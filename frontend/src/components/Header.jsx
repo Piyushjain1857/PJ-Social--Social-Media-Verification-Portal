@@ -25,16 +25,14 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
 
   const navigateToRoleSpace = () => {
     if (!user) return;
-    if (user.role === 'SUPER_ADMIN') onToggleView('super-admin-space');
-    else if (user.role === 'ADMIN') onToggleView('admin-space');
-    else onToggleView('user-space');
+    onToggleView('dashboard');
   };
 
-  const handleQuickSwitch = async (email, password, targetView) => {
+  const handleQuickSwitch = async (email, password) => {
     setShowRoleSwitcher(false);
     const res = await login(email, password);
     if (res.success) {
-      onToggleView(targetView);
+      onToggleView('dashboard');
     }
   };
 

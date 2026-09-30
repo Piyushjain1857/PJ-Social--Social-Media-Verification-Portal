@@ -29,11 +29,13 @@ export default function App() {
 
   const getInitialView = () => {
     const hash = window.location.hash.replace('#', '');
+    const hasToken = !!localStorage.getItem('auth_token');
     // Any authenticated workspace views all map to 'dashboard'
     const authenticatedViews = [
       'super-admin-space', 'admin-space', 'user-space', 'dashboard', 'role-space'
     ];
     if (authenticatedViews.includes(hash)) return 'dashboard';
+    if (hasToken && (hash === 'login' || hash === '')) return 'dashboard';
     const validViews = ['portal', 'login', 'unauthorized', 'dev-dashboard'];
     return validViews.includes(hash) ? hash : 'portal';
   };
@@ -90,17 +92,19 @@ export default function App() {
   // When user authenticates, automatically navigate to dashboard
   useEffect(() => {
     if (isAuthenticated && (currentView === 'login' || currentView === 'portal')) {
-      handleNavigate('dashboard');
+      setCurrentView('dashboard');
+      window.location.hash = 'dashboard';
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentView]);
 
   const handleNavigate = (view) => {
     // Alias authenticated workspace views → 'dashboard'
     const authenticatedViews = [
       'super-admin-space', 'admin-space', 'user-space', 'role-space', 'dashboard'
     ];
+    const isAuthed = isAuthenticated || !!localStorage.getItem('auth_token');
     if (authenticatedViews.includes(view)) {
-      if (isAuthenticated) {
+      if (isAuthed) {
         setCurrentView('dashboard');
         window.location.hash = 'dashboard';
       } else {

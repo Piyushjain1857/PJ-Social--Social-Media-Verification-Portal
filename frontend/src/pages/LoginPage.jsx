@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const DEMO_ACCOUNTS = [
@@ -29,7 +29,14 @@ const DEMO_ACCOUNTS = [
 ];
 
 export default function LoginPage({ onNavigate }) {
-  const { login, register, error: authError, clearError } = useAuth();
+  const { user, isAuthenticated, login, register, error: authError, clearError } = useAuth();
+
+  // If already authenticated, redirect straight to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      onNavigate('dashboard');
+    }
+  }, [isAuthenticated, onNavigate]);
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [formData, setFormData] = useState({
@@ -73,20 +80,9 @@ export default function LoginPage({ onNavigate }) {
     setIsSubmitting(false);
 
     if (res.success && res.user) {
-      // Redirect according to role
-      handleRoleRedirect(res.user.role);
+      onNavigate('dashboard');
     } else {
       setLocalError(res.error || 'Authentication failed. Please check credentials.');
-    }
-  };
-
-  const handleRoleRedirect = (role) => {
-    if (role === 'SUPER_ADMIN') {
-      onNavigate('super-admin-space');
-    } else if (role === 'ADMIN') {
-      onNavigate('admin-space');
-    } else {
-      onNavigate('user-space');
     }
   };
 
@@ -115,7 +111,7 @@ export default function LoginPage({ onNavigate }) {
       setIsSubmitting(false);
 
       if (res.success && res.user) {
-        handleRoleRedirect(res.user.role);
+        onNavigate('dashboard');
       } else {
         setLocalError(res.error || 'Registration failed.');
       }

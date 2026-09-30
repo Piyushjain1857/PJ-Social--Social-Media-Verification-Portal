@@ -143,6 +143,22 @@ async function runTests() {
     });
     assert(userAuditRes.status === 403, 'USER is blocked from Super Admin logs (GET /api/superadmin/audit-logs -> 403)');
 
+    // USER Dashboard tests
+    const userDashRes = await makeRequest('/dashboard/user', {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    assert(
+      userDashRes.status === 200 &&
+      userDashRes.body.success &&
+      userDashRes.body.data?.stats?.total !== undefined &&
+      userDashRes.body.data?.user?.email === 'user@portal.com',
+      'USER can access personal dashboard with scoped stats (GET /api/dashboard/user)'
+    );
+
+    // Unauthenticated access to dashboard is rejected
+    const unauthDashRes = await makeRequest('/dashboard/user');
+    assert(unauthDashRes.status === 401, 'Unauthenticated request to dashboard is blocked (401)');
+
     console.log('\n3. Testing ADMIN Role Permissions:');
     // ADMIN can access moderation queue
     const adminQueueRes = await makeRequest('/submissions', {

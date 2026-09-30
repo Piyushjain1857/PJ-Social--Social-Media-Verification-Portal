@@ -163,6 +163,13 @@ export const fetchMyNotifications = async () => {
   return await apiFetch('/notifications/my');
 };
 
+// Dashboard Endpoints
+export const fetchUserDashboard = async () => {
+  return await apiFetch('/dashboard/user');
+};
+
+
+
 // Super Admin Exclusive Endpoints
 export const fetchAuditLogs = async () => {
   return await apiFetch('/superadmin/audit-logs');
