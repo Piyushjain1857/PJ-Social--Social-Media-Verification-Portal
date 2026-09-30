@@ -1,4 +1,77 @@
 const { getAllUsers, updateUserRole, findUserById } = require('../repositories/userRepository');
+const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
+
+/**
+ * GET /api/users/profile
+ * Protected: USER, ADMIN, SUPER_ADMIN
+ * Retrieves authenticated user profile along with role-relevant summary metrics.
+ */
+const getUserProfile = async (req, res, next) => {
+  try {
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User profile not found.'
+      });
+    }
+
+    // Role-tailored summary stats for quick dashboard & profile consumption
+    let stats = {};
+    try {
+      if (user.role === 'USER') {
+        const mySubs = await getUserSubmissions(user.id);
+        stats = {
+          totalSubmissions: mySubs.length,
+          approved: mySubs.filter(s => s.status === 'APPROVED').length,
+          pending: mySubs.filter(s => s.status === 'PENDING').length,
+          rejected: mySubs.filter(s => s.status === 'REJECTED').length
+        };
+      } else if (user.role === 'ADMIN') {
+        const allSubs = await getAllSubmissions();
+        stats = {
+          pendingReview: allSubs.filter(s => s.status === 'PENDING').length,
+          totalSubmissions: allSubs.length,
+          approved: allSubs.filter(s => s.status === 'APPROVED').length
+        };
+      } else if (user.role === 'SUPER_ADMIN') {
+        const allUsers = await getAllUsers();
+        const allSubs = await getAllSubmissions();
+        stats = {
+          totalUsers: allUsers.length,
+          totalAdmins: allUsers.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN').length,
+          totalSubmissions: allSubs.length,
+          pendingReview: allSubs.filter(s => s.status === 'PENDING').length
+        };
+      }
+    } catch (e) {
+      console.warn('[userController] Stats calculation error:', e.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        createdAt: user.createdAt,
+        stats
+      },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * GET /api/users
@@ -69,6 +142,8 @@ const changeRole = async (req, res, next) => {
 };
 
 module.exports = {
+  getUserProfile,
   listUsers,
   changeRole
 };
+

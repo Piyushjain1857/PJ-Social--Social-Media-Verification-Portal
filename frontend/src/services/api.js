@@ -107,6 +107,12 @@ export const fetchCurrentUser = async () => {
   });
 };
 
+export const fetchUserProfile = async () => {
+  return await apiFetch('/users/profile', {
+    method: 'GET',
+  });
+};
+
 export const logoutUser = async () => {
   try {
     return await apiFetch('/auth/logout', {

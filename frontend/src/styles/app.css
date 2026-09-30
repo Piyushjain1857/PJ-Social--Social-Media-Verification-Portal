@@ -1,6 +1,8 @@
 /* ==========================================================================
    Component Layouts & Page Styles: VeriSocial Verification Portal
    ========================================================================== */
+@import './layout.css';
+
 
 .app-container {
   display: flex;

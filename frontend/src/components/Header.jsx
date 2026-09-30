@@ -55,10 +55,10 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
             </div>
           </div>
 
-          {/* Role-Aware Navigation: Items hidden if role does not have permission */}
+          {/* Role-Aware Navigation */}
           <nav className="header-nav" aria-label="Main Navigation">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`nav-link ${currentView === 'portal' ? 'active' : ''}`}
               onClick={() => onToggleView('portal')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
@@ -66,55 +66,21 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
               Portal Landing
             </button>
 
-            {/* Normal USER: Only sees Creator Space */}
-            {isAuthenticated && user?.role === 'USER' && (
-              <button 
-                type="button" 
-                className={`nav-link ${currentView === 'user-space' ? 'active' : ''}`}
-                onClick={() => onToggleView('user-space')}
+            {/* Authenticated: show unified Dashboard link */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
+                onClick={() => onToggleView('dashboard')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
               >
-                🚀 My Creator Space
+                {user?.role === 'SUPER_ADMIN' ? '👑' : user?.role === 'ADMIN' ? '🛡️' : '🚀'} My Dashboard
               </button>
             )}
 
-            {/* ADMIN: Sees Admin Workspace; HIDES Super Admin Console */}
-            {isAuthenticated && user?.role === 'ADMIN' && (
-              <button 
-                type="button" 
-                className={`nav-link ${currentView === 'admin-space' ? 'active' : ''}`}
-                onClick={() => onToggleView('admin-space')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-              >
-                🛡️ Admin Review Queue
-              </button>
-            )}
-
-            {/* SUPER_ADMIN: Full system access - sees Super Admin Console AND Admin Workspace */}
-            {isAuthenticated && user?.role === 'SUPER_ADMIN' && (
-              <>
-                <button 
-                  type="button" 
-                  className={`nav-link ${currentView === 'super-admin-space' ? 'active' : ''}`}
-                  onClick={() => onToggleView('super-admin-space')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                >
-                  👑 Super Admin Console
-                </button>
-                <button 
-                  type="button" 
-                  className={`nav-link ${currentView === 'admin-space' ? 'active' : ''}`}
-                  onClick={() => onToggleView('admin-space')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                >
-                  🛡️ Admin Queue
-                </button>
-              </>
-            )}
-
-            {/* Developer DB Console: Available to Super Admin and public demo */}
-            <button 
-              type="button" 
+            {/* Developer DB Console */}
+            <button
+              type="button"
               className={`nav-link ${currentView === 'dev-dashboard' ? 'active' : ''}`}
               onClick={() => onToggleView('dev-dashboard')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
@@ -124,6 +90,7 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
 
             <a href="#roles" className="nav-link" onClick={() => onToggleView('portal')}>Role Specs</a>
           </nav>
+
 
           <div className="header-actions">
             {/* API Status Pill */}

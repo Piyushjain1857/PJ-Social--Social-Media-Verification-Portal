@@ -91,6 +91,12 @@ async function runTests() {
     });
     assert(mySubRes.status === 200 && mySubRes.body.success, 'USER can view own submissions (GET /api/submissions/my)');
 
+    // USER can view own profile
+    const userProfileRes = await makeRequest('/users/profile', {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    assert(userProfileRes.status === 200 && userProfileRes.body.profile?.role === 'USER', 'USER can fetch authenticated profile (GET /api/users/profile)');
+
     // USER can view own notifications
     const notifRes = await makeRequest('/notifications/my', {
       headers: { Authorization: `Bearer ${userToken}` }

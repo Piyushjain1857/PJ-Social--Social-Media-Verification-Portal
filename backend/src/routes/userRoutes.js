@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { listUsers, changeRole } = require('../controllers/userController');
+const { listUsers, changeRole, getUserProfile } = require('../controllers/userController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize, preventSuperAdminPrivilegeEscalation } = require('../middlewares/roleMiddleware');
+
+/**
+ * Authenticated User Profile API:
+ * Lightweight profile endpoint accessible by any verified authenticated role.
+ */
+router.get('/profile', authenticate, getUserProfile);
 
 /**
  * ADMIN & SUPER_ADMIN Permission: View relevant users and submission information
