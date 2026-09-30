@@ -179,44 +179,242 @@ const getAllUsers = async () => {
 };
 
 /**
- * Update a user's role (Super Admin action)
+ * Get users with pagination, search, role and status filtering (excluding passwords)
  */
-const updateUserRole = async (id, newRole) => {
+const getUsersPaginated = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  role = 'ALL',
+  status = 'ALL'
+}) => {
+  await initializeInMemoryUsers();
+  const dbStatus = await checkDatabaseConnection();
+
+  const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+  const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const skip = (parsedPage - 1) * parsedLimit;
+  const trimmedSearch = typeof search === 'string' ? search.trim().toLowerCase() : '';
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const where = {};
+      if (role && role !== 'ALL') {
+        where.role = role;
+      }
+      if (status && status !== 'ALL') {
+        where.status = status;
+      }
+      if (trimmedSearch) {
+        where.OR = [
+          { name: { contains: trimmedSearch, mode: 'insensitive' } },
+          { email: { contains: trimmedSearch, mode: 'insensitive' } }
+        ];
+      }
+
+      const [totalCount, users, allUsers] = await Promise.all([
+        prisma.user.count({ where }),
+        prisma.user.findMany({
+          where,
+          skip,
+          take: parsedLimit,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            _count: {
+              select: {
+                submissions: true,
+                reviews: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        }),
+        // Global stats for quick metrics
+        prisma.user.findMany({
+          select: { role: true, status: true }
+        })
+      ]);
+
+      const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+      const stats = {
+        total: allUsers.length,
+        active: allUsers.filter(u => u.status === 'ACTIVE').length,
+        inactive: allUsers.filter(u => u.status === 'INACTIVE').length,
+        suspended: allUsers.filter(u => u.status === 'SUSPENDED').length,
+        usersCount: allUsers.filter(u => u.role === 'USER').length,
+        adminsCount: allUsers.filter(u => u.role === 'ADMIN').length,
+        superAdminsCount: allUsers.filter(u => u.role === 'SUPER_ADMIN').length
+      };
+
+      const mappedUsers = users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        status: u.status,
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt,
+        submissionsCount: u._count?.submissions || 0,
+        reviewsCount: u._count?.reviews || 0
+      }));
+
+      return {
+        users: mappedUsers,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: parsedPage,
+          limit: parsedLimit,
+          hasNextPage: parsedPage < totalPages,
+          hasPrevPage: parsedPage > 1
+        },
+        stats
+      };
+    } catch (err) {
+      console.warn('[UserRepo] Prisma getUsersPaginated failed, falling back to memory store:', err.message);
+    }
+  }
+
+  // In-memory fallback
+  const allUsersList = Array.from(inMemoryUsers.values());
+
+  const filtered = allUsersList.filter(u => {
+    const matchesSearch = !trimmedSearch ||
+      u.name.toLowerCase().includes(trimmedSearch) ||
+      u.email.toLowerCase().includes(trimmedSearch);
+
+    const matchesRole = role === 'ALL' || u.role === role;
+    const matchesStatus = status === 'ALL' || u.status === status;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const totalCount = filtered.length;
+  const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+  const paginatedList = filtered.slice(skip, skip + parsedLimit);
+
+  const stats = {
+    total: allUsersList.length,
+    active: allUsersList.filter(u => u.status === 'ACTIVE').length,
+    inactive: allUsersList.filter(u => u.status === 'INACTIVE').length,
+    suspended: allUsersList.filter(u => u.status === 'SUSPENDED').length,
+    usersCount: allUsersList.filter(u => u.role === 'USER').length,
+    adminsCount: allUsersList.filter(u => u.role === 'ADMIN').length,
+    superAdminsCount: allUsersList.filter(u => u.role === 'SUPER_ADMIN').length
+  };
+
+  const users = paginatedList.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    status: u.status,
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+    submissionsCount: 0,
+    reviewsCount: 0
+  }));
+
+  return {
+    users,
+    pagination: {
+      totalCount,
+      totalPages,
+      currentPage: parsedPage,
+      limit: parsedLimit,
+      hasNextPage: parsedPage < totalPages,
+      hasPrevPage: parsedPage > 1
+    },
+    stats
+  };
+};
+
+/**
+ * Get detailed user dossier including activity counts (excluding password)
+ */
+const getUserDetails = async (id) => {
   await initializeInMemoryUsers();
   const dbStatus = await checkDatabaseConnection();
 
   if (dbStatus.isConnected && prisma) {
     try {
-      const updated = await prisma.user.update({
+      const user = await prisma.user.findUnique({
         where: { id },
-        data: { role: newRole },
         select: {
           id: true,
           name: true,
           email: true,
           role: true,
           status: true,
-          updatedAt: true
+          createdAt: true,
+          updatedAt: true,
+          submissions: {
+            select: {
+              id: true,
+              platform: true,
+              actionType: true,
+              status: true,
+              createdAt: true
+            },
+            take: 5,
+            orderBy: { createdAt: 'desc' }
+          },
+          reviews: {
+            select: {
+              id: true,
+              status: true,
+              createdAt: true
+            },
+            take: 5,
+            orderBy: { createdAt: 'desc' }
+          },
+          _count: {
+            select: {
+              submissions: true,
+              reviews: true,
+              notifications: true
+            }
+          }
         }
       });
-      return updated;
+      if (user) {
+        return {
+          ...user,
+          submissionsCount: user._count?.submissions || 0,
+          reviewsCount: user._count?.reviews || 0,
+          notificationsCount: user._count?.notifications || 0
+        };
+      }
     } catch (err) {
-      console.warn('[UserRepo] Prisma updateUserRole failed, updating memory store:', err.message);
+      console.warn('[UserRepo] Prisma getUserDetails failed, falling back to memory store:', err.message);
     }
   }
 
-  for (const [email, user] of inMemoryUsers.entries()) {
+  // Fallback to in-memory store
+  for (const user of inMemoryUsers.values()) {
     if (user.id === id) {
-      user.role = newRole;
-      user.updatedAt = new Date();
-      inMemoryUsers.set(email, user);
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         status: user.status,
-        updatedAt: user.updatedAt
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        submissions: [],
+        reviews: [],
+        submissionsCount: 0,
+        reviewsCount: 0,
+        notificationsCount: 0
       };
     }
   }
@@ -224,11 +422,147 @@ const updateUserRole = async (id, newRole) => {
   return null;
 };
 
+/**
+ * Update user entity (name, email, role, status, password)
+ */
+const updateUser = async (id, updateFields = {}) => {
+  await initializeInMemoryUsers();
+  const dbStatus = await checkDatabaseConnection();
+
+  const updateData = {};
+  if (updateFields.name !== undefined) updateData.name = updateFields.name.trim();
+  if (updateFields.email !== undefined) updateData.email = updateFields.email.trim().toLowerCase();
+  if (updateFields.role !== undefined) updateData.role = updateFields.role;
+  if (updateFields.status !== undefined) updateData.status = updateFields.status;
+  if (updateFields.password !== undefined) updateData.password = updateFields.password;
+
+  let prismaUpdated = null;
+  if (dbStatus.isConnected && prisma) {
+    try {
+      prismaUpdated = await prisma.user.update({
+        where: { id },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+    } catch (err) {
+      console.warn('[UserRepo] Prisma updateUser failed, falling back to memory store:', err.message);
+    }
+  }
+
+  // Update in-memory store
+  for (const [emailKey, user] of inMemoryUsers.entries()) {
+    if (user.id === id) {
+      const oldEmail = emailKey;
+      const updatedUser = {
+        ...user,
+        ...updateData,
+        updatedAt: new Date()
+      };
+
+      if (updateData.email && updateData.email !== oldEmail) {
+        inMemoryUsers.delete(oldEmail);
+        inMemoryUsers.set(updateData.email, updatedUser);
+      } else {
+        inMemoryUsers.set(oldEmail, updatedUser);
+      }
+
+      return prismaUpdated || {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt
+      };
+    }
+  }
+
+  return prismaUpdated;
+};
+
+/**
+ * Update user status (ACTIVE, INACTIVE, SUSPENDED)
+ */
+const updateUserStatus = async (id, status) => {
+  return await updateUser(id, { status });
+};
+
+/**
+ * Delete a user
+ */
+const deleteUser = async (id) => {
+  await initializeInMemoryUsers();
+  const dbStatus = await checkDatabaseConnection();
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      await prisma.user.delete({ where: { id } });
+    } catch (err) {
+      console.warn('[UserRepo] Prisma deleteUser failed, falling back to memory store:', err.message);
+    }
+  }
+
+  for (const [emailKey, user] of inMemoryUsers.entries()) {
+    if (user.id === id) {
+      inMemoryUsers.delete(emailKey);
+      return true;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Count active Super Administrators to protect root governance
+ */
+const countSuperAdmins = async () => {
+  await initializeInMemoryUsers();
+  const dbStatus = await checkDatabaseConnection();
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const count = await prisma.user.count({
+        where: { role: 'SUPER_ADMIN', status: 'ACTIVE' }
+      });
+      return count;
+    } catch (err) {
+      console.warn('[UserRepo] Prisma countSuperAdmins failed, using memory store:', err.message);
+    }
+  }
+
+  return Array.from(inMemoryUsers.values()).filter(
+    u => u.role === 'SUPER_ADMIN' && u.status === 'ACTIVE'
+  ).length;
+};
+
+/**
+ * Update a user's role (Super Admin action)
+ */
+const updateUserRole = async (id, newRole) => {
+  return await updateUser(id, { role: newRole });
+};
+
 module.exports = {
   findUserByEmail,
   findUserById,
   createUser,
   getAllUsers,
-  updateUserRole
+  updateUserRole,
+  getUsersPaginated,
+  getUserDetails,
+  updateUser,
+  updateUserStatus,
+  deleteUser,
+  countSuperAdmins
 };
+
 

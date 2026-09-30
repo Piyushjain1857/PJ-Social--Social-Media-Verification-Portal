@@ -345,6 +345,50 @@ export const fetchSystemStats = async () => {
   return await apiFetch('/superadmin/system-stats');
 };
 
+// Super Admin User Management Endpoints
+export const fetchSuperAdminUsers = async ({ page = 1, limit = 10, search = '', role = 'ALL', status = 'ALL' } = {}) => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page);
+  if (limit) params.append('limit', limit);
+  if (search) params.append('search', search);
+  if (role && role !== 'ALL') params.append('role', role);
+  if (status && status !== 'ALL') params.append('status', status);
+
+  const qs = params.toString();
+  return await apiFetch(qs ? `/superadmin/users?${qs}` : '/superadmin/users');
+};
+
+export const fetchSuperAdminUserDetails = async (id) => {
+  return await apiFetch(`/superadmin/users/${id}`);
+};
+
+export const createSuperAdminUser = async ({ name, email, password, role, status }) => {
+  return await apiFetch('/superadmin/users', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password, role, status }),
+  });
+};
+
+export const updateSuperAdminUser = async (id, updates) => {
+  return await apiFetch(`/superadmin/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+};
+
+export const updateSuperAdminUserStatus = async (id, status) => {
+  return await apiFetch(`/superadmin/users/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+};
+
+export const deleteSuperAdminUser = async (id) => {
+  return await apiFetch(`/superadmin/users/${id}`, {
+    method: 'DELETE',
+  });
+};
+
 // Direct Restricted Endpoint Probe (for live in-app testing of 403 Forbidden responses)
 export const testRestrictedEndpoint = async (endpoint, options = {}) => {
   try {
