@@ -116,11 +116,26 @@ const create = async (req, res, next) => {
  */
 const getMy = async (req, res, next) => {
   try {
-    const submissions = await getUserSubmissions(req.user.id);
+    const { page, limit, search, status, platform } = req.query;
+    
+    const result = await getUserSubmissions(req.user.id, {
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 10,
+      search,
+      status,
+      platform
+    });
+    
     return res.status(200).json({
       success: true,
-      count: submissions.length,
-      data: submissions
+      count: result.records.length,
+      data: result.records,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages
+      }
     });
   } catch (error) {
     next(error);

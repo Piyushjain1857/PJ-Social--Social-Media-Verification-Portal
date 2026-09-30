@@ -103,28 +103,60 @@ const getAllSubmissions = async () => {
   );
 };
 
-const getUserSubmissions = async (userId) => {
+const getUserSubmissions = async (userId, filters = {}) => {
   initializeInMemorySubmissions();
   const dbStatus = await checkDatabaseConnection();
 
+  const { page = 1, limit = 10, search, status, platform } = filters;
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
   if (dbStatus.isConnected && prisma) {
     try {
+      const where = { userId };
+      
+      if (status) where.status = status.toUpperCase();
+      if (platform) where.platform = platform.toUpperCase();
+      if (search) {
+        where.OR = [
+          { postUrl: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ];
+      }
+
+      const totalCount = await prisma.submission.count({ where });
       const records = await prisma.submission.findMany({
-        where: { userId },
+        where,
         include: {
           reviews: { include: { admin: { select: { id: true, name: true } } } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: parseInt(limit)
       });
-      if (records && records.length > 0) return records;
+      return { records, totalCount, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(totalCount / parseInt(limit)) };
     } catch (err) {
       console.warn('[SubRepo] Prisma lookup failed, falling back to memory store:', err.message);
     }
   }
 
-  return Array.from(inMemorySubmissions.values())
-    .filter(s => s.userId === userId)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  let memoryRecords = Array.from(inMemorySubmissions.values())
+    .filter(s => s.userId === userId);
+    
+  if (status) memoryRecords = memoryRecords.filter(s => s.status === status.toUpperCase());
+  if (platform) memoryRecords = memoryRecords.filter(s => s.platform === platform.toUpperCase());
+  if (search) {
+    const s = search.toLowerCase();
+    memoryRecords = memoryRecords.filter(sub => 
+      (sub.postUrl && sub.postUrl.toLowerCase().includes(s)) ||
+      (sub.description && sub.description.toLowerCase().includes(s))
+    );
+  }
+
+  memoryRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const totalCount = memoryRecords.length;
+  memoryRecords = memoryRecords.slice(skip, skip + parseInt(limit));
+
+  return { records: memoryRecords, totalCount, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(totalCount / parseInt(limit)) };
 };
 
 const getSubmissionById = async (id) => {

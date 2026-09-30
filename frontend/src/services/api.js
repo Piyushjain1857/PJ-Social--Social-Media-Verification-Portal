@@ -125,8 +125,17 @@ export const logoutUser = async () => {
 };
 
 // Submissions Endpoints
-export const fetchMySubmissions = async () => {
-  return await apiFetch('/submissions/my');
+export const fetchMySubmissions = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.page) params.append('page', filters.page);
+  if (filters.limit) params.append('limit', filters.limit);
+  if (filters.search) params.append('search', filters.search);
+  if (filters.status) params.append('status', filters.status);
+  if (filters.platform) params.append('platform', filters.platform);
+
+  const query = params.toString();
+  const url = query ? `/submissions/my?${query}` : '/submissions/my';
+  return await apiFetch(url);
 };
 
 export const fetchAllSubmissions = async () => {
