@@ -9,41 +9,41 @@ const ROLES_DATA = [
     icon: '👑',
     summary: 'Full platform governance, security control, and administrative privileges.',
     capabilities: [
-      'Manage platform administrators and permissions',
-      'Global verification policies and scoring algorithms',
-      'System-wide audit trail and analytics dashboard',
-      'Direct database migration and platform health oversight',
-      'Emergency broadcast and platform rate limit control'
+      'Full system access across all portal resources',
+      'Manage user roles and elevate moderator privileges',
+      'System-wide audit trail and security telemetry',
+      'Supervise all creator submissions and reviewer decisions',
+      'Direct database console and schema constraint oversight'
     ]
   },
   {
     id: 'ADMIN',
-    name: 'Admin',
+    name: 'Admin Moderator',
     badgeClass: 'badge-admin',
     cardClass: 'admin',
     icon: '🛡️',
-    summary: 'Operational verification review, evidence checking, and dispute handling.',
+    summary: 'Operational verification review, evidence checking, and moderation queue.',
     capabilities: [
-      'Inspect pending activity submissions queue',
-      'Validate proof URLs, screenshots, and engagement metrics',
-      'Approve, reject, or request revisions with moderator notes',
-      'Escalate suspicious multi-account activities to Super Admin',
+      'Review submissions: approve or reject with moderator feedback',
+      'View relevant users and submission information',
+      'Inspect post URLs, action types, and proof screenshots',
+      'Strictly restricted: Cannot manage Super Admin privileges',
       'Real-time verification queue performance tracking'
     ]
   },
   {
     id: 'USER',
-    name: 'Normal User',
+    name: 'Creator User',
     badgeClass: 'badge-user',
     cardClass: 'user',
     icon: '🚀',
-    summary: 'Connects social identities, submits campaign proofs, and tracks status.',
+    summary: 'Submits campaign activity proofs and tracks verification status.',
     capabilities: [
-      'Link accounts across X (Twitter), YouTube, Instagram & LinkedIn',
-      'Submit activity links (posts, retweets, video reviews)',
-      'Real-time status tracking (Pending, Under Review, Verified, Rejected)',
-      'Earn verified badges and view activity credit history',
-      'Submit appeals and provide updated proof context'
+      'Create submissions for Instagram, LinkedIn, and Facebook activities',
+      'View own submissions and moderator feedback history',
+      'View own profile and real-time review notifications',
+      'Real-time status tracking (Pending, Approved, Rejected)',
+      'Protected from unauthorized access to staff queues'
     ]
   }
 ];

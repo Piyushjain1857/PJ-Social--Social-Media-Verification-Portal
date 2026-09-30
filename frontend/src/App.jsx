@@ -6,6 +6,8 @@ import RoleOverview from './components/RoleOverview';
 import HealthCheckWidget from './components/HealthCheckWidget';
 import TechStackBadge from './components/TechStackBadge';
 import DevDatabaseDashboard from './components/DevDatabaseDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
+import Unauthorized403 from './components/Unauthorized403';
 import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
 import SuperAdminSpace from './pages/SuperAdminSpace';
@@ -16,20 +18,36 @@ import './styles/index.css';
 import './styles/app.css';
 
 /**
- * VIEWS:
+ * Role-Aware Routing & Views:
  *   'portal'            - Public landing page
  *   'login'             - Login / Register page
- *   'super-admin-space' - SUPER_ADMIN dashboard (protected)
- *   'admin-space'       - ADMIN workspace (protected)
- *   'user-space'        - USER workspace (protected)
+ *   'super-admin-space' - SUPER_ADMIN dashboard (Protected: SUPER_ADMIN only)
+ *   'admin-space'       - ADMIN workspace (Protected: ADMIN & SUPER_ADMIN)
+ *   'user-space'        - USER workspace (Protected: USER, ADMIN & SUPER_ADMIN)
+ *   'unauthorized'      - 403 Forbidden display
  *   'dev-dashboard'     - Developer DB telemetry console
- *   'role-space'        - Alias: redirects to role-appropriate space
+ *   'role-space'        - Alias: redirects to user's assigned workspace
  */
 
 export default function App() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const [currentView, setCurrentView] = useState('portal');
+  // Initialize view from URL hash if present, or default to 'portal'
+  const getInitialView = () => {
+    const hash = window.location.hash.replace('#', '');
+    const validViews = [
+      'portal',
+      'login',
+      'super-admin-space',
+      'admin-space',
+      'user-space',
+      'unauthorized',
+      'dev-dashboard'
+    ];
+    return validViews.includes(hash) ? hash : 'portal';
+  };
+
+  const [currentView, setCurrentView] = useState(getInitialView);
   const [selectedRole, setSelectedRole] = useState('SUPER_ADMIN');
   const [apiStatus, setApiStatus] = useState({
     healthy: false,
@@ -68,29 +86,45 @@ export default function App() {
     checkHealth();
   }, []);
 
-  // When auth state resolves and user is logged in, redirect to their space
+  // Listen to browser hash changes for back/forward navigation
   useEffect(() => {
-    if (!authLoading && isAuthenticated && user) {
-      const publicViews = ['portal', 'login'];
-      if (publicViews.includes(currentView)) {
-        navigateToRoleSpace(user.role);
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        handleNavigate(hash);
       }
-    }
-  }, [authLoading, isAuthenticated, user]);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
-  const navigateToRoleSpace = (role) => {
-    if (role === 'SUPER_ADMIN') setCurrentView('super-admin-space');
-    else if (role === 'ADMIN') setCurrentView('admin-space');
-    else setCurrentView('user-space');
+  // Sync window hash when view changes
+  const handleNavigate = (view) => {
+    if (view === 'role-space') {
+      if (user) {
+        navigateToRoleSpace(user.role);
+      } else {
+        setCurrentView('login');
+        window.location.hash = 'login';
+      }
+      return;
+    }
+
+    setCurrentView(view);
+    if (view === 'portal') {
+      window.location.hash = '';
+    } else {
+      window.location.hash = view;
+    }
   };
 
-  // Resolve the 'role-space' alias at navigate time
-  const handleNavigate = (view) => {
-    if (view === 'role-space' && user) {
-      navigateToRoleSpace(user.role);
-    } else {
-      setCurrentView(view);
-    }
+  const navigateToRoleSpace = (role) => {
+    let target = 'user-space';
+    if (role === 'SUPER_ADMIN') target = 'super-admin-space';
+    else if (role === 'ADMIN') target = 'admin-space';
+
+    setCurrentView(target);
+    window.location.hash = target;
   };
 
   const scrollToSection = (id) => {
@@ -107,38 +141,10 @@ export default function App() {
         <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 4rem' }}>
           <div className="status-dot checking" style={{ width: '18px', height: '18px', margin: '0 auto 1.5rem auto', display: 'block' }} />
           <h3>Initializing VeriSocial Portal…</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem' }}>Verifying session credentials</p>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Verifying session credentials & role permissions</p>
         </div>
       </div>
     );
-  }
-
-  // ── Protected space guard ───────────────────────────────────────────────────
-  const protectedViews = ['super-admin-space', 'admin-space', 'user-space'];
-  if (protectedViews.includes(currentView) && !isAuthenticated) {
-    return (
-      <div className="app-container">
-        <Header apiStatus={apiStatus} currentView="login" onToggleView={handleNavigate} />
-        <main className="main-content">
-          <LoginPage onNavigate={handleNavigate} />
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Role-mismatch guard for protected views
-  if (currentView === 'super-admin-space' && user?.role !== 'SUPER_ADMIN') {
-    navigateToRoleSpace(user.role);
-    return null;
-  }
-  if (currentView === 'admin-space' && user?.role !== 'ADMIN') {
-    navigateToRoleSpace(user.role);
-    return null;
-  }
-  if (currentView === 'user-space' && user?.role !== 'USER') {
-    navigateToRoleSpace(user.role);
-    return null;
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -165,15 +171,44 @@ export default function App() {
           <LoginPage onNavigate={handleNavigate} />
         )}
 
-        {/* Role-based protected workspaces */}
+        {/* Dedicated 403 Forbidden Screen */}
+        {currentView === 'unauthorized' && (
+          <Unauthorized403
+            attemptedView="restricted-admin-portal"
+            allowedRoles={['ADMIN', 'SUPER_ADMIN']}
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {/* Role-based protected workspaces wrapped with ProtectedRoute */}
         {currentView === 'super-admin-space' && (
-          <SuperAdminSpace onNavigate={handleNavigate} />
+          <ProtectedRoute
+            allowedRoles={['SUPER_ADMIN']}
+            attemptedView="super-admin-space"
+            onNavigate={handleNavigate}
+          >
+            <SuperAdminSpace onNavigate={handleNavigate} />
+          </ProtectedRoute>
         )}
+
         {currentView === 'admin-space' && (
-          <AdminSpace onNavigate={handleNavigate} />
+          <ProtectedRoute
+            allowedRoles={['ADMIN', 'SUPER_ADMIN']}
+            attemptedView="admin-space"
+            onNavigate={handleNavigate}
+          >
+            <AdminSpace onNavigate={handleNavigate} />
+          </ProtectedRoute>
         )}
+
         {currentView === 'user-space' && (
-          <UserSpace onNavigate={handleNavigate} />
+          <ProtectedRoute
+            allowedRoles={['USER', 'ADMIN', 'SUPER_ADMIN']}
+            attemptedView="user-space"
+            onNavigate={handleNavigate}
+          >
+            <UserSpace onNavigate={handleNavigate} />
+          </ProtectedRoute>
         )}
 
         {/* Developer database console */}
@@ -186,3 +221,4 @@ export default function App() {
     </div>
   );
 }
+

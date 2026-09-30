@@ -1,0 +1,27 @@
+const express = require('express');
+const router = express.Router();
+const { listUsers, changeRole } = require('../controllers/userController');
+const { authenticate } = require('../middlewares/authMiddleware');
+const { authorize, preventSuperAdminPrivilegeEscalation } = require('../middlewares/roleMiddleware');
+
+/**
+ * ADMIN & SUPER_ADMIN Permission: View relevant users and submission information
+ * Strict RBAC: USER receives HTTP 403 Forbidden!
+ */
+router.get('/', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), listUsers);
+
+/**
+ * SUPER_ADMIN Permission: Manage user roles and system privileges
+ * Strict RBAC:
+ *   - Only SUPER_ADMIN can alter user roles.
+ *   - ADMIN CANNOT manage Super Admin privileges.
+ */
+router.patch(
+  '/:id/role',
+  authenticate,
+  authorize('SUPER_ADMIN'),
+  preventSuperAdminPrivilegeEscalation,
+  changeRole
+);
+
+module.exports = router;

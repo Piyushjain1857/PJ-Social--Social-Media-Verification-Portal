@@ -139,8 +139,96 @@ const createUser = async ({ name, email, password, role = 'USER', status = 'ACTI
   return userData;
 };
 
+/**
+ * Get all users (sanitized, excluding passwords)
+ */
+const getAllUsers = async () => {
+  await initializeInMemoryUsers();
+  const dbStatus = await checkDatabaseConnection();
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      if (users && users.length > 0) return users;
+    } catch (err) {
+      console.warn('[UserRepo] Prisma getAllUsers failed, falling back to memory store:', err.message);
+    }
+  }
+
+  // Return sanitized in-memory users
+  return Array.from(inMemoryUsers.values()).map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    status: u.status,
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt
+  }));
+};
+
+/**
+ * Update a user's role (Super Admin action)
+ */
+const updateUserRole = async (id, newRole) => {
+  await initializeInMemoryUsers();
+  const dbStatus = await checkDatabaseConnection();
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const updated = await prisma.user.update({
+        where: { id },
+        data: { role: newRole },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          updatedAt: true
+        }
+      });
+      return updated;
+    } catch (err) {
+      console.warn('[UserRepo] Prisma updateUserRole failed, updating memory store:', err.message);
+    }
+  }
+
+  for (const [email, user] of inMemoryUsers.entries()) {
+    if (user.id === id) {
+      user.role = newRole;
+      user.updatedAt = new Date();
+      inMemoryUsers.set(email, user);
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        updatedAt: user.updatedAt
+      };
+    }
+  }
+
+  return null;
+};
+
 module.exports = {
   findUserByEmail,
   findUserById,
-  createUser
+  createUser,
+  getAllUsers,
+  updateUserRole
 };
+

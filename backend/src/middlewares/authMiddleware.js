@@ -1,4 +1,5 @@
 const { verifyToken } = require('../utils/jwt');
+const { authorize } = require('./roleMiddleware');
 
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -6,6 +7,8 @@ const authenticate = (req, res, next) => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
+      error: 'Unauthorized',
+      code: 'UNAUTHORIZED',
       message: 'Authentication required. No token provided.'
     });
   }
@@ -20,34 +23,16 @@ const authenticate = (req, res, next) => {
     const isExpired = error.name === 'TokenExpiredError';
     return res.status(401).json({
       success: false,
-      message: isExpired ? 'Token has expired. Please log in again.' : 'Invalid authentication token.',
+      error: 'Unauthorized',
       code: isExpired ? 'TOKEN_EXPIRED' : 'TOKEN_INVALID',
-      error: error.message
+      message: isExpired ? 'Token has expired. Please log in again.' : 'Invalid authentication token.',
+      details: error.message
     });
   }
-};
-
-const authorize = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user || !req.user.role) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access forbidden: User role not found.'
-      });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Access denied. Requires one of roles: [${allowedRoles.join(', ')}]. Current role: ${req.user.role}`
-      });
-    }
-
-    next();
-  };
 };
 
 module.exports = {
   authenticate,
   authorize
 };
+

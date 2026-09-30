@@ -116,3 +116,73 @@ export const logoutUser = async () => {
     return { success: true };
   }
 };
+
+// Submissions Endpoints
+export const fetchMySubmissions = async () => {
+  return await apiFetch('/submissions/my');
+};
+
+export const fetchAllSubmissions = async () => {
+  return await apiFetch('/submissions');
+};
+
+export const createSubmission = async (submissionData) => {
+  return await apiFetch('/submissions', {
+    method: 'POST',
+    body: JSON.stringify(submissionData),
+  });
+};
+
+export const reviewSubmission = async (id, status, feedback) => {
+  return await apiFetch(`/submissions/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ status, feedback }),
+  });
+};
+
+// User Directory & Role Management Endpoints
+export const fetchUsers = async () => {
+  return await apiFetch('/users');
+};
+
+export const updateUserRole = async (userId, role) => {
+  return await apiFetch(`/users/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  });
+};
+
+// Notifications Endpoints
+export const fetchMyNotifications = async () => {
+  return await apiFetch('/notifications/my');
+};
+
+// Super Admin Exclusive Endpoints
+export const fetchAuditLogs = async () => {
+  return await apiFetch('/superadmin/audit-logs');
+};
+
+export const fetchSystemStats = async () => {
+  return await apiFetch('/superadmin/system-stats');
+};
+
+// Direct Restricted Endpoint Probe (for live in-app testing of 403 Forbidden responses)
+export const testRestrictedEndpoint = async (endpoint, options = {}) => {
+  try {
+    const data = await apiFetch(endpoint, options);
+    return {
+      allowed: true,
+      status: 200,
+      data
+    };
+  } catch (error) {
+    return {
+      allowed: false,
+      status: error.status || 403,
+      code: error.code,
+      message: error.message,
+      data: error.data
+    };
+  }
+};
+
