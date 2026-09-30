@@ -65,6 +65,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
   const [isUrlMode, setIsUrlMode] = useState(false);
   const [externalUrl, setExternalUrl] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [lightboxPreview, setLightboxPreview] = useState(false);
 
   // Status & Progress State
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -584,52 +585,56 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
         {/* ── 4. Screenshot Evidence Upload ── */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.4rem' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
               4. Proof Screenshot Evidence <span style={{ color: 'var(--status-error)' }}>*</span>
             </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUrlMode(!isUrlMode);
-                  setValidationErrors((prev) => ({ ...prev, screenshot: null }));
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  color: 'var(--primary-light)',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                {isUrlMode ? '📁 Switch to File Upload' : '🔗 Or provide image link'}
-              </button>
-            </div>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              PNG, JPG, WebP, GIF — max 5 MB
+            </span>
           </div>
 
           {!isUrlMode ? (
             <div>
-              {/* Drag & Drop File Zone */}
               {!previewUrl ? (
+                /* ── Drag & Drop Zone ────────────────────────────────────────── */
                 <div
+                  id="screenshot-dropzone"
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Drop screenshot here or click to browse files"
                   onDragOver={handleDragOver}
+                  onDragEnter={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
                   style={{
-                    border: `2px dashed ${isDragOver ? 'var(--primary)' : validationErrors.screenshot ? 'var(--status-error)' : 'var(--border-subtle)'}`,
+                    border: `2px dashed ${
+                      isDragOver
+                        ? 'var(--primary)'
+                        : validationErrors.screenshot
+                        ? 'var(--status-error)'
+                        : 'var(--border-subtle)'
+                    }`,
                     borderRadius: 'var(--radius-md)',
-                    padding: '2.5rem 1.5rem',
+                    padding: 'clamp(1.5rem, 5vw, 2.5rem) 1.5rem',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    background: isDragOver ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255, 255, 255, 0.015)',
+                    background: isDragOver
+                      ? 'rgba(99, 102, 241, 0.1)'
+                      : validationErrors.screenshot
+                      ? 'rgba(239, 68, 68, 0.04)'
+                      : 'rgba(255, 255, 255, 0.015)',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.6rem',
+                    gap: '0.65rem',
+                    outline: isDragOver ? '2px solid var(--primary)' : 'none',
+                    outlineOffset: '2px',
+                    transform: isDragOver ? 'scale(1.005)' : 'scale(1)',
+                    boxShadow: isDragOver ? '0 0 24px rgba(99,102,241,0.2)' : 'none',
                   }}
                 >
                   <input
@@ -643,105 +648,254 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                       }
                     }}
                   />
+
+                  {/* Upload icon */}
                   <div
                     style={{
-                      width: '48px',
-                      height: '48px',
+                      width: '56px',
+                      height: '56px',
                       borderRadius: '50%',
-                      background: 'rgba(255, 255, 255, 0.06)',
+                      background: isDragOver
+                        ? 'rgba(99,102,241,0.2)'
+                        : 'rgba(255,255,255,0.06)',
+                      border: `1px solid ${isDragOver ? 'var(--primary)' : 'var(--border-subtle)'}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.5rem',
+                      fontSize: '1.6rem',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0,
                     }}
                   >
-                    📸
+                    {isDragOver ? '⬇️' : '📸'}
                   </div>
-                  <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-highlight)' }}>
-                    {isDragOver ? 'Drop image screenshot here' : 'Click to browse or drag & drop proof image'}
+
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: isDragOver ? 'var(--primary-light)' : 'var(--text-highlight)', marginBottom: '0.2rem' }}>
+                      {isDragOver ? 'Release to attach screenshot' : 'Drag & drop screenshot here'}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      or{' '}
+                      <span style={{ color: 'var(--primary-light)', textDecoration: 'underline', fontWeight: 600 }}>
+                        browse files
+                      </span>
+                      {' '}from your device
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Accepts PNG, JPG, JPEG, WebP, GIF (Max 5 MB)
+
+                  {/* Supported types */}
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.15rem' }}>
+                    {['PNG', 'JPG', 'WebP', 'GIF'].map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid var(--border-subtle)',
+                          color: 'var(--text-muted)',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
                   </div>
-                  <div style={{ marginTop: '0.25rem' }}>
-                    <span className="badge badge-user" style={{ fontSize: '0.7rem' }}>
-                      Evidence required for moderation
+
+                  <div style={{ marginTop: '0.1rem' }}>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '999px',
+                        background: 'rgba(245,158,11,0.12)',
+                        border: '1px solid rgba(245,158,11,0.25)',
+                        color: 'var(--status-warning)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      📋 Required for admin moderation review
                     </span>
                   </div>
                 </div>
               ) : (
-                /* Selected File Preview Card */
+                /* ── File Preview Card ────────────────────────────────────────── */
                 <div
                   style={{
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid rgba(99,102,241,0.3)',
                     borderRadius: 'var(--radius-md)',
-                    padding: '1.25rem',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    display: 'flex',
-                    gap: '1.25rem',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
+                    background: 'rgba(99,102,241,0.05)',
+                    overflow: 'hidden',
                   }}
                 >
+                  {/* Thumbnail strip */}
                   <div
                     style={{
-                      width: '90px',
-                      height: '90px',
-                      borderRadius: 'var(--radius-sm)',
-                      overflow: 'hidden',
-                      border: '1px solid var(--border-subtle)',
+                      position: 'relative',
+                      width: '100%',
+                      height: 'clamp(120px, 30vw, 200px)',
                       background: '#000',
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      cursor: 'zoom-in',
                     }}
+                    onClick={() => setLightboxPreview(true)}
+                    title="Click to preview full image"
                   >
                     <img
                       src={previewUrl}
                       alt="Screenshot evidence preview"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                     />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                      <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>✓ ATTACHED</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {(file.size / 1024).toFixed(0)} KB · {file.type.split('/')[1]?.toUpperCase()}
-                      </span>
-                    </div>
                     <div
                       style={{
-                        fontWeight: 600,
-                        fontSize: '0.92rem',
-                        color: 'var(--text-highlight)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '380px',
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '2rem',
+                        opacity: 0,
+                        transition: 'all 0.15s ease',
                       }}
+                      className="preview-hover"
                     >
-                      {file.name}
-                    </div>
-                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
-                      Image loaded ready for secure upload and server inspection.
+                      🔍
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleClearFile}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
+                  {/* Metadata row */}
+                  <div
+                    style={{
+                      padding: '0.85rem 1.1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.75rem',
+                      flexWrap: 'wrap',
+                    }}
                   >
-                    ✕ Remove &amp; Replace
-                  </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+                      <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>🖼️</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              padding: '0.1rem 0.45rem',
+                              borderRadius: '4px',
+                              background: 'rgba(16,185,129,0.15)',
+                              border: '1px solid rgba(16,185,129,0.3)',
+                              color: 'var(--status-success)',
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            ✓ ATTACHED
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              padding: '0.1rem 0.45rem',
+                              borderRadius: '4px',
+                              background: 'rgba(255,255,255,0.06)',
+                              color: 'var(--text-muted)',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            {file.type.split('/')[1]?.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            {file.size < 1024 * 1024
+                              ? `${(file.size / 1024).toFixed(0)} KB`
+                              : `${(file.size / (1024 * 1024)).toFixed(1)} MB`}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '0.82rem',
+                            color: 'var(--text-secondary)',
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '260px',
+                          }}
+                          title={file.name}
+                        >
+                          {file.name}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxPreview(true)}
+                        style={{
+                          background: 'rgba(99,102,241,0.12)',
+                          border: '1px solid rgba(99,102,241,0.3)',
+                          borderRadius: 'var(--radius-sm)',
+                          color: 'var(--primary-light)',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          padding: '0.4rem 0.8rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        🔍 Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearFile}
+                        style={{
+                          background: 'rgba(239,68,68,0.08)',
+                          border: '1px solid rgba(239,68,68,0.25)',
+                          borderRadius: 'var(--radius-sm)',
+                          color: 'var(--status-error)',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          padding: '0.4rem 0.8rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Toggle to URL mode */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUrlMode(true);
+                  setValidationErrors((prev) => ({ ...prev, screenshot: null }));
+                  handleClearFile();
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  marginTop: '0.5rem',
+                  padding: '0.2rem 0',
+                  display: 'block',
+                  textDecoration: 'underline',
+                }}
+              >
+                🔗 Or provide an external image link instead
+              </button>
             </div>
           ) : (
-            /* External Image Link Input Mode */
+            /* ── External Image Link Mode ─────────────────────────────────────── */
             <div>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', color: 'var(--text-muted)' }}>
@@ -750,7 +904,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                 <input
                   type="url"
                   className="input-field"
-                  placeholder="https://images.unsplash.com/... or public screenshot link"
+                  placeholder="https://i.imgur.com/... or other public screenshot link"
                   value={externalUrl}
                   onChange={(e) => {
                     setExternalUrl(e.target.value);
@@ -764,13 +918,34 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                 />
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.3rem' }}>
-                Paste a public image link directly showing proof of like, comment or story engagement.
+                Paste a public image link showing proof of your engagement.
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUrlMode(false);
+                  setExternalUrl('');
+                  setValidationErrors((prev) => ({ ...prev, screenshot: null }));
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  marginTop: '0.4rem',
+                  padding: '0.2rem 0',
+                  display: 'block',
+                  textDecoration: 'underline',
+                }}
+              >
+                📁 Switch back to file upload
+              </button>
             </div>
           )}
 
           {validationErrors.screenshot && (
-            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.35rem', fontWeight: 500 }}>
+            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: 500 }}>
               ⚠️ {validationErrors.screenshot}
             </div>
           )}
@@ -887,6 +1062,79 @@ export default function SubmitActivityView({ onNavigateToNav }) {
         </div>
 
       </form>
+      
+      {/* Lightbox Modal for Selected Image Preview */}
+      {lightboxPreview && previewUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Screenshot preview modal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.92)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            animation: 'fadeIn 0.15s ease',
+          }}
+          onClick={() => setLightboxPreview(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxPreview(false)}
+            aria-label="Close preview"
+            style={{
+              position: 'fixed',
+              top: '1.25rem',
+              right: '1.25rem',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              color: '#fff',
+              fontSize: '1.1rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10000,
+            }}
+          >
+            ✕
+          </button>
+          <img
+            src={previewUrl}
+            alt="Selected screenshot evidence"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '92vw',
+              maxHeight: '85vh',
+              objectFit: 'contain',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: '0 25px 80px rgba(0,0,0,0.8)',
+            }}
+          />
+          <div
+            style={{
+              marginTop: '1rem',
+              fontSize: '0.8rem',
+              color: 'rgba(255,255,255,0.6)',
+              background: 'rgba(255,255,255,0.06)',
+              padding: '0.35rem 0.9rem',
+              borderRadius: '999px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {file ? `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)` : 'Selected Screenshot Preview'}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

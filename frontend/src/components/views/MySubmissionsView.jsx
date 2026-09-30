@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMySubmissions } from '../../services/api';
+import { fetchMySubmissions, getScreenshotUrl } from '../../services/api';
+import ScreenshotImage from '../ScreenshotImage';
 
 export default function MySubmissionsView({ onNavigateToNav }) {
   const [submissions, setSubmissions] = useState([]);
@@ -142,25 +143,27 @@ export default function MySubmissionsView({ onNavigateToNav }) {
               {/* Screenshot Evidence Display */}
               {sub.screenshotUrl && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 4, overflow: 'hidden', flexShrink: 0, background: '#000', border: '1px solid var(--border-subtle)' }}>
-                    <img src={sub.screenshotUrl} alt="Evidence thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
+                  <ScreenshotImage
+                    screenshotUrl={sub.screenshotUrl}
+                    alt="Evidence thumbnail"
+                    thumbnailStyle={{ width: '48px', height: '48px', flexShrink: 0 }}
+                  />
                   <div style={{ flex: 1, overflow: 'hidden' }}>
                     <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
                       Attached Proof Evidence
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      Submitted for moderator review
+                      Click thumbnail to zoom or inspect full image
                     </div>
                   </div>
                   <a
-                    href={sub.screenshotUrl}
+                    href={getScreenshotUrl(sub.screenshotUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-secondary"
                     style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                   >
-                    🔍 View Full
+                    🔍 New Tab
                   </a>
                 </div>
               )}

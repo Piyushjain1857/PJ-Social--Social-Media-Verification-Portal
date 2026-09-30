@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAllSubmissions, reviewSubmission } from '../../services/api';
+import ScreenshotImage from '../ScreenshotImage';
 
 export default function ReviewSubmissionsView() {
   const [submissions, setSubmissions] = useState([]);
@@ -213,10 +214,14 @@ export default function ReviewSubmissionsView() {
 
             {selectedSub.screenshotUrl && (
               <div style={{ marginBottom: '1.25rem' }}>
-                <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Verification Proof:</strong>
-                <div style={{ marginTop: '0.5rem', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                  <img src={selectedSub.screenshotUrl} alt="Submission Proof" style={{ width: '100%', height: 'auto', display: 'block' }} />
-                </div>
+                <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+                  Verification Proof (Click to inspect / zoom):
+                </strong>
+                <ScreenshotImage
+                  screenshotUrl={selectedSub.screenshotUrl}
+                  alt="Submission Proof Screenshot"
+                  thumbnailStyle={{ maxHeight: '380px', width: '100%', background: 'rgba(0,0,0,0.4)' }}
+                />
               </div>
             )}
 

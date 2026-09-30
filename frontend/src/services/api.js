@@ -213,6 +213,64 @@ export const fetchUserDashboard = async () => {
   return await apiFetch('/dashboard/user');
 };
 
+/**
+ * Resolve a screenshot reference to a fully-qualified authenticated URL.
+ *
+ * Internal refs (stored as /api/uploads/screenshots/<filename>) are served
+ * through the auth-gated API. The browser will send the Authorization header
+ * via XMLHttpRequest (for <img> we use object URLs).
+ *
+ * External URLs (http/https) pass through unchanged.
+ *
+ * @param {string|null} screenshotUrl - Raw value from the submission record
+ * @returns {string|null}
+ */
+export const getScreenshotUrl = (screenshotUrl) => {
+  if (!screenshotUrl) return null;
+  // External URL — leave as-is
+  if (screenshotUrl.startsWith('http://') || screenshotUrl.startsWith('https://')) {
+    return screenshotUrl;
+  }
+
+  const token = localStorage.getItem('auth_token');
+  const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
+
+  // Internal API ref — route via the API
+  if (screenshotUrl.startsWith('/api/uploads/')) {
+    return `${screenshotUrl}${tokenQuery}`;
+  }
+  // Legacy /uploads/<filename> — still route via the new API
+  if (screenshotUrl.startsWith('/uploads/')) {
+    return `/api${screenshotUrl}${tokenQuery}`;
+  }
+  return screenshotUrl;
+};
+
+/**
+ * Fetch a screenshot as a Blob using the stored auth token so <img> tags
+ * can display auth-gated images via an object URL.
+ * @param {string} screenshotUrl
+ * @returns {Promise<string>} Object URL
+ */
+export const fetchScreenshotObjectUrl = async (screenshotUrl) => {
+  const resolvedUrl = getScreenshotUrl(screenshotUrl);
+  if (!resolvedUrl) return null;
+
+  // External images: return directly (no auth needed)
+  if (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://')) {
+    return resolvedUrl;
+  }
+
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(resolvedUrl, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) return null;
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+};
 
 
 // Super Admin Exclusive Endpoints

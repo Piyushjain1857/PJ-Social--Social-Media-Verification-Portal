@@ -3,8 +3,15 @@ const { authorize } = require('./roleMiddleware');
 
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
+  let token = null;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query && req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) {
     return res.status(401).json({
       success: false,
       error: 'Unauthorized',
@@ -12,8 +19,6 @@ const authenticate = (req, res, next) => {
       message: 'Authentication required. No token provided.'
     });
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = verifyToken(token);

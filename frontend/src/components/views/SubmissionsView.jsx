@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAllSubmissions } from '../../services/api';
+import ScreenshotImage from '../ScreenshotImage';
 
 export default function SubmissionsView() {
   const [submissions, setSubmissions] = useState([]);
@@ -199,10 +200,12 @@ export default function SubmissionsView() {
               {selectedSub.description && <div><strong>Description:</strong> {selectedSub.description}</div>}
               {selectedSub.screenshotUrl && (
                 <div>
-                  <strong>Proof Screenshot:</strong>
-                  <div style={{ marginTop: '0.5rem', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                    <img src={selectedSub.screenshotUrl} alt="Submission Proof" style={{ width: '100%', height: 'auto', display: 'block' }} />
-                  </div>
+                  <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Proof Screenshot (Click to zoom):</strong>
+                  <ScreenshotImage
+                    screenshotUrl={selectedSub.screenshotUrl}
+                    alt="Submission Proof Screenshot"
+                    thumbnailStyle={{ maxHeight: '350px', width: '100%', background: 'rgba(0,0,0,0.4)' }}
+                  />
                 </div>
               )}
               {selectedSub.reviews && selectedSub.reviews.length > 0 && (

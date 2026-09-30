@@ -238,10 +238,42 @@ const reviewSubmission = async (id, { status, feedback, adminId, adminName }) =>
   return { submission, review: reviewEntry };
 };
 
+/**
+ * Find a submission by its screenshotUrl (used for auth-gated screenshot access).
+ * Optionally filter by userId to enforce ownership for non-admin users.
+ * @param {string} screenshotRef  - e.g. /api/uploads/screenshots/evidence-xxx.jpg
+ * @param {string|null} userId    - if provided, must match submission.userId
+ */
+const getSubmissionByScreenshotRef = async (screenshotRef, userId = null) => {
+  initializeInMemorySubmissions();
+  const dbStatus = await checkDatabaseConnection();
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const where = { screenshotUrl: screenshotRef };
+      if (userId) where.userId = userId;
+
+      const record = await prisma.submission.findFirst({ where });
+      if (record) return record;
+    } catch (err) {
+      console.warn('[SubRepo] getSubmissionByScreenshotRef Prisma lookup failed:', err.message);
+    }
+  }
+
+  // Fallback to in-memory
+  for (const sub of inMemorySubmissions.values()) {
+    if (sub.screenshotUrl === screenshotRef) {
+      if (!userId || sub.userId === userId) return sub;
+    }
+  }
+  return null;
+};
+
 module.exports = {
   getAllSubmissions,
   getUserSubmissions,
   getSubmissionById,
+  getSubmissionByScreenshotRef,
   createSubmission,
   reviewSubmission
 };

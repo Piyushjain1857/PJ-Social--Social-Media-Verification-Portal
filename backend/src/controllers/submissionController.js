@@ -16,12 +16,10 @@ const { createNotification } = require('../repositories/notificationRepository')
 const create = async (req, res, next) => {
   try {
     const { platform, actionType, postUrl, description } = req.body;
-    let screenshotUrl = req.body.screenshotUrl;
 
-    // Handle multipart/form-data uploaded file
-    if (req.file) {
-      screenshotUrl = `/uploads/${req.file.filename}`;
-    }
+    // Prefer the securely-generated ref from the upload middleware.
+    // Fall back to body.screenshotUrl only for external-URL mode.
+    let screenshotUrl = req.uploadedFile?.screenshotRef || req.body.screenshotUrl || null;
 
     // Validate platform
     const validPlatforms = ['INSTAGRAM', 'LINKEDIN', 'FACEBOOK'];
