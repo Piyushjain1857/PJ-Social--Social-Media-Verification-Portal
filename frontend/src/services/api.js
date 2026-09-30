@@ -222,6 +222,10 @@ export const fetchUserDashboard = async () => {
   return await apiFetch('/dashboard/user');
 };
 
+export const fetchAdminDashboard = async () => {
+  return await apiFetch('/dashboard/admin');
+};
+
 /**
  * Resolve a screenshot reference to a fully-qualified authenticated URL.
  *

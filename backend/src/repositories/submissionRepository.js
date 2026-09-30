@@ -213,6 +213,9 @@ const createSubmission = async ({ userId, userName, userEmail, platform, actionT
           screenshotUrl,
           description,
           status: 'PENDING'
+        },
+        include: {
+          reviews: { include: { admin: { select: { id: true, name: true } } } }
         }
       });
       inMemorySubmissions.set(created.id, { ...newSubmission, id: created.id });

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   fetchUserDashboard,
+  fetchAdminDashboard,
   fetchSystemStats,
   fetchAuditLogs,
   fetchAllSubmissions,
   fetchUsers,
 } from '../../services/api';
+import ScreenshotImage from '../ScreenshotImage';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,6 +22,7 @@ const PLATFORM_ICONS = {
 };
 
 const NOTIF_ICONS = {
+  SUBMISSION_UPDATE: '📋',
   REVIEW_FEEDBACK: '📬',
   SYSTEM:          '🔔',
   ALERT:           '⚠️',
@@ -699,66 +702,477 @@ function SuperAdminDashboard({ onNavigateToNav }) {
 
 // ─── ADMIN Dashboard ───────────────────────────────────────────────────────
 function AdminDashboard({ onNavigateToNav }) {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ allSubmissions: [], usersList: [] });
+  const { user } = useAuth();
+  const [state, setState] = useState({
+    status: 'loading',
+    data: null,
+    error: null,
+  });
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      const [subsRes, usersRes] = await Promise.all([fetchAllSubmissions(), fetchUsers()]);
-      if (alive) {
-        setData({
-          allSubmissions: subsRes.success ? subsRes.data || [] : [],
-          usersList: usersRes.success ? usersRes.data || [] : [],
-        });
-        setLoading(false);
+  const load = useCallback(async () => {
+    setState(s => ({ ...s, status: 'loading', error: null }));
+    try {
+      const res = await fetchAdminDashboard();
+      if (res.success) {
+        setState({ status: 'success', data: res.data, error: null });
+      } else {
+        setState({ status: 'error', data: null, error: res.message || 'Failed to load administrator dashboard.' });
       }
-    })();
-    return () => { alive = false; };
+    } catch (err) {
+      setState({ status: 'error', data: null, error: err.message || 'Network error fetching administrator dashboard.' });
+    }
   }, []);
 
-  const pending  = data.allSubmissions.filter(s => s.status === 'PENDING').length;
-  const approved = data.allSubmissions.filter(s => s.status === 'APPROVED').length;
-  const rejected = data.allSubmissions.filter(s => s.status === 'REJECTED').length;
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const { status, data, error } = state;
+  const isLoading = status === 'loading';
+  const stats = data?.stats || {};
+  const recentPending = data?.recentPending || [];
+
+  const pendingCount = stats.pending ?? 0;
+  const reviewedToday = stats.reviewedToday ?? 0;
+  const approvedCount = stats.approved ?? 0;
+  const rejectedCount = stats.rejected ?? 0;
+  const adminName = user?.name || 'Admin Moderator';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
-        {loading ? <><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /></> : (<>
-          <StatCard label="Queue Awaiting Review" value={pending} sub="Needs moderator verification" color="var(--status-warning)" icon="⏳" pulse={pending > 0} />
-          <StatCard label="Approved Submissions" value={approved} sub="Verified engagement proofs" color="var(--status-success)" icon="✓" />
-          <StatCard label="Rejected Submissions" value={rejected} sub="Invalid / missing proof" color="var(--status-error)" icon="✕" />
-          <StatCard label="Total Submissions" value={data.allSubmissions.length} sub="Lifetime platform activities" color="var(--role-admin)" icon="📋" />
-        </>)}
-      </div>
 
-      <div className="glass-panel" style={{ padding: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.25rem', borderLeft: '4px solid var(--primary)' }}>
+      {/* ── Error Banner ── */}
+      {status === 'error' && (
+        <ErrorBanner
+          message={`Failed to load administrator dashboard: ${error}`}
+          onRetry={load}
+        />
+      )}
+
+      {/* ── Welcome & Operational Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.15rem', color: 'var(--text-highlight)' }}>
-            ⚖️ Submissions Queue Ready for Moderation
-          </h3>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-            You have {pending} creator activity proofs awaiting verification review.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
+            <span className="badge badge-admin" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>
+              🛡️ MODERATOR CONTROL
+            </span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              • Live Queue Telemetry
+            </span>
+          </div>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+            Welcome back, {adminName}
+          </h2>
+          <p style={{ margin: '0.3rem 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            Review pending creator proofs, track daily moderation throughput, and enforce compliance guidelines.
           </p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => onNavigateToNav('review-submissions')}
-          style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
-          Open Review Queue ({pending}) →
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={load}
+            disabled={isLoading}
+            style={{ fontSize: '0.85rem', padding: '0.55rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            title="Refresh dashboard metrics"
+          >
+            <span>↺</span> {isLoading ? 'Refreshing…' : 'Refresh'}
+          </button>
+
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => onNavigateToNav('review-submissions')}
+            style={{
+              padding: '0.55rem 1.25rem',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              background: 'var(--role-admin)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 4px 15px rgba(99, 102, 241, 0.35)',
+            }}
+          >
+            <span>⚖️</span> Review Queue ({pendingCount}) →
+          </button>
+        </div>
+      </div>
+
+      {/* ── Statistics Cards (4 KPI Cards) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        {isLoading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Pending Submissions"
+              value={pendingCount}
+              sub="Awaiting verification decision"
+              color="var(--status-warning)"
+              icon="⏳"
+              pulse={pendingCount > 0}
+            />
+            <StatCard
+              label="Reviewed Today"
+              value={reviewedToday}
+              sub="Evaluated in the last 24 hours"
+              color="var(--role-admin)"
+              icon="🎯"
+            />
+            <StatCard
+              label="Approved Submissions"
+              value={approvedCount}
+              sub="Valid creator activities logged"
+              color="var(--status-success)"
+              icon="✓"
+            />
+            <StatCard
+              label="Rejected Submissions"
+              value={rejectedCount}
+              sub="Invalid or non-compliant proof"
+              color="var(--status-error)"
+              icon="✕"
+            />
+          </>
+        )}
+      </div>
+
+      {/* ── Quick Link to Review Queue Callout ── */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '1.5rem 1.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
+          borderLeft: '4px solid var(--role-admin)',
+          background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(15, 23, 42, 0.4) 100%)',
+        }}
+      >
+        <div style={{ maxWidth: '600px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>⚖️</span>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+              Moderation &amp; Verification Queue
+            </h3>
+            {pendingCount > 0 && (
+              <span className="badge badge-warning" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                {pendingCount} PENDING
+              </span>
+            )}
+          </div>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+            {pendingCount > 0
+              ? `There are currently ${pendingCount} social activity submissions awaiting evidence inspection and approval.`
+              : 'All pending submissions have been evaluated. Great job! Check back as creators log new activity.'}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => onNavigateToNav('review-submissions')}
+          style={{
+            padding: '0.7rem 1.6rem',
+            fontSize: '0.92rem',
+            fontWeight: 700,
+            background: 'var(--role-admin)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 6px 20px rgba(99, 102, 241, 0.4)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span>⚖️</span> Open Review Queue ({pendingCount}) →
         </button>
       </div>
 
+      {/* ── Recent Pending Submissions List / Queue Preview ── */}
       <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.05rem', color: 'var(--text-highlight)' }}>
-          📋 Verification Review Standard Operating Procedures
-        </h3>
-        <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <li>Verify creator handle in screenshot matches account registration.</li>
-          <li>Confirm timestamp of engagement is within valid active campaign window.</li>
-          <li>For Stories, ensure post proof shows at least 50 views or 2 hours active duration.</li>
-          <li>Always provide clear, constructive feedback when rejecting a submission.</li>
-        </ul>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+                ⏳ Recent Pending Submissions
+              </h3>
+              {!isLoading && (
+                <span className="badge" style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                  {recentPending.length} shown
+                </span>
+              )}
+            </div>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Most recent creator evidence submissions awaiting admin moderation verdict.
+            </p>
+          </div>
+
+          {!isLoading && recentPending.length > 0 && (
+            <button
+              type="button"
+              className="nav-link"
+              onClick={() => onNavigateToNav('review-submissions')}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                color: 'var(--primary-light)',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+              }}
+            >
+              Go to Full Queue ({pendingCount}) →
+            </button>
+          )}
+        </div>
+
+        {/* List Content */}
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </div>
+        ) : recentPending.length === 0 ? (
+          <EmptyState
+            icon="🎉"
+            title="No Pending Submissions"
+            message="All creator submissions have been reviewed. The moderation queue is completely up to date!"
+            actionLabel="📋 Browse All Submissions"
+            onAction={() => onNavigateToNav('submissions')}
+          />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {recentPending.map((sub) => {
+              const creatorName = sub.userName || sub.user?.name || 'Creator';
+              const creatorEmail = sub.userEmail || sub.user?.email || '';
+
+              return (
+                <div
+                  key={sub.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    padding: '1rem 1.15rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(255,255,255,0.025)',
+                    border: '1px solid var(--border-subtle)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.025)';
+                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  }}
+                >
+                  {/* Left: Platform Icon + Info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 300px', minWidth: 0 }}>
+                    {/* Platform avatar */}
+                    <span
+                      style={{
+                        fontSize: '1.4rem',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.06)',
+                        flexShrink: 0,
+                      }}
+                      title={sub.platform}
+                    >
+                      {PLATFORM_ICONS[sub.platform] || '🌐'}
+                    </span>
+
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                          {creatorName}
+                        </span>
+                        {creatorEmail && (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            ({creatorEmail})
+                          </span>
+                        )}
+                        <span
+                          className="badge"
+                          style={{
+                            fontSize: '0.68rem',
+                            padding: '0.15rem 0.45rem',
+                            background: 'rgba(99, 102, 241, 0.15)',
+                            color: '#a5b4fc',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                          }}
+                        >
+                          {sub.actionType}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                        {/* Post link */}
+                        <a
+                          href={sub.postUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: '0.78rem',
+                            color: 'var(--primary-light)',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            maxWidth: '320px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          title={`Open ${sub.postUrl} in new tab`}
+                        >
+                          <span>🔗</span> {sub.postUrl}
+                        </a>
+
+                        {sub.description && (
+                          <span
+                            style={{
+                              fontSize: '0.76rem',
+                              color: 'var(--text-secondary)',
+                              maxWidth: '300px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                            title={sub.description}
+                          >
+                            • {sub.description}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle: Screenshot Thumbnail */}
+                  {sub.screenshotUrl && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                      <div
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          border: '1px solid var(--border-subtle)',
+                          cursor: 'pointer',
+                        }}
+                        title="Click to view evidence in lightbox"
+                      >
+                        <ScreenshotImage
+                          screenshotUrl={sub.screenshotUrl}
+                          thumbnailStyle={{ width: '44px', height: '44px', objectFit: 'cover' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Right: Status + Timing + Quick link to queue */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                      <span className="badge badge-warning" style={{ fontSize: '0.7rem', fontWeight: 700 }}>
+                        ⏳ PENDING
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {timeAgo(sub.createdAt)}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => onNavigateToNav('review-submissions')}
+                      style={{
+                        padding: '0.45rem 0.85rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                      }}
+                      title="Inspect in moderation queue (actions handled in queue view)"
+                    >
+                      Inspect Queue →
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* ── Standard Moderation Procedures ── */}
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+          📋 Moderator Verification Standard Operating Procedures
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.2rem', color: 'var(--status-warning)' }}>1️⃣</span>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Identity Verification</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                Verify the creator handle visible in the screenshot matches the registered creator account.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.2rem', color: 'var(--primary-light)' }}>2️⃣</span>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Active Timestamp</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                Confirm timestamp of social engagement proof is within the valid active campaign timeframe.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.2rem', color: 'var(--status-success)' }}>3️⃣</span>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Legitimate Evidence</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                Ensure screenshot has not been cropped to obscure timestamps, handles, or interaction state.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.2rem', color: 'var(--status-error)' }}>4️⃣</span>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Constructive Feedback</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                When rejecting submissions, always provide actionable, polite feedback so creators can rectify.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

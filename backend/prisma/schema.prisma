@@ -102,8 +102,8 @@ model Submission {
   id              String            @id @default(uuid())
   userId          String
   user            User              @relation("UserSubmissions", fields: [userId], references: [id], onDelete: Cascade)
-  socialAccountId String
-  socialAccount   SocialAccount     @relation(fields: [socialAccountId], references: [id], onDelete: Restrict)
+  socialAccountId String?
+  socialAccount   SocialAccount?    @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
   platform        Platform
   actionType      ActionType
   postUrl         String

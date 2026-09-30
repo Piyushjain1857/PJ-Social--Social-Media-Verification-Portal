@@ -20,9 +20,10 @@ const getUserProfile = async (req, res, next) => {
     let stats = {};
     try {
       if (user.role === 'USER') {
-        const mySubs = await getUserSubmissions(user.id);
+        const mySubsResult = await getUserSubmissions(user.id, { limit: 1000 });
+        const mySubs = Array.isArray(mySubsResult) ? mySubsResult : (mySubsResult?.records || []);
         stats = {
-          totalSubmissions: mySubs.length,
+          totalSubmissions: mySubsResult?.totalCount ?? mySubs.length,
           approved: mySubs.filter(s => s.status === 'APPROVED').length,
           pending: mySubs.filter(s => s.status === 'PENDING').length,
           rejected: mySubs.filter(s => s.status === 'REJECTED').length

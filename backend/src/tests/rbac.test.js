@@ -191,11 +191,35 @@ async function runTests() {
       'USER can access personal dashboard with scoped stats (GET /api/dashboard/user)'
     );
 
+    // USER is blocked from Admin dashboard
+    const userAdminDashRes = await makeRequest('/dashboard/admin', {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    assert(userAdminDashRes.status === 403, 'USER is blocked from Admin dashboard (GET /api/dashboard/admin -> 403)');
+
     // Unauthenticated access to dashboard is rejected
     const unauthDashRes = await makeRequest('/dashboard/user');
     assert(unauthDashRes.status === 401, 'Unauthenticated request to dashboard is blocked (401)');
 
+    const unauthAdminDashRes = await makeRequest('/dashboard/admin');
+    assert(unauthAdminDashRes.status === 401, 'Unauthenticated request to admin dashboard is blocked (401)');
+
     console.log('\n3. Testing ADMIN Role Permissions:');
+    // ADMIN can access Admin dashboard
+    const adminDashRes = await makeRequest('/dashboard/admin', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      adminDashRes.status === 200 &&
+      adminDashRes.body.success &&
+      adminDashRes.body.data?.stats?.pending !== undefined &&
+      adminDashRes.body.data?.stats?.reviewedToday !== undefined &&
+      adminDashRes.body.data?.stats?.approved !== undefined &&
+      adminDashRes.body.data?.stats?.rejected !== undefined &&
+      Array.isArray(adminDashRes.body.data?.recentPending),
+      'ADMIN can access Admin dashboard with metrics (GET /api/dashboard/admin)'
+    );
+
     // ADMIN can access moderation queue
     const adminQueueRes = await makeRequest('/submissions', {
       headers: { Authorization: `Bearer ${adminToken}` }
@@ -231,6 +255,12 @@ async function runTests() {
     assert(adminRoleChangeRes.status === 403, 'ADMIN cannot manage Super Admin privileges (PATCH /api/users/:id/role -> 403)');
 
     console.log('\n4. Testing SUPER_ADMIN Role Permissions:');
+    // SUPER_ADMIN can access Admin dashboard as well
+    const superAdminDashRes = await makeRequest('/dashboard/admin', {
+      headers: { Authorization: `Bearer ${superToken}` }
+    });
+    assert(superAdminDashRes.status === 200 && superAdminDashRes.body.success, 'SUPER_ADMIN can access Admin dashboard (GET /api/dashboard/admin)');
+
     // SUPER_ADMIN has full system access
     const superAuditRes = await makeRequest('/superadmin/audit-logs', {
       headers: { Authorization: `Bearer ${superToken}` }
