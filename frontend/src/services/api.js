@@ -389,6 +389,54 @@ export const deleteSuperAdminUser = async (id) => {
   });
 };
 
+// Official Social Media Accounts (Active Accounts for Submissions)
+export const fetchActiveOfficialAccounts = async (platform) => {
+  const qs = platform && platform !== 'ALL' ? `?platform=${encodeURIComponent(platform)}` : '';
+  return await apiFetch(`/social-accounts/active${qs}`);
+};
+
+export const fetchOfficialAccountById = async (id) => {
+  return await apiFetch(`/social-accounts/${id}`);
+};
+
+// Super Admin Official Social Accounts Management (SUPER_ADMIN only)
+export const fetchSuperAdminSocialAccounts = async ({ platform, status, search } = {}) => {
+  const params = new URLSearchParams();
+  if (platform && platform !== 'ALL') params.append('platform', platform);
+  if (status && status !== 'ALL') params.append('status', status);
+  if (search) params.append('search', search);
+
+  const qs = params.toString();
+  return await apiFetch(qs ? `/superadmin/social-accounts?${qs}` : '/superadmin/social-accounts');
+};
+
+export const createSuperAdminSocialAccount = async (accountData) => {
+  return await apiFetch('/superadmin/social-accounts', {
+    method: 'POST',
+    body: JSON.stringify(accountData),
+  });
+};
+
+export const updateSuperAdminSocialAccount = async (id, updates) => {
+  return await apiFetch(`/superadmin/social-accounts/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+};
+
+export const updateSuperAdminSocialAccountStatus = async (id, isActive) => {
+  return await apiFetch(`/superadmin/social-accounts/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive }),
+  });
+};
+
+export const deleteSuperAdminSocialAccount = async (id) => {
+  return await apiFetch(`/superadmin/social-accounts/${id}`, {
+    method: 'DELETE',
+  });
+};
+
 // Direct Restricted Endpoint Probe (for live in-app testing of 403 Forbidden responses)
 export const testRestrictedEndpoint = async (endpoint, options = {}) => {
   try {
@@ -408,4 +456,5 @@ export const testRestrictedEndpoint = async (endpoint, options = {}) => {
     };
   }
 };
+
 

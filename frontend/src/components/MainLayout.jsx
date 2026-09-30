@@ -67,7 +67,7 @@ export const ROLE_NAVIGATION = {
     { id: 'users', label: 'Users', icon: '👥', description: 'User directory & RBAC assignment' },
     { id: 'admins', label: 'Admins', icon: '🛡️', description: 'Administrator directory & governance' },
     { id: 'submissions', label: 'Submissions', icon: '📋', description: 'Verification submissions repository' },
-    { id: 'social-accounts', label: 'Social Accounts', icon: '🔗', description: 'Connected platforms & API connectors' },
+    { id: 'social-accounts', label: 'Official Accounts', icon: '🏛️', description: 'Official college social media accounts' },
     { id: 'settings', label: 'Settings', icon: '⚙️', description: 'Platform security & verification rules' },
     { id: 'profile', label: 'Profile', icon: '👤', description: 'Authenticated Super Admin credentials' },
   ],

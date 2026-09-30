@@ -10,6 +10,14 @@ const {
   updateUserStatusManagement,
   deleteUserManagement
 } = require('../controllers/superAdminController');
+const {
+  listAccounts,
+  getAccountDetails,
+  createAccount,
+  updateAccount,
+  toggleAccountStatus,
+  deleteAccount
+} = require('../controllers/socialAccountController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
 
@@ -30,4 +38,13 @@ router.patch('/users/:id', authenticate, authorize('SUPER_ADMIN'), updateUserMan
 router.patch('/users/:id/status', authenticate, authorize('SUPER_ADMIN'), updateUserStatusManagement);
 router.delete('/users/:id', authenticate, authorize('SUPER_ADMIN'), deleteUserManagement);
 
+// Official Social Media Accounts Management (Only SUPER_ADMIN)
+router.get('/social-accounts', authenticate, authorize('SUPER_ADMIN'), listAccounts);
+router.get('/social-accounts/:id', authenticate, authorize('SUPER_ADMIN'), getAccountDetails);
+router.post('/social-accounts', authenticate, authorize('SUPER_ADMIN'), createAccount);
+router.patch('/social-accounts/:id', authenticate, authorize('SUPER_ADMIN'), updateAccount);
+router.patch('/social-accounts/:id/status', authenticate, authorize('SUPER_ADMIN'), toggleAccountStatus);
+router.delete('/social-accounts/:id', authenticate, authorize('SUPER_ADMIN'), deleteAccount);
+
 module.exports = router;
+

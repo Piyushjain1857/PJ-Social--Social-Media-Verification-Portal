@@ -88,6 +88,7 @@ const getAllSubmissions = async () => {
       const records = await prisma.submission.findMany({
         include: {
           user: { select: { id: true, name: true, email: true } },
+          socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
           reviews: { include: { admin: { select: { id: true, name: true } } } }
         },
         orderBy: { createdAt: 'desc' }
@@ -127,6 +128,7 @@ const getUserSubmissions = async (userId, filters = {}) => {
       const records = await prisma.submission.findMany({
         where,
         include: {
+          socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
           reviews: { include: { admin: { select: { id: true, name: true } } } }
         },
         orderBy: { createdAt: 'desc' },
@@ -169,6 +171,7 @@ const getSubmissionById = async (id) => {
         where: { id },
         include: {
           user: { select: { id: true, name: true, email: true } },
+          socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
           reviews: { include: { admin: { select: { id: true, name: true } } } }
         }
       });
@@ -181,7 +184,7 @@ const getSubmissionById = async (id) => {
   return inMemorySubmissions.get(id) || null;
 };
 
-const createSubmission = async ({ userId, userName, userEmail, platform, actionType, postUrl, screenshotUrl, description }) => {
+const createSubmission = async ({ userId, userName, userEmail, socialAccountId, platform, actionType, postUrl, screenshotUrl, description }) => {
   initializeInMemorySubmissions();
   const id = `sub-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -190,6 +193,7 @@ const createSubmission = async ({ userId, userName, userEmail, platform, actionT
     userId,
     userName: userName || 'Creator',
     userEmail: userEmail || '',
+    socialAccountId: socialAccountId || null,
     platform,
     actionType,
     postUrl,
@@ -207,6 +211,7 @@ const createSubmission = async ({ userId, userName, userEmail, platform, actionT
       const created = await prisma.submission.create({
         data: {
           userId,
+          socialAccountId: socialAccountId || null,
           platform,
           actionType,
           postUrl,
@@ -215,6 +220,7 @@ const createSubmission = async ({ userId, userName, userEmail, platform, actionT
           status: 'PENDING'
         },
         include: {
+          socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
           reviews: { include: { admin: { select: { id: true, name: true } } } }
         }
       });

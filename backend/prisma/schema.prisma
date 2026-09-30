@@ -76,24 +76,28 @@ model User {
   @@map("users")
 }
 
-/// Official Social Media Accounts linked to a User
+/// Official Social Media Accounts managed by Super Admin
 model SocialAccount {
   id          String        @id @default(uuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   platform    Platform
   handle      String
+  name        String?
+  accountUrl  String?
   profileUrl  String?
-  isVerified  Boolean       @default(false)
+  description String?
+  isActive    Boolean       @default(true)
+  isVerified  Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   // Relationships
   submissions Submission[]
 
-  @@unique([userId, platform, handle])
   @@index([userId])
   @@index([platform])
+  @@index([isActive])
   @@map("social_accounts")
 }
 

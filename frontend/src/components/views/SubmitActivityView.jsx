@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { createSubmission } from '../../services/api';
+import React, { useState, useRef, useEffect } from 'react';
+import { createSubmission, fetchActiveOfficialAccounts } from '../../services/api';
 
 const PLATFORMS = [
   {
@@ -59,6 +59,11 @@ export default function SubmitActivityView({ onNavigateToNav }) {
   const [postUrl, setPostUrl] = useState('');
   const [description, setDescription] = useState('');
 
+  // Official College Social Accounts State
+  const [officialAccounts, setOfficialAccounts] = useState([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+
   // Evidence File / URL State
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -78,6 +83,46 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
   // Active platform details
   const activePlatform = PLATFORMS.find((p) => p.id === platform) || PLATFORMS[0];
+
+  // Load active official accounts on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAccounts() {
+      setLoadingAccounts(true);
+      try {
+        const res = await fetchActiveOfficialAccounts();
+        if (isMounted && res.success) {
+          const accounts = res.data || [];
+          setOfficialAccounts(accounts);
+          const matching = accounts.filter((a) => a.platform === platform && a.isActive);
+          if (matching.length > 0) {
+            setSelectedAccountId(matching[0].id);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load active official accounts:', err);
+      } finally {
+        if (isMounted) setLoadingAccounts(false);
+      }
+    }
+    loadAccounts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // When platform changes, adjust selected official account
+  useEffect(() => {
+    const matching = officialAccounts.filter((a) => a.platform === platform && a.isActive);
+    if (matching.length > 0) {
+      const alreadyMatches = matching.some((a) => a.id === selectedAccountId);
+      if (!alreadyMatches) {
+        setSelectedAccountId(matching[0].id);
+      }
+    } else {
+      setSelectedAccountId('');
+    }
+  }, [platform, officialAccounts]);
 
   // ─── File Handling ────────────────────────────────────────────────────────
   const handleFileSelection = (selectedFile) => {
@@ -141,7 +186,15 @@ export default function SubmitActivityView({ onNavigateToNav }) {
   const validateForm = () => {
     const errors = {};
 
-    // Validate URL
+    // Validate Official College Account
+    const platformAccounts = officialAccounts.filter((a) => a.platform === platform && a.isActive);
+    if (platformAccounts.length === 0) {
+      errors.socialAccountId = 'No active official college accounts are currently registered for this platform. Submissions are temporarily unavailable.';
+    } else if (!selectedAccountId) {
+      errors.socialAccountId = 'Please select an active official college account for this submission.';
+    }
+
+    // Validate URL & Domain
     if (!postUrl.trim()) {
       errors.postUrl = 'Target post or profile URL is required.';
     } else {
@@ -149,6 +202,15 @@ export default function SubmitActivityView({ onNavigateToNav }) {
         const parsed = new URL(postUrl.trim());
         if (!['http:', 'https:'].includes(parsed.protocol)) {
           errors.postUrl = 'URL must start with http:// or https://';
+        } else {
+          const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+          if (platform === 'INSTAGRAM' && host !== 'instagram.com' && !host.endsWith('.instagram.com')) {
+            errors.postUrl = 'Invalid Instagram URL. Post link must be on instagram.com (e.g. https://instagram.com/p/...).';
+          } else if (platform === 'LINKEDIN' && host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) {
+            errors.postUrl = 'Invalid LinkedIn URL. Post link must be on linkedin.com (e.g. https://linkedin.com/feed/update/...).';
+          } else if (platform === 'FACEBOOK' && host !== 'facebook.com' && !host.endsWith('.facebook.com') && host !== 'fb.com') {
+            errors.postUrl = 'Invalid Facebook URL. Post link must be on facebook.com or fb.com.';
+          }
         }
       } catch {
         errors.postUrl = 'Please enter a valid, complete web URL.';
@@ -197,6 +259,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
         payload = new FormData();
         payload.append('platform', platform);
         payload.append('actionType', actionType);
+        payload.append('socialAccountId', selectedAccountId);
         payload.append('postUrl', postUrl.trim());
         payload.append('screenshot', file);
         if (description.trim()) {
@@ -207,6 +270,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
         payload = {
           platform,
           actionType,
+          socialAccountId: selectedAccountId,
           postUrl: postUrl.trim(),
           screenshotUrl: externalUrl.trim(),
           description: description.trim() || undefined,
@@ -497,10 +561,121 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           </div>
         </div>
 
-        {/* ── 2. Action Type Selection ── */}
+        {/* ── 2. Official College Social Account ── */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
+              2. Target Official College Account <span style={{ color: 'var(--status-error)' }}>*</span>
+            </label>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              Submissions must target verified institutional channels
+            </span>
+          </div>
+
+          {loadingAccounts ? (
+            <div style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+              ⏳ Loading active official accounts...
+            </div>
+          ) : officialAccounts.filter((a) => a.platform === platform && a.isActive).length === 0 ? (
+            <div
+              style={{
+                padding: '1.25rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                color: 'var(--status-error)',
+                fontSize: '0.88rem'
+              }}
+            >
+              ⚠️ No active official accounts are currently registered for <strong>{activePlatform.name}</strong>.
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                Please select another platform or ask a Super Administrator to register the official university channel.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+              {officialAccounts
+                .filter((a) => a.platform === platform && a.isActive)
+                .map((account) => {
+                  const isSelected = selectedAccountId === account.id;
+                  return (
+                    <div
+                      key={account.id}
+                      onClick={() => {
+                        setSelectedAccountId(account.id);
+                        setValidationErrors((prev) => ({ ...prev, socialAccountId: null }));
+                      }}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: isSelected ? `${activePlatform.color}15` : 'rgba(255, 255, 255, 0.03)',
+                        border: `2px solid ${isSelected ? activePlatform.color : 'var(--border-subtle)'}`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.45rem',
+                        transition: 'all 0.18s ease',
+                        boxShadow: isSelected ? `0 0 16px ${activePlatform.color}25` : 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span style={{ fontSize: '1.15rem' }}>{activePlatform.icon}</span>
+                          <span style={{ fontWeight: 700, fontSize: '0.92rem', color: isSelected ? 'var(--text-highlight)' : 'var(--text-primary)' }}>
+                            {account.name || account.handle}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            color: 'var(--status-success)',
+                            fontWeight: 600,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '10px'
+                          }}
+                        >
+                          ✓ Official
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontFamily: 'monospace' }}>{account.handle}</span>
+                        {account.accountUrl && (
+                          <a
+                            href={account.accountUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: activePlatform.color, textDecoration: 'none', fontSize: '0.76rem' }}
+                          >
+                            Inspect Channel ↗
+                          </a>
+                        )}
+                      </div>
+
+                      {isSelected && (
+                        <div style={{ fontSize: '0.72rem', color: activePlatform.color, fontWeight: 700, marginTop: '0.2rem' }}>
+                          ● Active Target Channel Selected
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {validationErrors.socialAccountId && (
+            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem' }}>
+              {validationErrors.socialAccountId}
+            </div>
+          )}
+        </div>
+
+        {/* ── 3. Action Type Selection ── */}
         <div>
           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.65rem' }}>
-            2. Verified Action Type <span style={{ color: 'var(--status-error)' }}>*</span>
+            3. Verified Action Type <span style={{ color: 'var(--status-error)' }}>*</span>
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem' }}>
             {ACTIONS.map((a) => {
@@ -544,11 +719,11 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           </div>
         </div>
 
-        {/* ── 3. Post / Profile URL Input ── */}
+        {/* ── 4. Post / Profile URL Input ── */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
             <label htmlFor="post-url-input" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              3. Official Post / Profile URL <span style={{ color: 'var(--status-error)' }}>*</span>
+              4. Official Post / Profile URL <span style={{ color: 'var(--status-error)' }}>*</span>
             </label>
             <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
               {activePlatform.hint}
@@ -583,11 +758,11 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           )}
         </div>
 
-        {/* ── 4. Screenshot Evidence Upload ── */}
+        {/* ── 5. Screenshot Evidence Upload ── */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.4rem' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              4. Proof Screenshot Evidence <span style={{ color: 'var(--status-error)' }}>*</span>
+              5. Proof Screenshot Evidence <span style={{ color: 'var(--status-error)' }}>*</span>
             </label>
             <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
               PNG, JPG, WebP, GIF — max 5 MB
@@ -951,11 +1126,11 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           )}
         </div>
 
-        {/* ── 5. Optional Context / Description ── */}
+        {/* ── 6. Optional Context / Description ── */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
             <label htmlFor="description-input" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              5. Additional Context / Account Handle <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
+              6. Additional Context / Account Handle <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
             </label>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
               {description.length} / 1000

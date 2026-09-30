@@ -9,6 +9,7 @@ const superAdminRoutes = require('./superAdminRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const reviewRoutes = require('./reviewRoutes');
+const socialAccountRoutes = require('./socialAccountRoutes');
 
 // Authentication routes (/api/auth)
 router.use('/auth', authRoutes);
@@ -27,6 +28,9 @@ router.use('/notifications', notificationRoutes);
 
 // Super Admin Exclusive Governance routes (/api/superadmin)
 router.use('/superadmin', superAdminRoutes);
+
+// Official Social Accounts (active accounts for submission targeting) (/api/social-accounts)
+router.use('/social-accounts', socialAccountRoutes);
 
 // Dashboard data routes (/api/dashboard)
 router.use('/dashboard', dashboardRoutes);

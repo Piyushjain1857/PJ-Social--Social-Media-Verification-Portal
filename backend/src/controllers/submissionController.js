@@ -5,6 +5,11 @@ const {
   createSubmission,
   reviewSubmission: updateReview
 } = require('../repositories/submissionRepository');
+const {
+  getOfficialAccountById,
+  getActiveOfficialAccounts
+} = require('../repositories/socialAccountRepository');
+const { validateSubmissionPostUrl } = require('../utils/urlValidator');
 const { createNotification } = require('../repositories/notificationRepository');
 
 /**
@@ -12,10 +17,11 @@ const { createNotification } = require('../repositories/notificationRepository')
  * Protected: Normal USER only
  * Submits evidence (screenshot + metadata) of social media activity for admin review.
  * Default status is PENDING.
+ * Must be associated with an active official college social media account.
  */
 const create = async (req, res, next) => {
   try {
-    const { platform, actionType, postUrl, description } = req.body;
+    const { platform, actionType, postUrl, description, socialAccountId } = req.body;
 
     // Prefer the securely-generated ref from the upload middleware.
     // Fall back to body.screenshotUrl only for external-URL mode.
@@ -31,6 +37,8 @@ const create = async (req, res, next) => {
       });
     }
 
+    const cleanPlatform = platform.toUpperCase();
+
     // Validate action type
     const validActionTypes = ['LIKE', 'COMMENT', 'STORY'];
     if (!actionType || !validActionTypes.includes(actionType.toUpperCase())) {
@@ -41,27 +49,52 @@ const create = async (req, res, next) => {
       });
     }
 
-    // Validate postUrl
-    if (!postUrl || typeof postUrl !== 'string') {
-      return res.status(400).json({
-        success: false,
-        code: 'MISSING_URL',
-        message: 'A post or profile URL is required.'
-      });
-    }
-
-    const trimmedUrl = postUrl.trim();
-    try {
-      const parsedUrl = new URL(trimmedUrl);
-      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-        throw new Error('Invalid protocol');
-      }
-    } catch {
+    // Validate postUrl & Platform Domain Integrity
+    const postUrlValidation = validateSubmissionPostUrl(cleanPlatform, postUrl);
+    if (!postUrlValidation.valid) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_URL',
-        message: 'A valid http:// or https:// post/account URL is required.'
+        message: postUrlValidation.message
       });
+    }
+    const trimmedUrl = postUrlValidation.cleanUrl;
+
+    // Verify Active Official Social Account
+    let officialAccount = null;
+    if (socialAccountId) {
+      officialAccount = await getOfficialAccountById(socialAccountId);
+      if (!officialAccount) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_OFFICIAL_ACCOUNT',
+          message: 'Selected official social account does not exist.'
+        });
+      }
+      if (!officialAccount.isActive) {
+        return res.status(400).json({
+          success: false,
+          code: 'INACTIVE_OFFICIAL_ACCOUNT',
+          message: 'Selected official social account is currently inactive. Submissions can only be made against active official college accounts.'
+        });
+      }
+      if (officialAccount.platform !== cleanPlatform) {
+        return res.status(400).json({
+          success: false,
+          code: 'PLATFORM_MISMATCH',
+          message: `Selected official account platform (${officialAccount.platform}) does not match submission platform (${cleanPlatform}).`
+        });
+      }
+    } else {
+      const activeAccounts = await getActiveOfficialAccounts(cleanPlatform);
+      if (!activeAccounts || activeAccounts.length === 0) {
+        return res.status(400).json({
+          success: false,
+          code: 'NO_ACTIVE_OFFICIAL_ACCOUNT',
+          message: `No active official college accounts found for ${cleanPlatform}. Submissions can only be made against active official accounts.`
+        });
+      }
+      officialAccount = activeAccounts[0];
     }
 
     // Validate screenshot evidence
@@ -82,7 +115,8 @@ const create = async (req, res, next) => {
       userId: req.user.id,
       userName: req.user.name,
       userEmail: req.user.email,
-      platform: platform.toUpperCase(),
+      socialAccountId: officialAccount.id,
+      platform: cleanPlatform,
       actionType: actionType.toUpperCase(),
       postUrl: trimmedUrl,
       screenshotUrl: screenshotUrl.trim(),
@@ -95,7 +129,7 @@ const create = async (req, res, next) => {
       userId: req.user.id,
       type: 'SUBMISSION_UPDATE',
       title: 'Activity Submitted for Verification',
-      message: `Your ${newSub.platform} ${newSub.actionType} submission is now in the review queue. Status: PENDING manual admin review.`
+      message: `Your ${newSub.platform} ${newSub.actionType} submission for official account "${officialAccount.name || officialAccount.handle}" is now in the review queue. Status: PENDING manual admin review.`
     });
 
     return res.status(201).json({
@@ -108,6 +142,7 @@ const create = async (req, res, next) => {
     next(error);
   }
 };
+
 
 /**
  * GET /api/submissions/my
