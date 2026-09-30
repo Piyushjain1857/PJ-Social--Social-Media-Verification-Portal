@@ -139,6 +139,32 @@ export default function MySubmissionsView({ onNavigateToNav }) {
                 </div>
               )}
 
+              {/* Screenshot Evidence Display */}
+              {sub.screenshotUrl && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: 4, overflow: 'hidden', flexShrink: 0, background: '#000', border: '1px solid var(--border-subtle)' }}>
+                    <img src={sub.screenshotUrl} alt="Evidence thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                      Attached Proof Evidence
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Submitted for moderator review
+                    </div>
+                  </div>
+                  <a
+                    href={sub.screenshotUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  >
+                    🔍 View Full
+                  </a>
+                </div>
+              )}
+
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', fontSize: '0.82rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
                 <div>
                   <strong>Post URL: </strong>
@@ -146,12 +172,6 @@ export default function MySubmissionsView({ onNavigateToNav }) {
                     {sub.postUrl}
                   </a>
                 </div>
-
-                {sub.screenshotUrl && (
-                  <a href={sub.screenshotUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-light)', textDecoration: 'none' }}>
-                    View Screenshot Proof 🖼️
-                  </a>
-                )}
               </div>
 
               {/* Moderator Feedback */}

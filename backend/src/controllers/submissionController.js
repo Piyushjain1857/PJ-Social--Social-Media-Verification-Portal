@@ -9,37 +9,76 @@ const { createNotification } = require('../repositories/notificationRepository')
 
 /**
  * POST /api/submissions
- * Protected: USER, ADMIN, SUPER_ADMIN
- * Creates a new social media activity submission.
+ * Protected: Normal USER only
+ * Submits evidence (screenshot + metadata) of social media activity for admin review.
+ * Default status is PENDING.
  */
 const create = async (req, res, next) => {
   try {
-    const { platform, actionType, postUrl, screenshotUrl, description } = req.body;
+    const { platform, actionType, postUrl, description } = req.body;
+    let screenshotUrl = req.body.screenshotUrl;
 
-    // Validate inputs
+    // Handle multipart/form-data uploaded file
+    if (req.file) {
+      screenshotUrl = `/uploads/${req.file.filename}`;
+    }
+
+    // Validate platform
     const validPlatforms = ['INSTAGRAM', 'LINKEDIN', 'FACEBOOK'];
-    const validActionTypes = ['LIKE', 'COMMENT', 'STORY'];
-
     if (!platform || !validPlatforms.includes(platform.toUpperCase())) {
       return res.status(400).json({
         success: false,
+        code: 'INVALID_PLATFORM',
         message: `Platform is required and must be one of: ${validPlatforms.join(', ')}`
       });
     }
 
+    // Validate action type
+    const validActionTypes = ['LIKE', 'COMMENT', 'STORY'];
     if (!actionType || !validActionTypes.includes(actionType.toUpperCase())) {
       return res.status(400).json({
         success: false,
+        code: 'INVALID_ACTION_TYPE',
         message: `Action type is required and must be one of: ${validActionTypes.join(', ')}`
       });
     }
 
-    if (!postUrl || typeof postUrl !== 'string' || !postUrl.startsWith('http')) {
+    // Validate postUrl
+    if (!postUrl || typeof postUrl !== 'string') {
       return res.status(400).json({
         success: false,
-        message: 'A valid http/https post URL is required.'
+        code: 'MISSING_URL',
+        message: 'A post or profile URL is required.'
       });
     }
+
+    const trimmedUrl = postUrl.trim();
+    try {
+      const parsedUrl = new URL(trimmedUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        throw new Error('Invalid protocol');
+      }
+    } catch {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_URL',
+        message: 'A valid http:// or https:// post/account URL is required.'
+      });
+    }
+
+    // Validate screenshot evidence
+    if (!screenshotUrl || typeof screenshotUrl !== 'string' || !screenshotUrl.trim()) {
+      return res.status(400).json({
+        success: false,
+        code: 'MISSING_SCREENSHOT',
+        message: 'Screenshot evidence is required for administrator review. Please upload an image file or provide a screenshot reference.'
+      });
+    }
+
+    // Sanitize optional description (max 1000 chars)
+    const sanitizedDescription = description && typeof description === 'string'
+      ? description.trim().substring(0, 1000)
+      : null;
 
     const newSub = await createSubmission({
       userId: req.user.id,
@@ -47,9 +86,10 @@ const create = async (req, res, next) => {
       userEmail: req.user.email,
       platform: platform.toUpperCase(),
       actionType: actionType.toUpperCase(),
-      postUrl: postUrl.trim(),
-      screenshotUrl: screenshotUrl?.trim() || null,
-      description: description?.trim() || null
+      postUrl: trimmedUrl,
+      screenshotUrl: screenshotUrl.trim(),
+      description: sanitizedDescription,
+      status: 'PENDING'
     });
 
     // Create acknowledgement notification for creator
@@ -57,12 +97,13 @@ const create = async (req, res, next) => {
       userId: req.user.id,
       type: 'SUBMISSION_UPDATE',
       title: 'Activity Submitted for Verification',
-      message: `Your ${newSub.platform} ${newSub.actionType} submission is now in the review queue.`
+      message: `Your ${newSub.platform} ${newSub.actionType} submission is now in the review queue. Status: PENDING manual admin review.`
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Submission created successfully and queued for admin moderation.',
+      message: 'Activity evidence submitted successfully and queued for administrator review.',
+      disclaimer: 'Note: Uploaded screenshot evidence is subject to manual administrator review and does not constitute automated verification.',
       data: newSub
     });
   } catch (error) {

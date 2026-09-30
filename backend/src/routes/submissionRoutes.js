@@ -9,12 +9,14 @@ const {
 } = require('../controllers/submissionController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
+const { uploadEvidenceScreenshot } = require('../middlewares/uploadMiddleware');
 
 /**
- * USER Permission: Create submissions
- * Open to USER, ADMIN, and SUPER_ADMIN
+ * Normal USER Exclusive: Create social media activity submissions
+ * Strict RBAC: Only authenticated Normal Users can submit evidence for verification.
+ * Accepts multipart/form-data with 'screenshot' image file or JSON body.
  */
-router.post('/', authenticate, authorize('USER', 'ADMIN', 'SUPER_ADMIN'), create);
+router.post('/', authenticate, authorize('USER'), uploadEvidenceScreenshot, create);
 
 /**
  * USER Permission: View own submissions

@@ -6,9 +6,10 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 export const apiFetch = async (endpoint, options = {}) => {
   const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders = {};
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   const token = localStorage.getItem('auth_token');
   if (token) {
@@ -132,8 +133,52 @@ export const fetchAllSubmissions = async () => {
   return await apiFetch('/submissions');
 };
 
-export const createSubmission = async (submissionData) => {
-  return await apiFetch('/submissions', {
+export const createSubmission = (submissionData, onProgress) => {
+  const url = `${BASE_URL}/submissions`;
+  const token = localStorage.getItem('auth_token');
+
+  // If payload is FormData, use XMLHttpRequest for real upload progress tracking
+  if (submissionData instanceof FormData) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      if (onProgress && xhr.upload) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(data);
+          } else {
+            const error = new Error(data.message || `Upload failed with status ${xhr.status}`);
+            error.status = xhr.status;
+            error.code = data.code;
+            reject(error);
+          }
+        } catch {
+          reject(new Error(`Failed to parse server response (${xhr.status})`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during file upload. Please check your connection.'));
+      xhr.send(submissionData);
+    });
+  }
+
+  // Fallback for standard JSON payload
+  return apiFetch('/submissions', {
     method: 'POST',
     body: JSON.stringify(submissionData),
   });

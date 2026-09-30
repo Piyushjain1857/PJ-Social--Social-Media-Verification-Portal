@@ -103,7 +103,7 @@ async function runTests() {
     });
     assert(notifRes.status === 200 && notifRes.body.success, 'USER can view own notifications (GET /api/notifications/my)');
 
-    // USER can create submission
+    // USER can create submission with required evidence
     const createSubRes = await makeRequest('/submissions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${userToken}` },
@@ -111,11 +111,47 @@ async function runTests() {
         platform: 'INSTAGRAM',
         actionType: 'LIKE',
         postUrl: 'https://instagram.com/p/automated-test',
+        screenshotUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113',
         description: 'Automated test submission'
       }
     });
-    assert(createSubRes.status === 201 && createSubRes.body.success, 'USER can create submission (POST /api/submissions)');
+    assert(
+      createSubRes.status === 201 &&
+      createSubRes.body.success &&
+      createSubRes.body.data?.status === 'PENDING',
+      'USER can create submission with default PENDING status (POST /api/submissions)'
+    );
     const createdSubId = createSubRes.body.data?.id;
+
+    // Submission Validation Tests
+    const missingUrlRes = await makeRequest('/submissions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { platform: 'INSTAGRAM', actionType: 'LIKE', screenshotUrl: 'https://example.com/proof.jpg' }
+    });
+    assert(missingUrlRes.status === 400, 'Submission rejects missing URL (400)');
+
+    const missingScreenshotRes = await makeRequest('/submissions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { platform: 'INSTAGRAM', actionType: 'LIKE', postUrl: 'https://instagram.com/p/123' }
+    });
+    assert(missingScreenshotRes.status === 400, 'Submission rejects missing screenshot evidence (400)');
+
+    const invalidPlatformRes = await makeRequest('/submissions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { platform: 'SNAPCHAT', actionType: 'LIKE', postUrl: 'https://snapchat.com/p/123', screenshotUrl: 'https://example.com/s.jpg' }
+    });
+    assert(invalidPlatformRes.status === 400, 'Submission rejects unsupported platform (400)');
+
+    // Only Normal USER can create submissions - ADMIN is blocked
+    const adminCreateRes = await makeRequest('/submissions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { platform: 'INSTAGRAM', actionType: 'LIKE', postUrl: 'https://instagram.com/p/test', screenshotUrl: 'https://example.com/s.jpg' }
+    });
+    assert(adminCreateRes.status === 403, 'ADMIN is blocked from creating submissions (POST /api/submissions -> 403)');
 
     // USER CANNOT access full submission moderation queue
     const userQueueRes = await makeRequest('/submissions', {

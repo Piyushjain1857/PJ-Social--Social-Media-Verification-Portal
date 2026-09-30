@@ -4,7 +4,11 @@ const env = require('./config/env');
 const apiRoutes = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
 
+const path = require('path');
 const app = express();
+
+// Serve uploaded screenshot files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // CORS configuration
 const corsOptions = {
