@@ -1,6 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { fetchAllSubmissions, fetchMyNotifications, fetchHealth } from '../services/api';
+import {
+  fetchAllSubmissions,
+  fetchNotifications,
+  fetchMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  fetchHealth
+} from '../services/api';
+
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffSec = Math.floor((now - date) / 1000);
+
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+};
+
+const getNotificationIcon = (notif) => {
+  const isApproved = notif.title?.toLowerCase().includes('approved') || notif.message?.toLowerCase().includes('approved');
+  const isRejected = notif.title?.toLowerCase().includes('rejected') || notif.message?.toLowerCase().includes('rejected');
+  const isAccount = notif.type === 'ACCOUNT_ALERT' || notif.title?.toLowerCase().includes('role') || notif.message?.toLowerCase().includes('role');
+
+  if (notif.type === 'APPROVAL' || isApproved) return '🎉';
+  if (notif.type === 'REJECTION' || isRejected) return '❌';
+  if (isAccount) return '🛡️';
+  return '📢';
+};
 
 // Sub-views for built-in views
 import DashboardView from './views/DashboardView';
@@ -84,29 +118,41 @@ export default function MainLayout({
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
 
+  // Notifications dropdown state
+  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
+  const notifMenuRef = useRef(null);
+  const [notificationsList, setNotificationsList] = useState([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+  const [markingIds, setMarkingIds] = useState(new Set());
+
   // Live badges and telemetry state
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [apiLatency, setApiLatency] = useState(null);
   const [isApiHealthy, setIsApiHealthy] = useState(true);
 
-  // Close profile dropdown when clicking outside
+  // Close profile and notification dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
+      }
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target)) {
+        setIsNotifMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close mobile drawer on Escape key
+  // Close dropdowns on Escape key
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsMobileDrawerOpen(false);
         setIsProfileMenuOpen(false);
+        setIsNotifMenuOpen(false);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -128,10 +174,14 @@ export default function MainLayout({
         }
       }
 
-      if (user?.role === 'USER') {
-        const notifRes = await fetchMyNotifications();
+      // Fetch user notifications for all authenticated accounts
+      if (user?.id) {
+        const notifRes = await fetchNotifications();
         if (notifRes.success && notifRes.data) {
-          setNotificationCount(notifRes.data.length);
+          setNotificationsList(notifRes.data);
+          const unread = notifRes.unreadCount ?? notifRes.data.filter(n => !n.isRead).length;
+          setUnreadNotifCount(unread);
+          setNotificationCount(unread);
         }
       }
     } catch (e) {
@@ -141,7 +191,53 @@ export default function MainLayout({
 
   useEffect(() => {
     refreshMetrics();
-  }, [user?.role]);
+  }, [user?.role, user?.id]);
+
+  // Mark a single notification as read
+  const handleMarkSingleRead = async (notifId, e) => {
+    if (e) e.stopPropagation();
+    if (markingIds.has(notifId)) return;
+
+    setMarkingIds(prev => new Set(prev).add(notifId));
+    // Optimistic UI update
+    setNotificationsList(prev => prev.map(n => n.id === notifId ? { ...n, isRead: true } : n));
+    setUnreadNotifCount(prev => Math.max(0, prev - 1));
+    setNotificationCount(prev => Math.max(0, prev - 1));
+
+    try {
+      await markNotificationRead(notifId);
+    } catch (err) {
+      console.warn('Failed to mark notification as read:', err.message);
+      refreshMetrics();
+    } finally {
+      setMarkingIds(prev => {
+        const next = new Set(prev);
+        next.delete(notifId);
+        return next;
+      });
+    }
+  };
+
+  // Mark all notifications as read
+  const handleMarkAllNotificationsAsRead = async (e) => {
+    if (e) e.stopPropagation();
+    if (isMarkingAllRead || unreadNotifCount === 0) return;
+
+    setIsMarkingAllRead(true);
+    // Optimistic UI update
+    setNotificationsList(prev => prev.map(n => ({ ...n, isRead: true })));
+    setUnreadNotifCount(0);
+    setNotificationCount(0);
+
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      console.warn('Failed to mark all notifications as read:', err.message);
+      refreshMetrics();
+    } finally {
+      setIsMarkingAllRead(false);
+    }
+  };
 
   // Derive navigation list based strictly on verified role data
   const currentRole = user?.role || 'USER';
@@ -203,7 +299,12 @@ export default function MainLayout({
       case 'my-submissions':
         return <MySubmissionsView onNavigateToNav={handleNavChange} />;
       case 'notifications':
-        return <NotificationsView onNavigateToNav={handleNavChange} />;
+        return (
+          <NotificationsView
+            onNavigateToNav={handleNavChange}
+            onNotificationUpdated={refreshMetrics}
+          />
+        );
       case 'profile':
         return <ProfileView onNavigateToNav={handleNavChange} />;
       default:
@@ -441,6 +542,130 @@ export default function MainLayout({
             >
               <span>{getRoleBadgeIcon(currentRole)}</span>
               <span>{currentRole}</span>
+            </div>
+
+            {/* Notification Bell Dropdown Menu */}
+            <div className="navbar-notif-menu" ref={notifMenuRef}>
+              <button
+                type="button"
+                className="navbar-notif-trigger"
+                onClick={() => {
+                  setIsNotifMenuOpen(!isNotifMenuOpen);
+                  setIsProfileMenuOpen(false);
+                }}
+                aria-expanded={isNotifMenuOpen}
+                aria-haspopup="true"
+                aria-label={`Notifications (${unreadNotifCount} unread)`}
+                title="Notifications"
+              >
+                <span>🔔</span>
+                {unreadNotifCount > 0 && (
+                  <span className="navbar-notif-badge">
+                    {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown Card */}
+              {isNotifMenuOpen && (
+                <div className="notif-dropdown-menu" role="menu">
+                  <div className="notif-dropdown-header">
+                    <div className="notif-dropdown-title-wrap">
+                      <span className="notif-dropdown-title">Notifications</span>
+                      {unreadNotifCount > 0 && (
+                        <span className="notif-pill-count">{unreadNotifCount} unread</span>
+                      )}
+                    </div>
+                    {unreadNotifCount > 0 && (
+                      <button
+                        type="button"
+                        className="notif-mark-all-btn"
+                        onClick={handleMarkAllNotificationsAsRead}
+                        disabled={isMarkingAllRead}
+                      >
+                        {isMarkingAllRead ? 'Marking...' : '✓ Mark all read'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="notif-dropdown-body">
+                    {notificationsList.length === 0 ? (
+                      <div className="notif-empty-state">
+                        <div className="notif-empty-icon">🔕</div>
+                        <div className="notif-empty-title">All caught up!</div>
+                        <div className="notif-empty-desc">You have no verification or account notifications.</div>
+                      </div>
+                    ) : (
+                      notificationsList.slice(0, 6).map((notif) => (
+                        <div
+                          key={notif.id}
+                          className={`notif-item ${notif.isRead ? 'read' : 'unread'}`}
+                        >
+                          <div className="notif-item-icon">
+                            {getNotificationIcon(notif)}
+                          </div>
+                          <div className="notif-item-content">
+                            <div className="notif-item-top">
+                              <span className="notif-item-title" title={notif.title}>
+                                {notif.title}
+                              </span>
+                              <span className="notif-item-time">
+                                {formatTimeAgo(notif.createdAt)}
+                              </span>
+                            </div>
+                            <div className="notif-item-msg">
+                              {notif.message}
+                            </div>
+                            <div className="notif-item-actions">
+                              {notif.submissionId && (
+                                <button
+                                  type="button"
+                                  className="notif-link-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsNotifMenuOpen(false);
+                                    if (currentRole === 'USER') {
+                                      handleNavChange('my-submissions');
+                                    } else {
+                                      handleNavChange('review-submissions');
+                                    }
+                                  }}
+                                >
+                                  View submission →
+                                </button>
+                              )}
+                              {!notif.isRead && (
+                                <button
+                                  type="button"
+                                  className="notif-single-read-btn"
+                                  onClick={(e) => handleMarkSingleRead(notif.id, e)}
+                                  disabled={markingIds.has(notif.id)}
+                                >
+                                  {markingIds.has(notif.id) ? '...' : 'Mark read'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="notif-dropdown-footer">
+                    <button
+                      type="button"
+                      className="notif-dropdown-footer-btn"
+                      onClick={() => {
+                        setIsNotifMenuOpen(false);
+                        handleNavChange('notifications');
+                      }}
+                    >
+                      <span>View all notifications</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* User Profile Menu */}

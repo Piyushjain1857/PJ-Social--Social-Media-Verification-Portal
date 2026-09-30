@@ -159,5 +159,7 @@ model Notification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("notifications")
 }

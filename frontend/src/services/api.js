@@ -227,8 +227,24 @@ export const updateUserRole = async (userId, role) => {
 };
 
 // Notifications Endpoints
+export const fetchNotifications = async () => {
+  return await apiFetch('/notifications');
+};
+
 export const fetchMyNotifications = async () => {
-  return await apiFetch('/notifications/my');
+  return await apiFetch('/notifications');
+};
+
+export const markNotificationRead = async (id) => {
+  return await apiFetch(`/notifications/${id}/read`, {
+    method: 'PATCH',
+  });
+};
+
+export const markAllNotificationsRead = async () => {
+  return await apiFetch('/notifications/read-all', {
+    method: 'PATCH',
+  });
 };
 
 // Dashboard Endpoints

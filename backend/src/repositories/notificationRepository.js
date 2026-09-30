@@ -99,7 +99,94 @@ const createNotification = async ({ userId, type = 'SYSTEM', title, message }) =
   return notif;
 };
 
+const markNotificationAsRead = async (id, userId) => {
+  initializeInMemoryNotifications();
+  const dbStatus = await checkDatabaseConnection();
+
+  let target = null;
+  if (dbStatus.isConnected && prisma) {
+    try {
+      target = await prisma.notification.findUnique({ where: { id } });
+    } catch (err) {
+      console.warn('[NotifRepo] Prisma findUnique failed:', err.message);
+    }
+  }
+
+  if (!target) {
+    target = inMemoryNotifications.get(id);
+  }
+
+  if (!target) {
+    return { error: 'NOT_FOUND', code: 'NOTIFICATION_NOT_FOUND', message: 'Notification not found.' };
+  }
+
+  // Strictly enforce that users can only access and modify their own notifications
+  if (target.userId !== userId) {
+    return {
+      error: 'FORBIDDEN',
+      code: 'FORBIDDEN_OWNERSHIP',
+      message: 'Access denied. You can only modify your own notifications.'
+    };
+  }
+
+  // Update in DB if connected
+  let updated = null;
+  if (dbStatus.isConnected && prisma) {
+    try {
+      updated = await prisma.notification.update({
+        where: { id },
+        data: { isRead: true, updatedAt: new Date() }
+      });
+    } catch (err) {
+      console.warn('[NotifRepo] Prisma markRead update failed:', err.message);
+    }
+  }
+
+  // Update in memory
+  const memNotif = inMemoryNotifications.get(id) || target;
+  memNotif.isRead = true;
+  memNotif.updatedAt = new Date();
+  inMemoryNotifications.set(id, memNotif);
+
+  return { success: true, data: updated || memNotif };
+};
+
+const markAllNotificationsAsRead = async (userId) => {
+  initializeInMemoryNotifications();
+  const dbStatus = await checkDatabaseConnection();
+
+  let updatedCount = 0;
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const res = await prisma.notification.updateMany({
+        where: { userId, isRead: false },
+        data: { isRead: true, updatedAt: new Date() }
+      });
+      updatedCount = res.count;
+    } catch (err) {
+      console.warn('[NotifRepo] Prisma markAllRead failed:', err.message);
+    }
+  }
+
+  // Update memory store
+  for (const [id, notif] of inMemoryNotifications.entries()) {
+    if (notif.userId === userId && !notif.isRead) {
+      notif.isRead = true;
+      notif.updatedAt = new Date();
+      inMemoryNotifications.set(id, notif);
+      if (!dbStatus.isConnected) {
+        updatedCount++;
+      }
+    }
+  }
+
+  return { success: true, count: updatedCount };
+};
+
 module.exports = {
   getUserNotifications,
-  createNotification
+  createNotification,
+  markNotificationAsRead,
+  markAllNotificationsAsRead
 };

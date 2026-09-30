@@ -1,5 +1,6 @@
 const { getAllUsers, updateUserRole, findUserById } = require('../repositories/userRepository');
 const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
+const { createNotification } = require('../repositories/notificationRepository');
 
 /**
  * GET /api/users/profile
@@ -131,6 +132,18 @@ const changeRole = async (req, res, next) => {
     }
 
     const updated = await updateUserRole(id, role);
+
+    // Notify user of important admin role modification
+    try {
+      await createNotification({
+        userId: id,
+        type: 'ACCOUNT_ALERT',
+        title: 'Account Role Updated',
+        message: `Your account role was updated to ${role} by administrator ${req.user.name}.`,
+      });
+    } catch (notifErr) {
+      console.warn('[userController] Failed to dispatch role change notification:', notifErr.message);
+    }
 
     return res.status(200).json({
       success: true,
