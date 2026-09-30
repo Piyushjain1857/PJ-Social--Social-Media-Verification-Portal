@@ -1,0 +1,36 @@
+{
+  "name": "social-media-verification-portal",
+  "version": "1.0.0",
+  "description": "Enterprise-grade social media activity verification portal with 3-tier role governance.",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "start:backend": "npm run start --prefix backend",
+    "prisma:generate": "npm run prisma:generate --prefix backend",
+    "prisma:migrate": "npm run prisma:migrate --prefix backend",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "social-media",
+    "verification",
+    "portal",
+    "full-stack",
+    "react",
+    "express",
+    "prisma",
+    "postgresql",
+    "rbac"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,81 @@
+// Prisma schema for Social Media Activity Verification Portal
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum Platform {
+  TWITTER_X
+  YOUTUBE
+  INSTAGRAM
+  LINKEDIN
+  FACEBOOK
+  TIKTOK
+}
+
+model User {
+  id                    String                @id @default(uuid())
+  email                 String                @unique
+  password              String
+  name                  String
+  role                  Role                  @default(USER)
+  isActive              Boolean               @default(true)
+  socialAccounts        SocialAccount[]
+  activitySubmissions   ActivitySubmission[]  @relation("UserActivities")
+  reviewedSubmissions   ActivitySubmission[]  @relation("ReviewedByAdmin")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@map("users")
+}
+
+model SocialAccount {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    Platform
+  handle      String
+  profileUrl  String?
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, platform, handle])
+  @@map("social_accounts")
+}
+
+model ActivitySubmission {
+  id             String             @id @default(uuid())
+  userId         String
+  user           User               @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
+  platform       Platform
+  activityType   String             // e.g. "POST", "SHARE", "VIDEO", "CAMPAIGN"
+  postUrl        String
+  proofUrl       String?
+  status         VerificationStatus @default(PENDING)
+  notes          String?
+  reviewedById   String?
+  reviewedBy     User?              @relation("ReviewedByAdmin", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@map("activity_submissions")
+}
