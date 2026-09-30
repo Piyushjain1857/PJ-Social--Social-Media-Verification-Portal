@@ -1,22 +1,8 @@
-const prisma = require('../config/db');
+const { checkDatabaseConnection } = require('../config/db');
 const env = require('../config/env');
 
 const getHealthStatus = async (req, res) => {
-  let dbStatus = 'disconnected';
-  let dbLatencyMs = null;
-
-  if (prisma && typeof prisma.$queryRaw === 'function') {
-    try {
-      const start = Date.now();
-      await prisma.$queryRaw`SELECT 1`;
-      dbLatencyMs = Date.now() - start;
-      dbStatus = 'connected';
-    } catch (err) {
-      dbStatus = `offline (${err.message.slice(0, 50)}...)`;
-    }
-  } else {
-    dbStatus = 'uninitialized (run prisma generate & start PostgreSQL)';
-  }
+  const dbCheck = await checkDatabaseConnection();
 
   const healthData = {
     status: 'healthy',
@@ -26,12 +12,17 @@ const getHealthStatus = async (req, res) => {
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.floor(process.uptime()),
     database: {
-      status: dbStatus,
-      latencyMs: dbLatencyMs
+      status: dbCheck.isConnected ? 'connected' : 'awaiting_connection',
+      isConnected: dbCheck.isConnected,
+      latencyMs: dbCheck.latencyMs,
+      message: dbCheck.message,
+      models: dbCheck.models,
+      enums: dbCheck.enums
     },
     roles: ['SUPER_ADMIN', 'ADMIN', 'USER'],
     endpoints: {
       health: '/api/health',
+      database: '/api/database/status',
       docs: '/api/info'
     }
   };
@@ -39,6 +30,41 @@ const getHealthStatus = async (req, res) => {
   return res.status(200).json({
     success: true,
     data: healthData
+  });
+};
+
+const getDatabaseStatus = async (req, res) => {
+  const dbCheck = await checkDatabaseConnection();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      ...dbCheck,
+      provider: 'postgresql',
+      orm: 'prisma',
+      schemaModels: {
+        User: {
+          fields: ['id', 'name', 'email', 'password', 'role', 'status', 'createdAt', 'updatedAt'],
+          relations: ['socialAccounts', 'submissions', 'reviews', 'notifications']
+        },
+        SocialAccount: {
+          fields: ['id', 'userId', 'platform', 'handle', 'profileUrl', 'isVerified', 'createdAt', 'updatedAt'],
+          relations: ['user', 'submissions']
+        },
+        Submission: {
+          fields: ['id', 'userId', 'socialAccountId', 'platform', 'actionType', 'postUrl', 'screenshotUrl', 'description', 'status', 'createdAt', 'updatedAt'],
+          relations: ['user', 'socialAccount', 'reviews']
+        },
+        Review: {
+          fields: ['id', 'submissionId', 'adminId', 'status', 'feedback', 'createdAt', 'updatedAt'],
+          relations: ['submission', 'admin']
+        },
+        Notification: {
+          fields: ['id', 'userId', 'type', 'title', 'message', 'isRead', 'metadata', 'createdAt', 'updatedAt'],
+          relations: ['user']
+        }
+      }
+    }
   });
 };
 
@@ -59,5 +85,6 @@ const getPortalInfo = (req, res) => {
 
 module.exports = {
   getHealthStatus,
+  getDatabaseStatus,
   getPortalInfo
 };

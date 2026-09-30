@@ -8,12 +8,6 @@ const STACK_ITEMS = [
     description: 'Ultra-fast HMR and modular component architecture.'
   },
   {
-    icon: '🎨',
-    name: 'Pure Vanilla CSS',
-    role: 'Design System',
-    description: 'Custom glassmorphic tokens, zero Tailwind or Bootstrap dependencies.'
-  },
-  {
     icon: '⚡',
     name: 'Node.js + Express',
     role: 'Backend API',

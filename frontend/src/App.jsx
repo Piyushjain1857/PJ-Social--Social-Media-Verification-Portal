@@ -4,12 +4,15 @@ import Hero from './components/Hero';
 import RoleOverview from './components/RoleOverview';
 import HealthCheckWidget from './components/HealthCheckWidget';
 import TechStackBadge from './components/TechStackBadge';
+import DevDatabaseDashboard from './components/DevDatabaseDashboard';
 import Footer from './components/Footer';
 import { fetchHealth } from './services/api';
 import './styles/index.css';
 import './styles/app.css';
 
 export default function App() {
+  const [currentView, setCurrentView] = useState('portal'); // 'portal' | 'dev-dashboard'
+
   const [apiStatus, setApiStatus] = useState({
     healthy: false,
     loading: true,
@@ -51,34 +54,50 @@ export default function App() {
   }, []);
 
   const scrollToRoles = () => {
-    document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' });
+    setCurrentView('portal');
+    setTimeout(() => {
+      document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
   };
 
   const scrollToHealth = () => {
-    document.getElementById('health-check')?.scrollIntoView({ behavior: 'smooth' });
+    setCurrentView('portal');
+    setTimeout(() => {
+      document.getElementById('health-check')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
   };
 
   return (
     <div className="app-container">
-      <Header apiStatus={apiStatus} />
+      <Header 
+        apiStatus={apiStatus} 
+        currentView={currentView}
+        onToggleView={setCurrentView}
+      />
       
       <main className="main-content">
-        <Hero 
-          onRoleClick={scrollToRoles} 
-          onTestHealthClick={scrollToHealth} 
-        />
+        {currentView === 'dev-dashboard' ? (
+          <DevDatabaseDashboard onBackToPortal={() => setCurrentView('portal')} />
+        ) : (
+          <>
+            <Hero 
+              onRoleClick={scrollToRoles} 
+              onTestHealthClick={scrollToHealth} 
+            />
 
-        <RoleOverview 
-          selectedRole={selectedRole} 
-          onSelectRole={setSelectedRole} 
-        />
+            <RoleOverview 
+              selectedRole={selectedRole} 
+              onSelectRole={setSelectedRole} 
+            />
 
-        <HealthCheckWidget 
-          apiStatus={apiStatus} 
-          onRefresh={checkHealth} 
-        />
+            <HealthCheckWidget 
+              apiStatus={apiStatus} 
+              onRefresh={checkHealth} 
+            />
 
-        <TechStackBadge />
+            <TechStackBadge />
+          </>
+        )}
       </main>
 
       <Footer />

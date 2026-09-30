@@ -58,6 +58,28 @@ export const fetchHealth = async () => {
   }
 };
 
+export const fetchDatabaseStatus = async () => {
+  const startTime = performance.now();
+  try {
+    const res = await apiFetch('/database/status');
+    const latency = Math.round(performance.now() - startTime);
+    return {
+      success: true,
+      latency,
+      data: res.data,
+      raw: res,
+    };
+  } catch (error) {
+    const latency = Math.round(performance.now() - startTime);
+    return {
+      success: false,
+      latency,
+      error: error.message,
+      status: error.status || 500,
+    };
+  }
+};
+
 export const fetchPortalInfo = async () => {
   return await apiFetch('/info');
 };

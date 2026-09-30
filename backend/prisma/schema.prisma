@@ -8,74 +8,156 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================================
+// Enums
+// ============================================================================
+
 enum Role {
   SUPER_ADMIN
   ADMIN
   USER
 }
 
-enum VerificationStatus {
-  PENDING
-  UNDER_REVIEW
-  VERIFIED
-  REJECTED
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
 enum Platform {
-  TWITTER_X
-  YOUTUBE
   INSTAGRAM
   LINKEDIN
   FACEBOOK
-  TIKTOK
 }
 
-model User {
-  id                    String                @id @default(uuid())
-  email                 String                @unique
-  password              String
-  name                  String
-  role                  Role                  @default(USER)
-  isActive              Boolean               @default(true)
-  socialAccounts        SocialAccount[]
-  activitySubmissions   ActivitySubmission[]  @relation("UserActivities")
-  reviewedSubmissions   ActivitySubmission[]  @relation("ReviewedByAdmin")
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+enum ActionType {
+  LIKE
+  COMMENT
+  STORY
+}
 
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  SUBMISSION_UPDATE
+  REVIEW_FEEDBACK
+  ACCOUNT_ALERT
+  SYSTEM
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+/// User entity with role-based access control (SUPER_ADMIN, ADMIN, USER)
+model User {
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  password        String
+  role            Role             @default(USER)
+  status          UserStatus       @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relationships
+  socialAccounts  SocialAccount[]
+  submissions     Submission[]     @relation("UserSubmissions")
+  reviews         Review[]         @relation("AdminReviews")
+  notifications   Notification[]   @relation("UserNotifications")
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
   @@map("users")
 }
 
+/// Official Social Media Accounts linked to a User
 model SocialAccount {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   platform    Platform
   handle      String
   profileUrl  String?
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isVerified  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relationships
+  submissions Submission[]
 
   @@unique([userId, platform, handle])
+  @@index([userId])
+  @@index([platform])
   @@map("social_accounts")
 }
 
-model ActivitySubmission {
-  id             String             @id @default(uuid())
-  userId         String
-  user           User               @relation("UserActivities", fields: [userId], references: [id], onDelete: Cascade)
-  platform       Platform
-  activityType   String             // e.g. "POST", "SHARE", "VIDEO", "CAMPAIGN"
-  postUrl        String
-  proofUrl       String?
-  status         VerificationStatus @default(PENDING)
-  notes          String?
-  reviewedById   String?
-  reviewedBy     User?              @relation("ReviewedByAdmin", fields: [reviewedById], references: [id])
-  reviewedAt     DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+/// Activity Submissions created by Users and linked to an official SocialAccount
+model Submission {
+  id              String            @id @default(uuid())
+  userId          String
+  user            User              @relation("UserSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+  socialAccountId String
+  socialAccount   SocialAccount     @relation(fields: [socialAccountId], references: [id], onDelete: Restrict)
+  platform        Platform
+  actionType      ActionType
+  postUrl         String
+  screenshotUrl   String?
+  description     String?
+  status          SubmissionStatus  @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  @@map("activity_submissions")
+  // Relationships
+  reviews         Review[]
+
+  @@index([userId])
+  @@index([socialAccountId])
+  @@index([platform, actionType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("submissions")
+}
+
+/// Moderation Reviews performed by Admins on Submissions
+model Review {
+  id            String            @id @default(uuid())
+  submissionId  String
+  submission    Submission        @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  adminId       String
+  admin         User              @relation("AdminReviews", fields: [adminId], references: [id], onDelete: Restrict)
+  status        SubmissionStatus
+  feedback      String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([submissionId])
+  @@index([adminId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+/// User Notifications for submission updates, moderation alerts, and system info
+model Notification {
+  id          String            @id @default(uuid())
+  userId      String
+  user        User              @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType  @default(SYSTEM)
+  title       String
+  message     String
+  isRead      Boolean           @default(false)
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
