@@ -40,6 +40,21 @@ export default function SubmissionsView() {
     loadSubmissions();
   }, []);
 
+  // Dismiss modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (confirmModal.isOpen && !confirmModal.isSubmitting) {
+          closeConfirmModal();
+        } else if (selectedSub) {
+          setSelectedSub(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmModal.isOpen, confirmModal.isSubmitting, selectedSub]);
+
   const openConfirmModal = (action) => {
     setConfirmModal({
       isOpen: true,
@@ -217,16 +232,16 @@ export default function SubmissionsView() {
       </div>
 
       {/* Submissions Table */}
-      <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+      <div className="table-responsive-wrapper">
+        <table className="portal-table" style={{ minWidth: '780px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
-              <th style={{ padding: '0.75rem' }}>Creator</th>
-              <th style={{ padding: '0.75rem' }}>Platform & Action</th>
-              <th style={{ padding: '0.75rem' }}>Proof / URL</th>
-              <th style={{ padding: '0.75rem' }}>Status</th>
-              <th style={{ padding: '0.75rem' }}>Submitted</th>
-              <th style={{ padding: '0.75rem', textAlign: 'right' }}>Actions</th>
+            <tr>
+              <th>Creator</th>
+              <th>Platform & Action</th>
+              <th>Proof / URL</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -289,46 +304,42 @@ export default function SubmissionsView() {
       {/* Inspection Modal */}
       {selectedSub && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.78)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '1.5rem'
-          }}
+          className="portal-modal-backdrop"
           onClick={() => setSelectedSub(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Submission Details"
         >
           <div
-            className="glass-panel"
-            style={{ maxWidth: '640px', width: '100%', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}
+            className="portal-modal-card"
+            style={{ maxWidth: '640px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <h3 style={{ margin: 0, color: 'var(--text-highlight)' }}>Submission Details</h3>
-                <span className={`badge ${selectedSub.status === 'APPROVED' ? 'badge-success' : selectedSub.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`}>
-                  {selectedSub.status}
-                </span>
+            <div className="portal-modal-header">
+              <div className="portal-modal-title-group">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                  <h3 style={{ margin: 0 }}>Submission Details</h3>
+                  <span className={`badge ${selectedSub.status === 'APPROVED' ? 'badge-success' : selectedSub.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`}>
+                    {selectedSub.status}
+                  </span>
+                </div>
+                <p>Activity verification dossier & history</p>
               </div>
               <button
                 type="button"
-                className="btn-secondary"
+                className="portal-modal-close-btn"
                 onClick={() => setSelectedSub(null)}
-                style={{ padding: '0.25rem 0.5rem' }}
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+            <div className="portal-modal-body" style={{ fontSize: '0.9rem' }}>
               <div><strong>ID:</strong> <code>{selectedSub.id}</code></div>
               <div><strong>Creator:</strong> {selectedSub.userName || selectedSub.user?.name} ({selectedSub.userEmail || selectedSub.user?.email})</div>
               <div><strong>Platform:</strong> {selectedSub.platform} • {selectedSub.actionType}</div>
-              <div><strong>Post URL:</strong> <a href={selectedSub.postUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-cyan)' }}>{selectedSub.postUrl}</a></div>
+              <div><strong>Post URL:</strong> <a href={selectedSub.postUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-cyan)', wordBreak: 'break-all' }}>{selectedSub.postUrl}</a></div>
               {selectedSub.description && <div><strong>Description:</strong> {selectedSub.description}</div>}
               {selectedSub.screenshotUrl && (
                 <div>
@@ -357,40 +368,22 @@ export default function SubmissionsView() {
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
                     Review Decision
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
                     <button
                       type="button"
                       id="btn-submissions-approve"
+                      className="btn-success"
                       onClick={() => openConfirmModal('APPROVE')}
-                      style={{
-                        padding: '0.65rem 1rem',
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: 'var(--radius-md)',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
-                      }}
+                      style={{ padding: '0.65rem 1rem', fontSize: '0.85rem' }}
                     >
                       ✓ Approve Submission
                     </button>
                     <button
                       type="button"
                       id="btn-submissions-reject"
+                      className="btn-danger"
                       onClick={() => openConfirmModal('REJECT')}
-                      style={{
-                        padding: '0.65rem 1rem',
-                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: 'var(--radius-md)',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 15px rgba(239, 68, 68, 0.35)',
-                      }}
+                      style={{ padding: '0.65rem 1rem', fontSize: '0.85rem' }}
                     >
                       ✕ Reject Submission
                     </button>
@@ -413,6 +406,17 @@ export default function SubmissionsView() {
                 </div>
               )}
             </div>
+
+            <div className="portal-modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setSelectedSub(null)}
+                style={{ minWidth: '100px' }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -420,140 +424,120 @@ export default function SubmissionsView() {
       {/* Confirmation Modal */}
       {confirmModal.isOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1400,
-            padding: '1.25rem',
-          }}
+          className="portal-modal-backdrop"
           onClick={() => !confirmModal.isSubmitting && closeConfirmModal()}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm Decision"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
-              maxWidth: '500px',
-              width: '100%',
-              padding: '1.75rem',
+              maxWidth: '520px',
               border: confirmModal.action === 'APPROVE'
                 ? '1px solid rgba(16, 185, 129, 0.4)'
                 : '1px solid rgba(239, 68, 68, 0.4)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <div
-                style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.3rem',
-                  fontWeight: 800,
-                  background: confirmModal.action === 'APPROVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  color: confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)',
-                  border: `1px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`,
-                  flexShrink: 0,
-                }}
+            <div className="portal-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.3rem',
+                    fontWeight: 800,
+                    background: confirmModal.action === 'APPROVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)',
+                    border: `1px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {confirmModal.action === 'APPROVE' ? '✓' : '✕'}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                    {confirmModal.action === 'APPROVE' ? 'Confirm Approval' : 'Confirm Rejection'}
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    {confirmModal.action === 'APPROVE'
+                      ? 'Verify this submission and record your approval.'
+                      : 'Reject this submission and provide required feedback.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="portal-modal-close-btn"
+                onClick={closeConfirmModal}
+                disabled={confirmModal.isSubmitting}
+                aria-label="Close modal"
               >
-                {confirmModal.action === 'APPROVE' ? '✓' : '✕'}
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  {confirmModal.action === 'APPROVE' ? 'Confirm Approval' : 'Confirm Rejection'}
-                </h3>
-                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  {confirmModal.action === 'APPROVE'
-                    ? 'Verify this submission and record your approval.'
-                    : 'Reject this submission and provide required feedback.'}
-                </p>
-              </div>
+                ✕
+              </button>
             </div>
 
-            {confirmModal.error && (
-              <div
-                style={{
-                  padding: '0.75rem 1rem',
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  borderLeft: '4px solid var(--status-error)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--status-error)',
-                  fontSize: '0.84rem',
-                  marginBottom: '1rem',
-                }}
-              >
-                ⚠️ {confirmModal.error}
-              </div>
-            )}
+            <div className="portal-modal-body">
+              {confirmModal.error && (
+                <div className="portal-alert portal-alert-error" style={{ marginBottom: '1rem' }}>
+                  ⚠️ {confirmModal.error}
+                </div>
+              )}
 
-            {confirmModal.action === 'APPROVE' ? (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.4rem' }}>
-                  Approval Note (Optional):
-                </label>
-                <textarea
-                  className="input-field"
-                  rows="3"
-                  value={confirmModal.feedback}
-                  onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
-                  placeholder="Optional remark for creator..."
-                  style={{ width: '100%', fontSize: '0.85rem' }}
-                  disabled={confirmModal.isSubmitting}
-                />
-              </div>
-            ) : (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.4rem' }}>
-                  Rejection Reason <span style={{ color: 'var(--status-error)' }}>* (Required)</span>:
-                </label>
-                <textarea
-                  className="input-field"
-                  rows="3"
-                  value={confirmModal.feedback}
-                  onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
-                  placeholder="Detail reason for rejection..."
-                  style={{ width: '100%', fontSize: '0.85rem' }}
-                  disabled={confirmModal.isSubmitting}
-                  autoFocus
-                />
-              </div>
-            )}
+              {confirmModal.action === 'APPROVE' ? (
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label">
+                    Approval Note (Optional):
+                  </label>
+                  <textarea
+                    rows="3"
+                    value={confirmModal.feedback}
+                    onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
+                    placeholder="Optional remark for creator..."
+                    style={{ fontSize: '0.9rem' }}
+                    disabled={confirmModal.isSubmitting}
+                  />
+                </div>
+              ) : (
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label form-label-required">
+                    Rejection Reason
+                  </label>
+                  <textarea
+                    rows="3"
+                    value={confirmModal.feedback}
+                    onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
+                    placeholder="Detail reason for rejection..."
+                    style={{ fontSize: '0.9rem' }}
+                    disabled={confirmModal.isSubmitting}
+                    autoFocus
+                  />
+                </div>
+              )}
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div className="portal-modal-footer">
               <button
                 type="button"
                 className="btn-secondary"
                 onClick={closeConfirmModal}
                 disabled={confirmModal.isSubmitting}
-                style={{ fontSize: '0.85rem', padding: '0.55rem 1rem' }}
+                style={{ fontSize: '0.85rem' }}
               >
                 Cancel
               </button>
               <button
                 type="button"
+                id="btn-confirm-execute"
+                className={confirmModal.action === 'APPROVE' ? 'btn-success' : 'btn-danger'}
                 onClick={handleExecuteDecision}
                 disabled={confirmModal.isSubmitting}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  fontSize: '0.85rem',
-                  padding: '0.55rem 1.25rem',
-                  fontWeight: 700,
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: confirmModal.isSubmitting ? 'not-allowed' : 'pointer',
-                  background: confirmModal.action === 'APPROVE'
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                  color: '#ffffff',
-                }}
+                style={{ fontSize: '0.85rem' }}
               >
                 {confirmModal.isSubmitting
                   ? (confirmModal.action === 'APPROVE' ? 'Approving…' : 'Rejecting…')

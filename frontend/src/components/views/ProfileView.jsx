@@ -61,6 +61,17 @@ export default function ProfileView({ onNavigateToNav }) {
     loadProfile();
   }, [user?.id, user?.role]);
 
+  // Handle Escape key to dismiss logout modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showLogoutConfirm) {
+        setShowLogoutConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLogoutConfirm]);
+
   // Handle Edit Name Save
   const handleSaveName = async (e) => {
     e.preventDefault();
@@ -907,46 +918,39 @@ export default function ProfileView({ onNavigateToNav }) {
       {/* ── 6. Logout Confirmation Modal ── */}
       {showLogoutConfirm && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(5px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '1rem'
-          }}
+          className="portal-modal-backdrop"
           onClick={() => setShowLogoutConfirm(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm Sign Out"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
-              maxWidth: '420px',
-              width: '100%',
-              padding: '2rem',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
-              border: '1px solid rgba(244, 63, 94, 0.3)'
+              maxWidth: '440px',
+              border: '1px solid rgba(244, 63, 94, 0.4)',
+              textAlign: 'center',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '0.75rem' }}>
-              ⎋
+            <div className="portal-modal-body" style={{ padding: '2rem 1.75rem 1.25rem 1.75rem', alignItems: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>
+                ⎋
+              </div>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-highlight)', fontSize: '1.3rem' }}>
+                Sign Out of VeriSocial?
+              </h3>
+              <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                Are you sure you want to end your session as <strong>{profileData?.name || user?.name}</strong> ({currentRole})?
+              </p>
             </div>
-            <h3 style={{ margin: '0 0 0.5rem 0', textAlign: 'center', color: 'var(--text-highlight)', fontSize: '1.25rem' }}>
-              Sign Out of VeriSocial?
-            </h3>
-            <p style={{ margin: '0 0 1.5rem 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Are you sure you want to end your session as <strong>{profileData?.name || user?.name}</strong> ({currentRole})?
-            </p>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="portal-modal-footer" style={{ justifyContent: 'center' }}>
               <button
                 type="button"
                 className="btn-secondary"
                 onClick={() => setShowLogoutConfirm(false)}
-                style={{ flex: 1, padding: '0.65rem' }}
+                style={{ flex: 1, minWidth: '100px' }}
               >
                 Cancel
               </button>
@@ -954,7 +958,7 @@ export default function ProfileView({ onNavigateToNav }) {
                 type="button"
                 className="btn-danger"
                 onClick={handleConfirmLogout}
-                style={{ flex: 1, padding: '0.65rem', fontWeight: 700 }}
+                style={{ flex: 1, minWidth: '100px', fontWeight: 700 }}
               >
                 Sign Out
               </button>

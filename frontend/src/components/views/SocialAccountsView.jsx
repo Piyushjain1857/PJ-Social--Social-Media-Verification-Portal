@@ -97,6 +97,20 @@ export default function SocialAccountsView() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Handle Escape key to dismiss open modals
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isAddModalOpen && !addSubmitting) setIsAddModalOpen(false);
+        if (isEditModalOpen && !editSubmitting) setIsEditModalOpen(false);
+        if (isViewModalOpen) setIsViewModalOpen(false);
+        if (isDeleteModalOpen && !deleteSubmitting) setIsDeleteModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddModalOpen, isEditModalOpen, isViewModalOpen, isDeleteModalOpen, addSubmitting, editSubmitting, deleteSubmitting]);
+
   // Load Accounts
   const loadAccounts = useCallback(async () => {
     setIsLoading(true);
@@ -593,7 +607,7 @@ export default function SocialAccountsView() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
           {accounts.map(acc => {
             const cfg = PLATFORM_CONFIG[acc.platform] || PLATFORM_CONFIG.INSTAGRAM;
             const isToggling = togglingId === acc.id;
@@ -832,9 +846,19 @@ export default function SocialAccountsView() {
           MODAL: ADD OFFICIAL ACCOUNT (SUPER_ADMIN ONLY)
       ───────────────────────────────────────────────────────────────────────────── */}
       {isAddModalOpen && (
-        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '540px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div
+          className="portal-modal-backdrop"
+          onClick={() => !addSubmitting && setIsAddModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add Official Account"
+        >
+          <div
+            className="portal-modal-card"
+            style={{ maxWidth: '560px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="portal-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>➕</span>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
@@ -843,8 +867,10 @@ export default function SocialAccountsView() {
               </div>
               <button
                 type="button"
+                className="portal-modal-close-btn"
                 onClick={() => setIsAddModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                disabled={addSubmitting}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -900,7 +926,7 @@ export default function SocialAccountsView() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Apex University Official Instagram"
+                  placeholder="e.g. K.R. Mangalam University Official Instagram"
                   value={addForm.name}
                   onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
                   className="input-field"
@@ -1006,19 +1032,31 @@ export default function SocialAccountsView() {
           MODAL: EDIT OFFICIAL ACCOUNT (SUPER_ADMIN ONLY)
       ───────────────────────────────────────────────────────────────────────────── */}
       {isEditModalOpen && (
-        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '540px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div
+          className="portal-modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget && !editSubmitting) setIsEditModalOpen(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-account-title"
+        >
+          <div
+            className="portal-modal-card"
+            style={{ width: '100%', maxWidth: '540px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="portal-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>✏️</span>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                <h3 id="edit-account-title" style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
                   Edit Official Account
                 </h3>
               </div>
               <button
                 type="button"
+                className="portal-modal-close-btn"
                 onClick={() => setIsEditModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                disabled={editSubmitting}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -1169,15 +1207,25 @@ export default function SocialAccountsView() {
           MODAL: VIEW ACCOUNT DOSSIER
       ───────────────────────────────────────────────────────────────────────────── */}
       {isViewModalOpen && selectedAccount && (
-        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '580px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+        <div
+          className="portal-modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsViewModalOpen(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="view-account-title"
+        >
+          <div
+            className="portal-modal-card"
+            style={{ width: '100%', maxWidth: '580px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="portal-modal-header" style={{ alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ fontSize: '2rem' }}>
                   {PLATFORM_CONFIG[selectedAccount.platform]?.icon || '🌐'}
                 </span>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
+                  <h3 id="view-account-title" style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
                     {selectedAccount.name || selectedAccount.handle}
                   </h3>
                   <div style={{ fontSize: '0.8rem', color: PLATFORM_CONFIG[selectedAccount.platform]?.color || 'var(--text-secondary)', fontWeight: 600 }}>
@@ -1187,8 +1235,9 @@ export default function SocialAccountsView() {
               </div>
               <button
                 type="button"
+                className="portal-modal-close-btn"
                 onClick={() => setIsViewModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -1196,7 +1245,7 @@ export default function SocialAccountsView() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               {/* Status & Verification Pill */}
-              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span className={`badge ${selectedAccount.isActive ? 'badge-success' : 'badge-warning'}`}>
                   {selectedAccount.isActive ? '● Active Channel' : '○ Paused / Inactive'}
                 </span>
@@ -1206,7 +1255,7 @@ export default function SocialAccountsView() {
               </div>
 
               {/* Data Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                 <div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Handle</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
@@ -1221,7 +1270,7 @@ export default function SocialAccountsView() {
                   </div>
                 </div>
 
-                <div style={{ gridColumn: 'span 2' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Official URL</div>
                   <div style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>
                     <a
@@ -1320,13 +1369,34 @@ export default function SocialAccountsView() {
           MODAL: DELETE CONFIRMATION (SUPER_ADMIN ONLY)
       ───────────────────────────────────────────────────────────────────────────── */}
       {isDeleteModalOpen && accountToDelete && (
-        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '2rem', borderTop: '4px solid var(--status-rejected)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '1.75rem' }}>🗑️</span>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                Delete Official Social Account?
-              </h3>
+        <div
+          className="portal-modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget && !deleteSubmitting) setIsDeleteModalOpen(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-account-title"
+        >
+          <div
+            className="portal-modal-card"
+            style={{ width: '100%', maxWidth: '480px', borderTop: '4px solid var(--status-rejected)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="portal-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.75rem' }}>🗑️</span>
+                <h3 id="delete-account-title" style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                  Delete Official Social Account?
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="portal-modal-close-btn"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={deleteSubmitting}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
 
             <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -1353,20 +1423,16 @@ export default function SocialAccountsView() {
               <button
                 type="button"
                 id="btn-confirm-delete-account"
+                className="btn-danger"
                 onClick={handleDeleteConfirm}
                 disabled={deleteSubmitting}
                 style={{
-                  background: 'var(--status-rejected)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '0.6rem 1.2rem',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  cursor: 'pointer'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
                 }}
               >
-                {deleteSubmitting ? 'Deleting...' : 'Delete Account'}
+                {deleteSubmitting ? 'Deleting...' : '🗑️ Delete Account'}
               </button>
             </div>
           </div>

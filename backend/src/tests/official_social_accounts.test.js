@@ -177,12 +177,12 @@ async function runOfficialSocialAccountsTests() {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${superToken}` },
     body: {
-      name: 'Apex University Engineering & Tech Alumni',
+      name: 'K.R. Mangalam University Engineering & Tech Alumni',
       description: 'Updated description for university alumni community.'
     }
   });
   assert.strictEqual(updateRes.status, 200, 'Account update returns 200 OK');
-  assert.strictEqual(updateRes.body.data.name, 'Apex University Engineering & Tech Alumni');
+  assert.strictEqual(updateRes.body.data.name, 'K.R. Mangalam University Engineering & Tech Alumni');
   console.log('✓ Updated official account details');
 
   // 6. Status toggle (Deactivate account)

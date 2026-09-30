@@ -388,7 +388,7 @@ function UserDashboard({ onNavigateToNav }) {
       )}
 
       {/* ── Bottom grid: Recent Submissions + Recent Notifications ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
 
         {/* Recent Submissions */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
@@ -828,7 +828,7 @@ function SuperAdminDashboard({ onNavigateToNav }) {
 
       {/* ── Distribution & Pipeline Breakdown Row ── */}
       {!isLoading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
           
           {/* Platform Distribution Bar */}
           <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -980,8 +980,8 @@ function SuperAdminDashboard({ onNavigateToNav }) {
             message="No activity verifications have been submitted by creators yet."
           />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+          <div className="table-responsive-wrapper" style={{ margin: 0, border: 'none', background: 'transparent' }}>
+            <table className="portal-table" style={{ fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '0.65rem' }}>Creator</th>
@@ -1083,8 +1083,8 @@ function SuperAdminDashboard({ onNavigateToNav }) {
             message="Audit records and moderation decisions will appear here as administrators review submissions."
           />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+          <div className="table-responsive-wrapper" style={{ margin: 0, border: 'none', background: 'transparent' }}>
+            <table className="portal-table" style={{ fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '0.65rem' }}>Timestamp</th>

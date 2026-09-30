@@ -9,7 +9,7 @@ const initializeInMemoryAccounts = async () => {
     {
       id: 'soc-official-001',
       platform: 'INSTAGRAM',
-      name: 'Apex University Official Instagram',
+      name: 'K.R. Mangalam University Official Instagram',
       handle: '@apex_university',
       accountUrl: 'https://instagram.com/apex_university',
       profileUrl: 'https://instagram.com/apex_university',
@@ -22,7 +22,7 @@ const initializeInMemoryAccounts = async () => {
     {
       id: 'soc-official-002',
       platform: 'LINKEDIN',
-      name: 'Apex University Official LinkedIn Page',
+      name: 'K.R. Mangalam University Official LinkedIn Page',
       handle: 'apex-university',
       accountUrl: 'https://linkedin.com/school/apex-university',
       profileUrl: 'https://linkedin.com/school/apex-university',
@@ -35,7 +35,7 @@ const initializeInMemoryAccounts = async () => {
     {
       id: 'soc-official-003',
       platform: 'FACEBOOK',
-      name: 'Apex University Official Facebook',
+      name: 'K.R. Mangalam University Official Facebook',
       handle: 'apexuniversity',
       accountUrl: 'https://facebook.com/apexuniversity',
       profileUrl: 'https://facebook.com/apexuniversity',

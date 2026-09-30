@@ -1123,10 +1123,26 @@
 }
 
 /* ==========================================================================
-   Responsive Breakpoints: Desktop / Tablet / Mobile Behavior
+   Responsive Breakpoints: Desktop / Laptop / Tablet / Mobile Behavior
    ========================================================================== */
 
-/* Tablet & Mobile Screens (< 1024px) */
+/* Laptop tier (1024px - 1280px) */
+@media (min-width: 1024px) and (max-width: 1280px) {
+  .layout-sidebar {
+    width: 240px;
+  }
+
+  .layout-content-area {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .portal-table th,
+  .portal-table td {
+    padding: 0.8rem 0.95rem;
+  }
+}
+
+/* Tablet Screens (768px - 1023px) */
 @media (max-width: 1023px) {
   .layout-sidebar {
     display: none; /* Hide static desktop sidebar; use mobile drawer */
@@ -1147,13 +1163,18 @@
   .layout-header-title {
     font-size: 1.5rem;
   }
+
+  .layout-page-header {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
 }
 
 /* Mobile Screens (< 768px) */
 @media (max-width: 767px) {
   .layout-navbar {
-    height: 60px;
-    padding: 0 1rem;
+    height: 56px;
+    padding: 0 0.85rem;
   }
 
   .breadcrumb-root,
@@ -1166,25 +1187,130 @@
   }
 
   .navbar-role-pill {
-    padding: 0.25rem 0.55rem;
-    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.68rem;
+  }
+
+  .api-status-pill {
+    display: none; /* Hide latency pill on small screens to conserve navbar space */
   }
 
   .layout-content-area {
     padding: 1rem 0.85rem;
   }
 
+  .layout-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .layout-header-title-wrap {
+    width: 100%;
+  }
+
   .layout-header-title {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
   }
 
   .layout-header-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
   }
 
+  .layout-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .layout-header-actions button {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  /* Form touch targets on mobile */
+  .form-input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents auto-zoom in iOS Safari */
+    min-height: 44px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-success,
+  .btn-warning {
+    min-height: 44px;
+  }
+
+  /* Modal responsive adjustments on mobile */
+  .portal-modal-backdrop {
+    padding: 0.75rem;
+    align-items: flex-end; /* Slide up sheet on mobile */
+  }
+
+  .portal-modal-card {
+    max-height: 90vh;
+    border-radius: var(--radius-lg);
+  }
+
+  .portal-modal-header {
+    padding: 1.15rem 1.25rem;
+  }
+
+  .portal-modal-body {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .portal-modal-footer {
+    padding: 1rem 1.25rem;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .portal-modal-footer button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  /* Dropdown Menus on Mobile */
   .profile-dropdown-menu {
-    width: 260px;
+    width: 270px;
+    max-width: calc(100vw - 20px);
     right: -10px;
+  }
+
+  .notif-dropdown-menu {
+    width: 320px;
+    max-width: calc(100vw - 16px);
+    right: -50px;
+  }
+}
+
+/* Small Mobile Screens (< 480px) */
+@media (max-width: 480px) {
+  .layout-content-area {
+    padding: 0.75rem 0.65rem;
+  }
+
+  .layout-header-actions button {
+    flex: 1 1 100%; /* Full-width buttons on extra-compact phones */
+  }
+
+  .notif-dropdown-menu {
+    right: -40px;
   }
 }
 

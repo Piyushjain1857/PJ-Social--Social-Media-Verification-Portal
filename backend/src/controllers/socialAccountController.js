@@ -120,7 +120,7 @@ const createAccount = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         code: 'MISSING_NAME',
-        message: 'Official account name is required (e.g. Apex University Official Instagram).'
+        message: 'Official account name is required (e.g. K.R. Mangalam University Official Instagram).'
       });
     }
 

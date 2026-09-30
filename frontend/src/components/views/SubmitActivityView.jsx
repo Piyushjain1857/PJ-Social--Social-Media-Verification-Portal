@@ -124,6 +124,17 @@ export default function SubmitActivityView({ onNavigateToNav }) {
     }
   }, [platform, officialAccounts]);
 
+  // Escape key handler for lightbox modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && lightboxPreview) {
+        setLightboxPreview(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxPreview]);
+
   // ─── File Handling ────────────────────────────────────────────────────────
   const handleFileSelection = (selectedFile) => {
     setErrorMessage(null);

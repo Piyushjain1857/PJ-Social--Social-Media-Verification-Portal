@@ -589,10 +589,10 @@ export default function ReviewSubmissionsView() {
             )}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+          <div className="table-responsive-wrapper" style={{ margin: 0, border: 'none', background: 'transparent' }}>
+            <table className="portal-table" style={{ minWidth: '820px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <tr>
                   <th style={{ padding: '0.85rem 1rem' }}>Platform &amp; Action</th>
                   <th style={{ padding: '0.85rem 1rem' }}>Creator</th>
                   <th style={{ padding: '0.85rem 1rem' }}>Target Post</th>
@@ -804,34 +804,21 @@ export default function ReviewSubmissionsView() {
           ==================================================================== */}
       {selectedSubId && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.78)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1100,
-            padding: '1.25rem',
-          }}
+          className="portal-modal-backdrop"
           onClick={closeDetailsModal}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Verification Dossier"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
               maxWidth: '850px',
-              width: '100%',
-              padding: '1.75rem',
-              maxHeight: '92vh',
-              overflowY: 'auto',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+            <div className="portal-modal-header">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
                   <span style={{ fontSize: '1.3rem' }}>{dossier ? PLATFORM_ICONS[dossier.submission.platform] : '🔍'}</span>
@@ -851,10 +838,10 @@ export default function ReviewSubmissionsView() {
 
               <button
                 type="button"
-                className="btn-secondary"
+                className="portal-modal-close-btn"
                 onClick={closeDetailsModal}
-                style={{ padding: '0.35rem 0.65rem', fontSize: '0.9rem' }}
                 title="Close (Esc)"
+                aria-label="Close dossier"
               >
                 ✕
               </button>
@@ -1185,36 +1172,24 @@ export default function ReviewSubmissionsView() {
           ==================================================================== */}
       {confirmModal.isOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1300,
-            padding: '1.25rem',
-          }}
+          className="portal-modal-backdrop"
           onClick={() => !confirmModal.isSubmitting && closeConfirmModal()}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm Decision"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
               maxWidth: '520px',
-              width: '100%',
-              padding: '1.75rem',
               border: confirmModal.action === 'APPROVE'
                 ? '1px solid rgba(16, 185, 129, 0.4)'
                 : '1px solid rgba(239, 68, 68, 0.4)',
-              boxShadow: confirmModal.action === 'APPROVE'
-                ? '0 25px 60px rgba(16, 185, 129, 0.2)'
-                : '0 25px 60px rgba(239, 68, 68, 0.2)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Confirmation Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            <div className="portal-modal-header">
               <div
                 style={{
                   width: '44px',
@@ -1243,9 +1218,19 @@ export default function ReviewSubmissionsView() {
                     : 'Reject this submission and provide required feedback for the creator.'}
                 </p>
               </div>
+              <button
+                type="button"
+                className="portal-modal-close-btn"
+                onClick={closeConfirmModal}
+                disabled={confirmModal.isSubmitting}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Submission Context Summary Card */}
+            <div className="portal-modal-body">
+              {/* Submission Context Summary Card */}
             <div
               style={{
                 background: 'rgba(255, 255, 255, 0.03)',
@@ -1336,9 +1321,10 @@ export default function ReviewSubmissionsView() {
                 </div>
               </div>
             )}
+            </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div className="portal-modal-footer">
               <button
                 type="button"
                 className="btn-secondary"

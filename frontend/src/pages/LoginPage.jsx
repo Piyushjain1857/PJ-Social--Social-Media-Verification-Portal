@@ -130,17 +130,17 @@ export default function LoginPage({ onNavigate }) {
   const displayedError = localError || authError;
 
   return (
-    <div className="container" style={{ padding: '3rem 1.5rem', maxWidth: '580px' }}>
-      <div className="glass-panel" style={{ padding: '2.5rem' }}>
+    <div className="container" style={{ padding: 'clamp(1.5rem, 5vw, 3.5rem) clamp(0.75rem, 3vw, 1.5rem)', maxWidth: '580px' }}>
+      <div className="glass-panel" style={{ padding: 'clamp(1.25rem, 4vw, 2.5rem)' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div className="brand-logo-icon" style={{ width: '48px', height: '48px', margin: '0 auto 1rem auto', fontSize: '1.5rem' }}>
             🛡️
           </div>
-          <h2 style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.85rem)', marginBottom: '0.4rem' }}>
             {mode === 'login' ? 'Account Authentication' : 'Create Creator Account'}
           </h2>
-          <p style={{ fontSize: '0.92rem', margin: 0 }}>
+          <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>
             {mode === 'login'
               ? 'Sign in to access your role-governed verification workspace.'
               : 'Register for community social activity verification.'}
@@ -320,7 +320,7 @@ export default function LoginPage({ onNavigate }) {
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', textAlign: 'center' }}>
             ⚡ 1-Click Demo Accounts (Test All 3 Roles)
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {DEMO_ACCOUNTS.map((demo) => (
               <div
                 key={demo.role}
@@ -328,30 +328,32 @@ export default function LoginPage({ onNavigate }) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '0.6rem 0.85rem',
+                  padding: '0.75rem 0.9rem',
                   background: 'rgba(255, 255, 255, 0.03)',
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-md)',
+                  flexWrap: 'wrap',
+                  gap: '0.6rem',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <span style={{ fontSize: '1.1rem' }}>{demo.icon}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: '160px', flex: '1 1 auto' }}>
+                  <span style={{ fontSize: '1.25rem' }}>{demo.icon}</span>
                   <div>
                     <span className={`badge ${demo.badgeClass}`} style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}>
                       {demo.label}
                     </span>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem', wordBreak: 'break-all' }}>
                       {demo.email}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', flex: '0 0 auto' }}>
                   <button
                     type="button"
                     className="btn-secondary"
                     onClick={() => handleSelectDemo(demo, false)}
-                    style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+                    style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', minHeight: '34px' }}
                   >
                     Fill
                   </button>
@@ -360,7 +362,7 @@ export default function LoginPage({ onNavigate }) {
                     className="btn-primary"
                     onClick={() => handleSelectDemo(demo, true)}
                     disabled={isSubmitting}
-                    style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                    style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem', minHeight: '34px' }}
                   >
                     Instant Login
                   </button>

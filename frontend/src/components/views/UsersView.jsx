@@ -89,6 +89,20 @@ export default function UsersView() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  // Handle Escape key to dismiss open modals
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isCreateModalOpen && !createSubmitting) setIsCreateModalOpen(false);
+        if (isEditModalOpen && !editSubmitting) setIsEditModalOpen(false);
+        if (isDetailsModalOpen) setIsDetailsModalOpen(false);
+        if (isStatusConfirmOpen && !statusSubmitting) setIsStatusConfirmOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCreateModalOpen, isEditModalOpen, isDetailsModalOpen, isStatusConfirmOpen, createSubmitting, editSubmitting, statusSubmitting]);
+
   // Load users directory
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
@@ -528,16 +542,16 @@ export default function UsersView() {
       </div>
 
       {/* ── Users Table ── */}
-      <div className="glass-panel" style={{ padding: '0', overflowX: 'auto', borderRadius: 'var(--radius-md)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+      <div className="table-responsive-wrapper">
+        <table className="portal-table" style={{ minWidth: '850px' }}>
           <thead>
-            <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              <th style={{ padding: '0.9rem 1.25rem' }}>User Profile</th>
-              <th style={{ padding: '0.9rem 1rem' }}>Clearance & Role</th>
-              <th style={{ padding: '0.9rem 1rem' }}>Status</th>
-              <th style={{ padding: '0.9rem 1rem' }}>Activity</th>
-              <th style={{ padding: '0.9rem 1rem' }}>Joined Date</th>
-              <th style={{ padding: '0.9rem 1.25rem', textAlign: 'right' }}>Governance Actions</th>
+            <tr>
+              <th>User Profile</th>
+              <th>Clearance &amp; Role</th>
+              <th>Status</th>
+              <th>Activity</th>
+              <th>Joined Date</th>
+              <th style={{ textAlign: 'right' }}>Governance Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -753,31 +767,21 @@ export default function UsersView() {
           ==================================================================== */}
       {isCreateModalOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1400,
-            padding: '1.25rem'
-          }}
+          className="portal-modal-backdrop"
           onClick={() => !createSubmitting && setIsCreateModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Provision New User"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
-              maxWidth: '520px',
-              width: '100%',
-              padding: '1.75rem',
+              maxWidth: '540px',
               border: '1px solid rgba(99, 102, 241, 0.35)',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.8)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div className="portal-modal-header">
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
                   ➕ Provision New User
@@ -788,9 +792,10 @@ export default function UsersView() {
               </div>
               <button
                 type="button"
+                className="portal-modal-close-btn"
                 onClick={() => setIsCreateModalOpen(false)}
                 disabled={createSubmitting}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -933,31 +938,21 @@ export default function UsersView() {
           ==================================================================== */}
       {isEditModalOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1400,
-            padding: '1.25rem'
-          }}
+          className="portal-modal-backdrop"
           onClick={() => !editSubmitting && setIsEditModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit User Account"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
-              maxWidth: '520px',
-              width: '100%',
-              padding: '1.75rem',
+              maxWidth: '540px',
               border: '1px solid rgba(99, 102, 241, 0.35)',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.8)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div className="portal-modal-header">
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
                   ✏️ Edit User Account
@@ -968,9 +963,10 @@ export default function UsersView() {
               </div>
               <button
                 type="button"
+                className="portal-modal-close-btn"
                 onClick={() => setIsEditModalOpen(false)}
                 disabled={editSubmitting}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -1114,40 +1110,28 @@ export default function UsersView() {
           ==================================================================== */}
       {isDetailsModalOpen && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1400,
-            padding: '1.25rem'
-          }}
+          className="portal-modal-backdrop"
           onClick={() => setIsDetailsModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="User Profile Dossier"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
-              maxWidth: '600px',
-              width: '100%',
-              padding: '1.75rem',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
-              maxHeight: '90vh',
-              overflowY: 'auto'
+              maxWidth: '640px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div className="portal-modal-header">
               <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
                 📋 User Profile & Activity Dossier
               </h3>
               <button
                 type="button"
+                className="portal-modal-close-btn"
                 onClick={() => setIsDetailsModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -1281,77 +1265,73 @@ export default function UsersView() {
           ==================================================================== */}
       {isStatusConfirmOpen && statusTargetUser && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1400,
-            padding: '1.25rem'
-          }}
+          className="portal-modal-backdrop"
           onClick={() => !statusSubmitting && setIsStatusConfirmOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm Status Change"
         >
           <div
-            className="glass-panel"
+            className="portal-modal-card"
             style={{
-              maxWidth: '460px',
-              width: '100%',
-              padding: '1.75rem',
+              maxWidth: '480px',
               border: statusTargetNewValue === 'ACTIVE'
                 ? '1px solid rgba(34, 197, 94, 0.4)'
                 : '1px solid rgba(239, 68, 68, 0.4)',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.8)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>
-                {statusTargetNewValue === 'ACTIVE' ? '⚡' : '⛔'}
-              </span>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)' }}>
-                  Confirm Status Change
-                </h3>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  Target: <strong>{statusTargetUser.name}</strong> ({statusTargetUser.email})
+            <div className="portal-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>
+                  {statusTargetNewValue === 'ACTIVE' ? '⚡' : '⛔'}
+                </span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)' }}>
+                    Confirm Status Change
+                  </h3>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Target: <strong>{statusTargetUser.name}</strong> ({statusTargetUser.email})
+                  </div>
                 </div>
               </div>
+              <button
+                type="button"
+                className="portal-modal-close-btn"
+                onClick={() => setIsStatusConfirmOpen(false)}
+                disabled={statusSubmitting}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
 
-            <p style={{ margin: '0 0 1.25rem 0', color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5 }}>
-              {statusTargetNewValue === 'ACTIVE' ? (
-                <>Are you sure you want to <strong>activate</strong> this account? The user will immediately be granted permission to authenticate and access platform capabilities.</>
-              ) : (
-                <>Are you sure you want to change status to <strong>{statusTargetNewValue}</strong>? The user will be blocked from logging in or submitting verification proofs.</>
-              )}
-            </p>
+            <div className="portal-modal-body">
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.55 }}>
+                {statusTargetNewValue === 'ACTIVE' ? (
+                  <>Are you sure you want to <strong>activate</strong> this account? The user will immediately be granted permission to authenticate and access platform capabilities.</>
+                ) : (
+                  <>Are you sure you want to change status to <strong>{statusTargetNewValue}</strong>? The user will be blocked from logging in or submitting verification proofs.</>
+                )}
+              </p>
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div className="portal-modal-footer">
               <button
                 type="button"
                 className="btn-secondary"
                 disabled={statusSubmitting}
                 onClick={() => setIsStatusConfirmOpen(false)}
-                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                style={{ fontSize: '0.85rem' }}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="btn-primary"
+                className={statusTargetNewValue === 'ACTIVE' ? 'btn-success' : 'btn-danger'}
                 disabled={statusSubmitting}
                 onClick={handleStatusConfirmSubmit}
-                style={{
-                  padding: '0.5rem 1.15rem',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  background: statusTargetNewValue === 'ACTIVE'
-                    ? 'var(--status-success)'
-                    : 'var(--status-error)'
-                }}
+                style={{ fontSize: '0.85rem' }}
               >
                 {statusSubmitting ? 'Updating...' : `Confirm ${statusTargetNewValue}`}
               </button>
