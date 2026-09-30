@@ -510,3 +510,76 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Auth Form & Login Page Styles
+   ========================================================================== */
+
+/* Input focus glow */
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="text"]:focus {
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  outline: none;
+}
+
+/* Input hover */
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="text"]:hover {
+  border-color: var(--border-strong) !important;
+}
+
+/* Active / current nav link */
+.nav-link.active {
+  color: var(--text-highlight);
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+}
+
+/* Auth loading splash (init overlay) */
+.auth-loading-splash {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Protected workspace page – full-width scroll area */
+.workspace-page {
+  width: 100%;
+  padding-top: 1rem;
+}
+
+/* Workspace section header */
+.workspace-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 1rem;
+}
+
+/* Logout button specific override */
+.btn-danger {
+  background: linear-gradient(135deg, #f43f5e 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(244, 63, 94, 0.28);
+}
+
+.btn-danger:hover {
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.45);
+  filter: brightness(1.1);
+}

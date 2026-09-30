@@ -29,6 +29,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   if (!response.ok) {
     const error = new Error(data.message || `Request failed with status ${response.status}`);
     error.status = response.status;
+    error.code = data.code;
     error.data = data;
     throw error;
   }
@@ -36,6 +37,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   return data;
 };
 
+// Health & Telemetry
 export const fetchHealth = async () => {
   const startTime = performance.now();
   try {
@@ -82,4 +84,35 @@ export const fetchDatabaseStatus = async () => {
 
 export const fetchPortalInfo = async () => {
   return await apiFetch('/info');
+};
+
+// Authentication Endpoints
+export const loginUser = async (email, password) => {
+  return await apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+};
+
+export const registerUser = async (name, email, password) => {
+  return await apiFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password }),
+  });
+};
+
+export const fetchCurrentUser = async () => {
+  return await apiFetch('/auth/me', {
+    method: 'GET',
+  });
+};
+
+export const logoutUser = async () => {
+  try {
+    return await apiFetch('/auth/logout', {
+      method: 'POST',
+    });
+  } catch {
+    return { success: true };
+  }
 };

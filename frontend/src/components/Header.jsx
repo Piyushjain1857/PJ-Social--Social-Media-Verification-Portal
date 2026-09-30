@@ -1,6 +1,9 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header({ apiStatus, currentView, onToggleView }) {
+  const { user, isAuthenticated, logout } = useAuth();
+
   const getDotClass = () => {
     if (apiStatus.loading) return 'checking';
     return apiStatus.healthy ? 'online' : 'offline';
@@ -12,6 +15,19 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
   };
 
   const isDbConnected = apiStatus.data?.database?.isConnected;
+
+  const getRoleBadgeClass = (role) => {
+    if (role === 'SUPER_ADMIN') return 'badge-superadmin';
+    if (role === 'ADMIN') return 'badge-admin';
+    return 'badge-user';
+  };
+
+  const navigateToRoleSpace = () => {
+    if (!user) return;
+    if (user.role === 'SUPER_ADMIN') onToggleView('super-admin-space');
+    else if (user.role === 'ADMIN') onToggleView('admin-space');
+    else onToggleView('user-space');
+  };
 
   return (
     <header className="site-header" id="site-header">
@@ -47,8 +63,17 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
             >
               Dev DB Console
             </button>
+            {isAuthenticated && (
+              <button 
+                type="button" 
+                className={`nav-link ${['super-admin-space', 'admin-space', 'user-space'].includes(currentView) ? 'active' : ''}`}
+                onClick={navigateToRoleSpace}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+              >
+                My Workspace
+              </button>
+            )}
             <a href="#roles" className="nav-link" onClick={() => onToggleView('portal')}>3-Tier Roles</a>
-            <a href="#health-check" className="nav-link" onClick={() => onToggleView('portal')}>Diagnostics</a>
           </nav>
 
           <div className="header-actions">
@@ -66,18 +91,44 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
               onClick={() => onToggleView('dev-dashboard')}
             >
               <span className={`status-dot ${isDbConnected ? 'online' : 'checking'}`} />
-              <span>{isDbConnected ? 'PostgreSQL Active' : 'DB Schema Ready'}</span>
+              <span>{isDbConnected ? 'DB Active' : 'DB Ready'}</span>
             </div>
 
-            {/* Switch view CTA */}
-            <button
-              type="button"
-              className={currentView === 'dev-dashboard' ? 'btn-secondary' : 'btn-primary'}
-              onClick={() => onToggleView(currentView === 'dev-dashboard' ? 'portal' : 'dev-dashboard')}
-              style={{ padding: '0.45rem 0.95rem', fontSize: '0.8rem' }}
-            >
-              {currentView === 'dev-dashboard' ? 'View Landing' : 'Dev Dashboard'}
-            </button>
+            {/* Authentication State / Action */}
+            {isAuthenticated ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <div 
+                  onClick={navigateToRoleSpace}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-full)', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)' }}
+                  title="Click to view your role workspace"
+                >
+                  <span className={`badge ${getRoleBadgeClass(user.role)}`} style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}>
+                    {user.role}
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                    {user.name.split(' ')[0]}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => { logout(); onToggleView('portal'); }}
+                  style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
+                  title="Sign out of your session"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => onToggleView('login')}
+                style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}
+              >
+                Sign In →
+              </button>
+            )}
           </div>
         </div>
       </div>
