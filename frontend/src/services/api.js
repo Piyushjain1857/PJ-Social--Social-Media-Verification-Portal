@@ -200,6 +200,20 @@ export const reviewSubmission = async (id, status, feedback) => {
   });
 };
 
+export const approveSubmission = async (id, feedback = '') => {
+  return await apiFetch(`/reviews/${id}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ feedback }),
+  });
+};
+
+export const rejectSubmission = async (id, feedback) => {
+  return await apiFetch(`/reviews/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ feedback }),
+  });
+};
+
 // User Directory & Role Management Endpoints
 export const fetchUsers = async () => {
   return await apiFetch('/users');

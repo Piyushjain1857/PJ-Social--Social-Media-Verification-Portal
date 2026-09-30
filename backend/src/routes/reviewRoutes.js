@@ -4,6 +4,8 @@ const {
   getPendingReviews,
   getSubmissionReviewDetails,
   submitReviewVerdict,
+  approveReview,
+  rejectReview,
 } = require('../controllers/reviewController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
@@ -25,5 +27,12 @@ router.get('/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getSubmissio
 
 // Submit human moderation verdict (Approve / Reject)
 router.post('/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), submitReviewVerdict);
+router.post('/:id/approve', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), approveReview);
+router.post('/:id/reject', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), rejectReview);
+
+// Submission path aliases for frontend or external client consistency
+router.post('/submission/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), submitReviewVerdict);
+router.post('/submission/:id/approve', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), approveReview);
+router.post('/submission/:id/reject', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), rejectReview);
 
 module.exports = router;

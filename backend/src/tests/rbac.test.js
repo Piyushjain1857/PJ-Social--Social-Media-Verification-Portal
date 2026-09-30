@@ -260,13 +260,110 @@ async function runTests() {
     });
     assert(adminQueueRes.status === 200 && adminQueueRes.body.success, 'ADMIN can view submissions queue (GET /api/submissions)');
 
-    // ADMIN can review submission
+    // ADMIN can review submission (Approve)
     const adminReviewRes = await makeRequest(`/submissions/${createdSubId}/review`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${adminToken}` },
       body: { status: 'APPROVED', feedback: 'Verified by automated admin test' }
     });
-    assert(adminReviewRes.status === 200 && adminReviewRes.body.success, 'ADMIN can review submission (POST /api/submissions/:id/review)');
+    assert(
+      adminReviewRes.status === 200 &&
+      adminReviewRes.body.success &&
+      adminReviewRes.body.data?.submission?.status === 'APPROVED' &&
+      adminReviewRes.body.data?.review?.adminId !== undefined &&
+      adminReviewRes.body.data?.review?.createdAt !== undefined,
+      'ADMIN can approve submission, record reviewer and timestamp (POST /api/submissions/:id/review)'
+    );
+
+    // State transition test: Re-approving an already approved submission must be blocked (400)
+    const reApproveRes = await makeRequest(`/submissions/${createdSubId}/review`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { status: 'APPROVED' }
+    });
+    assert(reApproveRes.status === 400, 'Invalid transition: Cannot re-approve already approved submission (400)');
+
+    // State transition test: Rejecting an already approved submission must be blocked (400)
+    const rejectApprovedRes = await makeRequest(`/submissions/${createdSubId}/review`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { status: 'REJECTED', feedback: 'Cannot reject approved' }
+    });
+    assert(rejectApprovedRes.status === 400, 'Invalid transition: Cannot reject an already approved submission (400)');
+
+    // Create a second submission by USER to test rejection workflow
+    const sub2Res = await makeRequest('/submissions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: {
+        platform: 'LINKEDIN',
+        actionType: 'COMMENT',
+        postUrl: 'https://linkedin.com/feed/test-for-rejection',
+        screenshotUrl: 'https://images.unsplash.com/photo-1616469829941-c7200edec809',
+        description: 'Test submission for rejection workflow'
+      }
+    });
+    const sub2Id = sub2Res.body.data?.id;
+
+    // Reject without reason must fail with 400
+    const rejectNoReasonRes = await makeRequest(`/reviews/${sub2Id}/reject`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { feedback: '' }
+    });
+    assert(rejectNoReasonRes.status === 400, 'Rejection requires non-empty rejection reason (POST /api/reviews/:id/reject -> 400)');
+
+    // Reject with reason succeeds
+    const rejectWithReasonRes = await makeRequest(`/reviews/${sub2Id}/reject`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { feedback: 'Screenshot is missing timestamp and username handle.' }
+    });
+    assert(
+      rejectWithReasonRes.status === 200 &&
+      rejectWithReasonRes.body.success &&
+      rejectWithReasonRes.body.data?.submission?.status === 'REJECTED' &&
+      rejectWithReasonRes.body.data?.review?.feedback === 'Screenshot is missing timestamp and username handle.',
+      'ADMIN can reject submission with reason, record reviewer & timestamp (POST /api/reviews/:id/reject)'
+    );
+
+    // State transition test: Re-rejecting an already rejected submission must be blocked (400)
+    const reRejectRes = await makeRequest(`/reviews/${sub2Id}/reject`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { feedback: 'Another reason' }
+    });
+    assert(reRejectRes.status === 400, 'Invalid transition: Cannot re-reject already rejected submission (400)');
+
+    // State transition test: Approving an already rejected submission must be blocked (400)
+    const approveRejectedRes = await makeRequest(`/reviews/${sub2Id}/approve`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { feedback: 'Overturn' }
+    });
+    assert(approveRejectedRes.status === 400, 'Invalid transition: Cannot approve an already rejected submission (400)');
+
+    // USER received notification after review decisions
+    const userNotifsAfterReviews = await makeRequest('/notifications/my', {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    const hasFeedbackNotif = Array.isArray(userNotifsAfterReviews.body?.data) &&
+      userNotifsAfterReviews.body.data.some(n => n.type === 'REVIEW_FEEDBACK');
+    assert(hasFeedbackNotif, 'USER receives notification for review decision (REVIEW_FEEDBACK)');
+
+    // USER cannot call /approve or /reject endpoints (403)
+    const userApproveRes = await makeRequest(`/reviews/${sub2Id}/approve`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    assert(userApproveRes.status === 403, 'USER is blocked from approving submissions (403)');
+
+    const userRejectRes = await makeRequest(`/reviews/${sub2Id}/reject`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { feedback: 'Normal user cannot reject' }
+    });
+    assert(userRejectRes.status === 403, 'USER is blocked from rejecting submissions (403)');
 
     // ADMIN can view user directory
     const adminUsersRes = await makeRequest('/users', {

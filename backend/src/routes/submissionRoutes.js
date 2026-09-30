@@ -5,7 +5,9 @@ const {
   getMy,
   getAll,
   getById,
-  review
+  review,
+  approve,
+  reject
 } = require('../controllers/submissionController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
@@ -42,5 +44,7 @@ router.get('/:id', authenticate, authorize('USER', 'ADMIN', 'SUPER_ADMIN'), getB
  */
 router.post('/:id/review', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), review);
 router.patch('/:id/review', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), review);
+router.post('/:id/approve', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), approve);
+router.post('/:id/reject', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), reject);
 
 module.exports = router;

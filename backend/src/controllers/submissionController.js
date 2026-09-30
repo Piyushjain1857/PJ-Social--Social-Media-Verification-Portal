@@ -216,36 +216,51 @@ const review = async (req, res, next) => {
     if (!status || !validStatuses.includes(status.toUpperCase())) {
       return res.status(400).json({
         success: false,
+        code: 'INVALID_STATUS',
         message: `Review decision status must be one of: ${validStatuses.join(', ')}`
       });
     }
 
-    const existing = await getSubmissionById(id);
-    if (!existing) {
-      return res.status(404).json({
+    const cleanStatus = status.toUpperCase();
+
+    if (cleanStatus === 'REJECTED' && (!feedback || !feedback.trim())) {
+      return res.status(400).json({
         success: false,
-        message: 'Submission to review was not found.'
+        code: 'FEEDBACK_REQUIRED',
+        message: 'A rejection reason/feedback is mandatory so the creator understands what was missing.'
       });
     }
 
     const result = await updateReview(id, {
-      status: status.toUpperCase(),
-      feedback: feedback?.trim() || null,
+      status: cleanStatus,
+      feedback: feedback ? feedback.trim() : null,
       adminId: req.user.id,
       adminName: req.user.name
     });
 
+    if (result.error) {
+      const statusCode = result.code === 'SUBMISSION_NOT_FOUND' ? 404 : 400;
+      return res.status(statusCode).json({
+        success: false,
+        code: result.code,
+        message: result.message
+      });
+    }
+
     // Notify the submission owner of the verdict
+    const isApproved = cleanStatus === 'APPROVED';
     await createNotification({
-      userId: existing.userId,
+      userId: result.submission.userId,
       type: 'REVIEW_FEEDBACK',
-      title: `Submission ${status.toUpperCase()}`,
-      message: `Your ${existing.platform} activity submission was ${status.toLowerCase()} by ${req.user.name}.${feedback ? ` Feedback: "${feedback}"` : ''}`
+      title: `Submission ${cleanStatus}`,
+      message: isApproved
+        ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${result.review.feedback ? ` Feedback: "${result.review.feedback}"` : ''}`
+        : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${result.review.feedback}"`
     });
 
     return res.status(200).json({
       success: true,
-      message: `Submission successfully marked as ${status.toUpperCase()}.`,
+      message: `Submission successfully marked as ${cleanStatus}.`,
       data: result
     });
   } catch (error) {
@@ -253,10 +268,22 @@ const review = async (req, res, next) => {
   }
 };
 
+const approve = async (req, res, next) => {
+  req.body.status = 'APPROVED';
+  return review(req, res, next);
+};
+
+const reject = async (req, res, next) => {
+  req.body.status = 'REJECTED';
+  return review(req, res, next);
+};
+
 module.exports = {
   create,
   getMy,
   getAll,
   getById,
-  review
+  review,
+  approve,
+  reject
 };

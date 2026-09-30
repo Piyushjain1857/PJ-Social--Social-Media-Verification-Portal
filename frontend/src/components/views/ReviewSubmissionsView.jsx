@@ -67,12 +67,16 @@ export default function ReviewSubmissionsView() {
   const [dossier, setDossier] = useState(null);
   const [isDossierLoading, setIsDossierLoading] = useState(false);
   const [dossierError, setDossierError] = useState(null);
+  const [dossierFeedback, setDossierFeedback] = useState(null);
 
-  // ── Verification Decision Form State ──
-  const [verdict, setVerdict] = useState('APPROVED');
-  const [feedback, setFeedback] = useState('');
-  const [isSubmittingVerdict, setIsSubmittingVerdict] = useState(false);
-  const [verdictError, setVerdictError] = useState(null);
+  // ── Confirmation Modal State ──
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    action: 'APPROVE', // 'APPROVE' or 'REJECT'
+    feedback: '',
+    error: null,
+    isSubmitting: false,
+  });
 
   // Checklist verification states (for human verification tracking)
   const [checklistState, setChecklistState] = useState({
@@ -164,9 +168,14 @@ export default function ReviewSubmissionsView() {
     setSelectedSubId(subId);
     setDossier(null);
     setDossierError(null);
-    setVerdict('APPROVED');
-    setFeedback('Verified activity engagement matches criteria.');
-    setVerdictError(null);
+    setDossierFeedback(null);
+    setConfirmModal({
+      isOpen: false,
+      action: 'APPROVE',
+      feedback: '',
+      error: null,
+      isSubmitting: false,
+    });
     setChecklistState({
       handleMatches: false,
       timestampValid: false,
@@ -190,48 +199,123 @@ export default function ReviewSubmissionsView() {
   };
 
   const closeDetailsModal = () => {
+    if (confirmModal.isSubmitting) return;
     setSelectedSubId(null);
     setDossier(null);
+    setDossierFeedback(null);
+    closeConfirmModal();
   };
 
-  // Close modal on Escape
+  // Open confirmation modal for Approve or Reject
+  const openConfirmModal = (action) => {
+    setConfirmModal({
+      isOpen: true,
+      action,
+      feedback: action === 'APPROVE' ? 'Verified activity engagement matches criteria.' : '',
+      error: null,
+      isSubmitting: false,
+    });
+  };
+
+  const closeConfirmModal = () => {
+    if (confirmModal.isSubmitting) return;
+    setConfirmModal({
+      isOpen: false,
+      action: 'APPROVE',
+      feedback: '',
+      error: null,
+      isSubmitting: false,
+    });
+  };
+
+  // Close modals on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && selectedSubId) {
-        closeDetailsModal();
+      if (e.key === 'Escape') {
+        if (confirmModal.isOpen) {
+          if (!confirmModal.isSubmitting) closeConfirmModal();
+        } else if (selectedSubId) {
+          closeDetailsModal();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedSubId]);
+  }, [confirmModal.isOpen, confirmModal.isSubmitting, selectedSubId]);
 
-  // Handle verdict decision submission
-  const handleVerdictSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedSubId) return;
+  // Execute approval or rejection decision
+  const handleExecuteDecision = async () => {
+    if (!selectedSubId || !confirmModal.isOpen) return;
 
-    if (verdict === 'REJECTED' && (!feedback || !feedback.trim())) {
-      setVerdictError('Please specify the rejection reason so the creator can understand.');
+    const action = confirmModal.action;
+    const cleanFeedback = confirmModal.feedback.trim();
+
+    // Mandatory rejection reason validation
+    if (action === 'REJECT' && !cleanFeedback) {
+      setConfirmModal((prev) => ({
+        ...prev,
+        error: 'Please enter a rejection reason so the creator understands what was missing or invalid.',
+      }));
       return;
     }
 
-    setIsSubmittingVerdict(true);
-    setVerdictError(null);
+    setConfirmModal((prev) => ({ ...prev, isSubmitting: true, error: null }));
 
     try {
-      const res = await reviewSubmission(selectedSubId, verdict, feedback.trim());
+      const res = await reviewSubmission(selectedSubId, action, cleanFeedback);
       if (res.success) {
-        setSuccessMessage(`Submission #${selectedSubId.substring(0, 8)} successfully marked as ${verdict}.`);
+        const successMsg = `Submission #${selectedSubId.substring(0, 8)} successfully marked as ${action}. Creator has been notified.`;
+        setSuccessMessage(successMsg);
         setTimeout(() => setSuccessMessage(null), 5000);
-        closeDetailsModal();
-        await loadReviews();
+
+        setDossierFeedback({
+          type: action,
+          message: `Submission marked as ${action}! Notification dispatched to creator.`,
+        });
+
+        // Update local dossier state
+        if (dossier && dossier.submission) {
+          const newReviewEntry = res.data?.review || {
+            id: `rev-${Date.now().toString(36)}`,
+            submissionId: selectedSubId,
+            status: action,
+            feedback: cleanFeedback,
+            createdAt: new Date().toISOString(),
+          };
+          setDossier({
+            ...dossier,
+            submission: {
+              ...dossier.submission,
+              status: action,
+              reviews: [newReviewEntry, ...(dossier.submission.reviews || [])],
+            },
+          });
+        }
+
+        // Update main queue table row immediately
+        setSubmissions((prevList) =>
+          prevList.map((item) =>
+            item.id === selectedSubId ? { ...item, status: action } : item
+          )
+        );
+
+        closeConfirmModal();
+
+        // Refresh full queue from server in background
+        loadReviews();
       } else {
-        setVerdictError(res.message || 'Failed to submit moderation review.');
+        setConfirmModal((prev) => ({
+          ...prev,
+          error: res.message || `Failed to ${action.toLowerCase()} submission.`,
+          isSubmitting: false,
+        }));
       }
     } catch (err) {
-      setVerdictError(err.message || 'Network error processing review verdict.');
-    } finally {
-      setIsSubmittingVerdict(false);
+      setConfirmModal((prev) => ({
+        ...prev,
+        error: err.message || `Network error processing review decision.`,
+        isSubmitting: false,
+      }));
     }
   };
 
@@ -940,96 +1024,123 @@ export default function ReviewSubmissionsView() {
                       </div>
                     </div>
 
-                    {/* Verdict Decision Form */}
+                    {/* In-dossier Feedback Alert */}
+                    {dossierFeedback && (
+                      <div
+                        style={{
+                          padding: '0.85rem 1rem',
+                          borderRadius: 'var(--radius-sm)',
+                          borderLeft: `4px solid ${dossierFeedback.type === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`,
+                          background: dossierFeedback.type === 'APPROVE' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                          color: dossierFeedback.type === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)',
+                          fontSize: '0.88rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <span>{dossierFeedback.type === 'APPROVE' ? '✓' : '✕'} {dossierFeedback.message}</span>
+                        <button
+                          type="button"
+                          onClick={() => setDossierFeedback(null)}
+                          style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Verification Decision Action Area */}
                     <div className="glass-panel" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.02)' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                        Record Verification Decision
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
+                        Moderator Verification Decision
                       </div>
 
-                      {verdictError && (
-                        <div style={{ color: 'var(--status-error)', fontSize: '0.8rem', marginBottom: '0.65rem' }}>
-                          ⚠️ {verdictError}
+                      {dossier.submission.status !== 'PENDING' ? (
+                        <div
+                          style={{
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: dossier.submission.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                            border: `1px solid ${dossier.submission.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.4rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: dossier.submission.status === 'APPROVED' ? 'var(--status-success)' : 'var(--status-error)', fontSize: '0.95rem' }}>
+                            <span>{dossier.submission.status === 'APPROVED' ? '✓' : '✕'}</span>
+                            <span>Submission is {dossier.submission.status}</span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                            This submission has already been finalized by a moderator. Re-verifications or invalid state transitions are locked to preserve audit integrity.
+                          </p>
                         </div>
-                      )}
-
-                      <form onSubmit={handleVerdictSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      ) : (
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                            Decision Verdict:
-                          </label>
-                          <div style={{ display: 'flex', gap: '1.25rem' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.88rem' }}>
-                              <input
-                                type="radio"
-                                name="verdict"
-                                value="APPROVED"
-                                checked={verdict === 'APPROVED'}
-                                onChange={() => {
-                                  setVerdict('APPROVED');
-                                  setFeedback('Verified activity engagement matches criteria.');
-                                  setVerdictError(null);
-                                }}
-                              />
-                              <span style={{ color: 'var(--status-success)', fontWeight: 700 }}>✓ Approve</span>
-                            </label>
+                          <p style={{ margin: '0 0 1rem 0', fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            Verify evidence against campaign requirements. Selecting an action will open a confirmation prompt to record your decision and dispatch creator notifications.
+                          </p>
 
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.88rem' }}>
-                              <input
-                                type="radio"
-                                name="verdict"
-                                value="REJECTED"
-                                checked={verdict === 'REJECTED'}
-                                onChange={() => {
-                                  setVerdict('REJECTED');
-                                  setFeedback('Proof missing timestamp or required handle verification.');
-                                  setVerdictError(null);
-                                }}
-                              />
-                              <span style={{ color: 'var(--status-error)', fontWeight: 700 }}>✕ Reject</span>
-                            </label>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                            {/* Approve Button */}
+                            <button
+                              type="button"
+                              id="btn-approve-action"
+                              onClick={() => openConfirmModal('APPROVE')}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.45rem',
+                                padding: '0.75rem 1rem',
+                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: 'var(--radius-md)',
+                                fontWeight: 700,
+                                fontSize: '0.88rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                              <span>✓</span> Approve Submission
+                            </button>
+
+                            {/* Reject Button */}
+                            <button
+                              type="button"
+                              id="btn-reject-action"
+                              onClick={() => openConfirmModal('REJECT')}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.45rem',
+                                padding: '0.75rem 1rem',
+                                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: 'var(--radius-md)',
+                                fontWeight: 700,
+                                fontSize: '0.88rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.35)',
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                              <span>✕</span> Reject Submission
+                            </button>
                           </div>
                         </div>
-
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem' }}>
-                            Moderator Feedback {verdict === 'REJECTED' && <span style={{ color: 'var(--status-error)' }}>* (Required)</span>}
-                          </label>
-                          <textarea
-                            className="input-field"
-                            rows="3"
-                            value={feedback}
-                            onChange={(e) => setFeedback(e.target.value)}
-                            placeholder="Enter constructive feedback to be sent to the creator..."
-                            required={verdict === 'REJECTED'}
-                            style={{ width: '100%', fontSize: '0.82rem', resize: 'vertical' }}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '0.25rem' }}>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={closeDetailsModal}
-                            disabled={isSubmittingVerdict}
-                            style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="btn-primary"
-                            disabled={isSubmittingVerdict}
-                            style={{
-                              fontSize: '0.82rem',
-                              padding: '0.45rem 1.1rem',
-                              fontWeight: 700,
-                              background: verdict === 'APPROVED' ? 'var(--status-success)' : 'var(--status-error)',
-                            }}
-                          >
-                            {isSubmittingVerdict ? 'Submitting…' : `Confirm ${verdict}`}
-                          </button>
-                        </div>
-                      </form>
+                      )}
                     </div>
 
                     {/* Past Review History if already reviewed */}
@@ -1040,17 +1151,17 @@ export default function ReviewSubmissionsView() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {dossier.submission.reviews.map((r) => (
-                            <div key={r.id} style={{ fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                            <div key={r.id} style={{ fontSize: '0.8rem', padding: '0.6rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
                                 <span style={{ color: r.status === 'APPROVED' ? 'var(--status-success)' : 'var(--status-error)' }}>
-                                  {r.status} by {r.admin?.name || r.adminName || 'Admin'}
+                                  {r.status === 'APPROVED' ? '✓ APPROVED' : '✕ REJECTED'} by {r.admin?.name || r.adminName || 'Admin Moderator'}
                                 </span>
                                 <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
                                   {formatDate(r.createdAt)}
                                 </span>
                               </div>
                               {r.feedback && (
-                                <div style={{ color: 'var(--text-secondary)', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                                <div style={{ color: 'var(--text-secondary)', marginTop: '0.35rem', fontStyle: 'italic', lineHeight: 1.4 }}>
                                   "{r.feedback}"
                                 </div>
                               )}
@@ -1065,6 +1176,217 @@ export default function ReviewSubmissionsView() {
 
               </div>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          CONFIRMATION MODAL (Approve / Reject Dialog)
+          ==================================================================== */}
+      {confirmModal.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1300,
+            padding: '1.25rem',
+          }}
+          onClick={() => !confirmModal.isSubmitting && closeConfirmModal()}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              maxWidth: '520px',
+              width: '100%',
+              padding: '1.75rem',
+              border: confirmModal.action === 'APPROVE'
+                ? '1px solid rgba(16, 185, 129, 0.4)'
+                : '1px solid rgba(239, 68, 68, 0.4)',
+              boxShadow: confirmModal.action === 'APPROVE'
+                ? '0 25px 60px rgba(16, 185, 129, 0.2)'
+                : '0 25px 60px rgba(239, 68, 68, 0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Confirmation Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.35rem',
+                  fontWeight: 800,
+                  background: confirmModal.action === 'APPROVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)',
+                  border: `1px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`,
+                  flexShrink: 0,
+                }}
+              >
+                {confirmModal.action === 'APPROVE' ? '✓' : '✕'}
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
+                  {confirmModal.action === 'APPROVE' ? 'Confirm Submission Approval' : 'Confirm Submission Rejection'}
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  {confirmModal.action === 'APPROVE'
+                    ? 'Verify this submission and record your approval.'
+                    : 'Reject this submission and provide required feedback for the creator.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Submission Context Summary Card */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.85rem 1rem',
+                marginBottom: '1.25rem',
+                fontSize: '0.82rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Creator:</span>
+                <strong style={{ color: 'var(--text-highlight)' }}>
+                  {dossier?.creator?.name} ({dossier?.creator?.email})
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Platform &amp; Action:</span>
+                <span style={{ fontWeight: 600 }}>{dossier?.submission?.platform} • {dossier?.submission?.actionType}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>Target URL:</span>
+                <span style={{ color: 'var(--primary-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>
+                  {dossier?.submission?.postUrl}
+                </span>
+              </div>
+            </div>
+
+            {/* Error Message inside Modal */}
+            {confirmModal.error && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  borderLeft: '4px solid var(--status-error)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--status-error)',
+                  fontSize: '0.84rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                ⚠️ {confirmModal.error}
+              </div>
+            )}
+
+            {/* Input Form Fields */}
+            {confirmModal.action === 'APPROVE' ? (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.4rem' }}>
+                  Approval Note / Feedback (Optional):
+                </label>
+                <textarea
+                  className="input-field"
+                  rows="3"
+                  value={confirmModal.feedback}
+                  onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
+                  placeholder="Optional congratulatory note or remark for the creator..."
+                  style={{ width: '100%', fontSize: '0.85rem', resize: 'vertical' }}
+                  disabled={confirmModal.isSubmitting}
+                />
+              </div>
+            ) : (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.4rem' }}>
+                  Rejection Reason <span style={{ color: 'var(--status-error)' }}>* (Required)</span>:
+                </label>
+                <textarea
+                  id="rejection-reason-field"
+                  className="input-field"
+                  rows="3"
+                  value={confirmModal.feedback}
+                  onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
+                  placeholder="Explain why this proof is rejected (e.g. proof screenshot does not show valid timestamp, handle does not match creator profile)..."
+                  style={{
+                    width: '100%',
+                    fontSize: '0.85rem',
+                    resize: 'vertical',
+                    borderColor: confirmModal.error ? 'var(--status-error)' : undefined,
+                  }}
+                  disabled={confirmModal.isSubmitting}
+                  autoFocus
+                />
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                  This reason is required and will be delivered directly to the creator's notification inbox.
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeConfirmModal}
+                disabled={confirmModal.isSubmitting}
+                style={{ fontSize: '0.85rem', padding: '0.55rem 1.1rem' }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                id={confirmModal.action === 'APPROVE' ? 'btn-confirm-approve' : 'btn-confirm-reject'}
+                onClick={handleExecuteDecision}
+                disabled={confirmModal.isSubmitting}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.85rem',
+                  padding: '0.55rem 1.35rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: confirmModal.isSubmitting ? 'not-allowed' : 'pointer',
+                  background: confirmModal.action === 'APPROVE'
+                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                    : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: '#ffffff',
+                  boxShadow: confirmModal.action === 'APPROVE'
+                    ? '0 4px 15px rgba(16, 185, 129, 0.4)'
+                    : '0 4px 15px rgba(239, 68, 68, 0.4)',
+                }}
+              >
+                {confirmModal.isSubmitting ? (
+                  <>
+                    <span className="status-dot checking" style={{ width: '10px', height: '10px' }} />
+                    {confirmModal.action === 'APPROVE' ? 'Approving…' : 'Rejecting…'}
+                  </>
+                ) : (
+                  <>
+                    <span>{confirmModal.action === 'APPROVE' ? '✓' : '✕'}</span>
+                    {confirmModal.action === 'APPROVE' ? 'Confirm Approval' : 'Confirm Rejection'}
+                  </>
+                )}
+              </button>
+            </div>
+
           </div>
         </div>
       )}

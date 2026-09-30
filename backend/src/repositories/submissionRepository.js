@@ -231,38 +231,122 @@ const createSubmission = async ({ userId, userName, userEmail, platform, actionT
 
 const reviewSubmission = async (id, { status, feedback, adminId, adminName }) => {
   initializeInMemorySubmissions();
-  const submission = inMemorySubmissions.get(id);
 
-  if (!submission) return null;
+  // Find submission from database or in-memory store
+  const submission = await getSubmissionById(id);
+  if (!submission) {
+    return {
+      error: 'NOT_FOUND',
+      code: 'SUBMISSION_NOT_FOUND',
+      message: 'Submission not found to review.'
+    };
+  }
+
+  const currentStatus = submission.status;
+  const newStatus = status ? status.toUpperCase() : '';
+
+  // Validate status
+  if (!['APPROVED', 'REJECTED'].includes(newStatus)) {
+    return {
+      error: 'INVALID_STATUS',
+      code: 'INVALID_STATUS',
+      message: 'Review decision status must be either APPROVED or REJECTED.'
+    };
+  }
+
+  // Prevent invalid state transitions:
+  // 1. If currently APPROVED
+  if (currentStatus === 'APPROVED') {
+    if (newStatus === 'APPROVED') {
+      return {
+        error: 'ALREADY_APPROVED',
+        code: 'INVALID_STATE_TRANSITION',
+        message: 'Submission is already approved. Cannot re-approve an approved submission.'
+      };
+    }
+    if (newStatus === 'REJECTED') {
+      return {
+        error: 'CANNOT_REJECT_APPROVED',
+        code: 'INVALID_STATE_TRANSITION',
+        message: 'Cannot reject an already approved and verified submission.'
+      };
+    }
+  }
+
+  // 2. If currently REJECTED
+  if (currentStatus === 'REJECTED') {
+    if (newStatus === 'REJECTED') {
+      return {
+        error: 'ALREADY_REJECTED',
+        code: 'INVALID_STATE_TRANSITION',
+        message: 'Submission is already rejected. Cannot re-reject a rejected submission.'
+      };
+    }
+    if (newStatus === 'APPROVED') {
+      return {
+        error: 'CANNOT_APPROVE_REJECTED',
+        code: 'INVALID_STATE_TRANSITION',
+        message: 'Cannot approve an already rejected submission. The creator must submit new evidence.'
+      };
+    }
+  }
+
+  // 3. Rejection requires non-empty reason
+  if (newStatus === 'REJECTED' && (!feedback || !feedback.trim())) {
+    return {
+      error: 'FEEDBACK_REQUIRED',
+      code: 'FEEDBACK_REQUIRED',
+      message: 'A rejection reason is mandatory so the creator understands what was missing or invalid.'
+    };
+  }
+
+  const cleanFeedback = feedback && typeof feedback === 'string' ? feedback.trim() : null;
+  const reviewTimestamp = new Date();
 
   const reviewEntry = {
-    id: `rev-${Date.now().toString(36)}`,
+    id: `rev-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
     submissionId: id,
     adminId,
     adminName: adminName || 'Admin Moderator',
-    status,
-    feedback: feedback || null,
-    createdAt: new Date()
+    status: newStatus,
+    feedback: cleanFeedback,
+    createdAt: reviewTimestamp,
+    updatedAt: reviewTimestamp
   };
 
-  submission.status = status;
-  submission.updatedAt = new Date();
-  submission.reviews.push(reviewEntry);
-  inMemorySubmissions.set(id, submission);
-
+  let updatedSubmission = null;
   const dbStatus = await checkDatabaseConnection();
+
   if (dbStatus.isConnected && prisma) {
     try {
-      await prisma.submission.update({
-        where: { id },
-        data: { status }
-      });
-      await prisma.review.create({
+      const createdReview = await prisma.review.create({
         data: {
           submissionId: id,
           adminId,
-          status,
-          feedback
+          status: newStatus,
+          feedback: cleanFeedback
+        },
+        include: {
+          admin: { select: { id: true, name: true, email: true } }
+        }
+      });
+
+      reviewEntry.id = createdReview.id;
+      reviewEntry.createdAt = createdReview.createdAt;
+      reviewEntry.updatedAt = createdReview.updatedAt;
+
+      updatedSubmission = await prisma.submission.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          updatedAt: reviewTimestamp
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          reviews: {
+            include: { admin: { select: { id: true, name: true, email: true } } },
+            orderBy: { createdAt: 'desc' }
+          }
         }
       });
     } catch (err) {
@@ -270,7 +354,30 @@ const reviewSubmission = async (id, { status, feedback, adminId, adminName }) =>
     }
   }
 
-  return { submission, review: reviewEntry };
+  // Update in-memory record
+  let memSub = inMemorySubmissions.get(id);
+  if (!memSub) {
+    memSub = {
+      ...submission,
+      reviews: submission.reviews ? [...submission.reviews] : []
+    };
+  }
+  memSub.status = newStatus;
+  memSub.updatedAt = reviewTimestamp;
+  if (!Array.isArray(memSub.reviews)) memSub.reviews = [];
+  memSub.reviews.unshift(reviewEntry);
+  inMemorySubmissions.set(id, memSub);
+
+  return {
+    success: true,
+    submission: updatedSubmission || memSub,
+    review: reviewEntry,
+    reviewer: {
+      id: adminId,
+      name: adminName || 'Admin Moderator'
+    },
+    reviewedAt: reviewTimestamp
+  };
 };
 
 /**

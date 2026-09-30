@@ -408,11 +408,12 @@ const submitReviewVerdict = async (req, res, next) => {
       adminName: req.user.name,
     });
 
-    if (!result) {
-      return res.status(404).json({
+    if (result.error) {
+      const statusCode = result.code === 'SUBMISSION_NOT_FOUND' ? 404 : 400;
+      return res.status(statusCode).json({
         success: false,
-        code: 'NOT_FOUND',
-        message: 'Submission not found to review.',
+        code: result.code,
+        message: result.message,
       });
     }
 
@@ -439,8 +440,20 @@ const submitReviewVerdict = async (req, res, next) => {
   }
 };
 
+const approveReview = async (req, res, next) => {
+  req.body.status = 'APPROVED';
+  return submitReviewVerdict(req, res, next);
+};
+
+const rejectReview = async (req, res, next) => {
+  req.body.status = 'REJECTED';
+  return submitReviewVerdict(req, res, next);
+};
+
 module.exports = {
   getPendingReviews,
   getSubmissionReviewDetails,
   submitReviewVerdict,
+  approveReview,
+  rejectReview,
 };
