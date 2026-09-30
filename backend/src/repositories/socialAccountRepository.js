@@ -9,7 +9,7 @@ const initializeInMemoryAccounts = async () => {
     {
       id: 'soc-official-001',
       platform: 'INSTAGRAM',
-      name: 'K.R. Mangalam University Official Instagram',
+      name: 'K.R. Mangalam University Official Instagram Page',
       handle: '@krmuniv',
       accountUrl: 'https://www.instagram.com/krmuniv/?hl=en',
       profileUrl: 'https://www.instagram.com/krmuniv/?hl=en',
@@ -35,7 +35,7 @@ const initializeInMemoryAccounts = async () => {
     {
       id: 'soc-official-003',
       platform: 'FACEBOOK',
-      name: 'K.R. Mangalam University Official Facebook',
+      name: 'K.R. Mangalam University Official Facebook Page',
       handle: 'krmuniv',
       accountUrl: 'https://www.facebook.com/krmuniv/',
       profileUrl: 'https://www.facebook.com/krmuniv/',

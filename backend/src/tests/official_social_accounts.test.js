@@ -158,9 +158,9 @@ async function runOfficialSocialAccountsTests() {
     headers: { Authorization: `Bearer ${superToken}` },
     body: {
       platform: 'LINKEDIN',
-      name: 'Apex Engineering Alumni Network',
-      accountUrl: 'https://linkedin.com/school/apex-engineering-alumni',
-      description: 'Official alumni association for Apex Engineering graduates.',
+      name: 'K.R. Mangalam University Engineering & Tech Alumni',
+      accountUrl: 'https://www.linkedin.com/school/krmuniv/',
+      description: 'Official alumni association for K.R. Mangalam University Engineering & Tech graduates.',
       isActive: true
     }
   });

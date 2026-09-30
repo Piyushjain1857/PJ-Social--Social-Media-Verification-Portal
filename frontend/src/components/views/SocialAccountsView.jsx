@@ -926,7 +926,7 @@ export default function SocialAccountsView() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. K.R. Mangalam University Official Instagram"
+                  placeholder="e.g. K.R. Mangalam University Official Instagram Page"
                   value={addForm.name}
                   onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
                   className="input-field"
