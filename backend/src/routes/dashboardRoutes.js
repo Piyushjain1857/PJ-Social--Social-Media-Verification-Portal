@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize } = require('../middlewares/roleMiddleware');
-const { getUserDashboard, getAdminDashboard } = require('../controllers/dashboardController');
+const { getUserDashboard, getAdminDashboard, getSuperAdminDashboard } = require('../controllers/dashboardController');
 
 /**
  * Dashboard Routes - /api/dashboard
@@ -18,4 +18,9 @@ router.get('/user', authenticate, authorize('USER', 'ADMIN', 'SUPER_ADMIN'), get
 // Protected: ADMIN and SUPER_ADMIN only
 router.get('/admin', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getAdminDashboard);
 
+// GET /api/dashboard/super-admin
+// Protected: SUPER_ADMIN only
+router.get('/super-admin', authenticate, authorize('SUPER_ADMIN'), getSuperAdminDashboard);
+
 module.exports = router;
+

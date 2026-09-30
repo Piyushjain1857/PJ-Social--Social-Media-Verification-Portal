@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   fetchUserDashboard,
   fetchAdminDashboard,
+  fetchSuperAdminDashboard,
   fetchSystemStats,
   fetchAuditLogs,
   fetchAllSubmissions,
@@ -603,102 +604,543 @@ function UserDashboard({ onNavigateToNav }) {
   );
 }
 
-// ─── SUPER_ADMIN Dashboard (unchanged, inline) ─────────────────────────────
+// ─── SUPER_ADMIN Dashboard ──────────────────────────────────────────────────
 function SuperAdminDashboard({ onNavigateToNav }) {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ systemStats: null, auditLogs: [], allSubmissions: [], usersList: [] });
+  const { user } = useAuth();
+  const [state, setState] = useState({
+    status: 'loading',
+    data: null,
+    error: null,
+  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      const [statsRes, logsRes, subsRes, usersRes] = await Promise.all([
-        fetchSystemStats(), fetchAuditLogs(), fetchAllSubmissions(), fetchUsers()
-      ]);
-      if (alive) {
-        setData({
-          systemStats: statsRes.success ? statsRes.data : null,
-          auditLogs:   logsRes.success  ? logsRes.data  || [] : [],
-          allSubmissions: subsRes.success ? subsRes.data || [] : [],
-          usersList:   usersRes.success  ? usersRes.data || [] : [],
+  const load = useCallback(async (manual = false) => {
+    if (manual) setIsRefreshing(true);
+    else setState(s => ({ ...s, status: 'loading', error: null }));
+
+    try {
+      const res = await fetchSuperAdminDashboard();
+      if (res.success) {
+        setState({ status: 'success', data: res.data, error: null });
+      } else {
+        setState({
+          status: 'error',
+          data: null,
+          error: res.message || 'Failed to load Super Administrator governance dashboard.',
         });
-        setLoading(false);
       }
-    })();
-    return () => { alive = false; };
+    } catch (err) {
+      setState({
+        status: 'error',
+        data: null,
+        error: err.message || 'Network error fetching super admin dashboard.',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   }, []);
 
-  const pending  = data.allSubmissions.filter(s => s.status === 'PENDING').length;
-  const approved = data.allSubmissions.filter(s => s.status === 'APPROVED').length;
-  const rejected = data.allSubmissions.filter(s => s.status === 'REJECTED').length;
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const { status, data, error } = state;
+  const isLoading = status === 'loading';
+  const stats = data?.stats || {};
+  const platformBreakdown = data?.platformBreakdown || {};
+  const recentSubmissions = data?.recentSubmissions || [];
+  const recentActivity = data?.recentActivity || [];
+
+  // Metrics
+  const totalUsers = stats.totalUsers ?? 0;
+  const creatorsCount = stats.creatorsCount ?? 0;
+  const totalAdmins = stats.totalAdmins ?? 0;
+  const adminsCount = stats.adminsCount ?? 0;
+  const superAdminsCount = stats.superAdminsCount ?? 0;
+
+  const totalSubmissions = stats.totalSubmissions ?? 0;
+  const pendingSubmissions = stats.pendingSubmissions ?? 0;
+  const approvedSubmissions = stats.approvedSubmissions ?? 0;
+  const rejectedSubmissions = stats.rejectedSubmissions ?? 0;
+
+  const activeSocialAccounts = stats.activeSocialAccounts ?? 0;
+  const totalSocialAccounts = stats.totalSocialAccounts ?? 0;
+  const approvalRate = stats.approvalRate ?? 0;
+
+  // Platform percentages
+  const igCount = platformBreakdown.INSTAGRAM || 0;
+  const liCount = platformBreakdown.LINKEDIN || 0;
+  const fbCount = platformBreakdown.FACEBOOK || 0;
+  const totalPlatformSubs = igCount + liCount + fbCount || 1;
+
+  const igPct = Math.round((igCount / totalPlatformSubs) * 100);
+  const liPct = Math.round((liCount / totalPlatformSubs) * 100);
+  const fbPct = Math.round((fbCount / totalPlatformSubs) * 100);
+
+  // Status percentages
+  const subTotalForBar = totalSubmissions || 1;
+  const approvedPct = Math.round((approvedSubmissions / subTotalForBar) * 100);
+  const pendingPct = Math.round((pendingSubmissions / subTotalForBar) * 100);
+  const rejectedPct = Math.round((rejectedSubmissions / subTotalForBar) * 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
-        {loading ? <><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /></> : (<>
-          <StatCard label="Total Registered Users" value={data.usersList.length || 3} sub="Full platform accounts" color="var(--role-superadmin)" icon="👥" />
-          <StatCard label="Active Administrators" value={data.usersList.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN').length || 2} sub="Super Admin & Moderators" color="var(--role-admin)" icon="🛡️" />
-          <StatCard label="Pending Verification" value={pending} sub="Awaiting review" color="var(--status-warning)" icon="⏳" pulse={pending > 0} />
-          <StatCard label="Total Submissions" value={data.allSubmissions.length || 3} sub="Proof verifications logged" color="var(--status-success)" icon="📋" />
-        </>)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', width: '100%' }}>
+
+      {/* ── Header Governance Banner ── */}
+      <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--role-superadmin)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <span style={{ fontSize: '1.6rem' }}>⚡</span>
+              <h2 style={{ margin: 0, fontSize: '1.35rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
+                Super Administrator Central Command
+              </h2>
+            </div>
+            <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+              Institutional governance overview · Live PostgreSQL database analytics · Official account channels
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--status-success)',
+                background: 'rgba(16, 185, 129, 0.12)',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '20px',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--status-success)', display: 'inline-block' }} />
+              PostgreSQL Connected
+            </span>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => load(true)}
+              disabled={isLoading || isRefreshing}
+              style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <span>{isRefreshing ? '⏳' : '🔄'}</span>
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: 'var(--text-highlight)' }}>⚡ Governance Quick Actions</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+      {/* ── Error Banner ── */}
+      {status === 'error' && (
+        <ErrorBanner
+          message={`Failed to load Super Administrator governance data: ${error}`}
+          onRetry={() => load(false)}
+        />
+      )}
+
+      {/* ── Analytics Metric Cards Grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
+        {isLoading ? (
+          <>
+            <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+            <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+          </>
+        ) : (
+          <>
+            {/* 1. Total Users */}
+            <StatCard
+              label="Total Users"
+              value={totalUsers}
+              sub={`${creatorsCount} Creators · ${totalAdmins} Staff`}
+              color="var(--role-superadmin)"
+              icon="👥"
+            />
+
+            {/* 2. Total Admins */}
+            <StatCard
+              label="Total Admins"
+              value={totalAdmins}
+              sub={`${adminsCount} Moderators · ${superAdminsCount} Super Admins`}
+              color="var(--role-admin)"
+              icon="🛡️"
+            />
+
+            {/* 3. Total Submissions */}
+            <StatCard
+              label="Total Submissions"
+              value={totalSubmissions}
+              sub="Verifications across platforms"
+              color="var(--primary)"
+              icon="📋"
+            />
+
+            {/* 4. Active Social Accounts */}
+            <StatCard
+              label="Active Social Accounts"
+              value={`${activeSocialAccounts} / ${totalSocialAccounts}`}
+              sub="Institutional college profiles"
+              color="#8B5CF6"
+              icon="🏛️"
+            />
+
+            {/* 5. Pending Submissions */}
+            <StatCard
+              label="Pending Submissions"
+              value={pendingSubmissions}
+              sub="Awaiting admin evaluation"
+              color="var(--status-warning)"
+              icon="⏳"
+              pulse={pendingSubmissions > 0}
+            />
+
+            {/* 6. Approved Submissions */}
+            <StatCard
+              label="Approved Submissions"
+              value={approvedSubmissions}
+              sub="Verified activities"
+              color="var(--status-success)"
+              icon="✓"
+            />
+
+            {/* 7. Rejected Submissions */}
+            <StatCard
+              label="Rejected Submissions"
+              value={rejectedSubmissions}
+              sub="Declined with feedback"
+              color="var(--status-error)"
+              icon="✕"
+            />
+
+            {/* 8. Approval Ratio */}
+            <StatCard
+              label="Approval Ratio"
+              value={`${approvalRate}%`}
+              sub="Overall platform pass rate"
+              color="var(--status-success)"
+              icon="📈"
+            />
+          </>
+        )}
+      </div>
+
+      {/* ── Distribution & Pipeline Breakdown Row ── */}
+      {!isLoading && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          
+          {/* Platform Distribution Bar */}
+          <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+                📊 Platform Volume Distribution
+              </h3>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                {totalSubmissions} Total Activities
+              </span>
+            </div>
+
+            {/* Stacked bar */}
+            <div style={{ height: '10px', width: '100%', borderRadius: '5px', overflow: 'hidden', display: 'flex', background: 'rgba(255, 255, 255, 0.05)' }}>
+              <div style={{ width: `${igPct}%`, background: '#E1306C', transition: 'width 0.5s ease' }} title={`Instagram: ${igCount}`} />
+              <div style={{ width: `${liPct}%`, background: '#0A66C2', transition: 'width 0.5s ease' }} title={`LinkedIn: ${liCount}`} />
+              <div style={{ width: `${fbPct}%`, background: '#1877F2', transition: 'width 0.5s ease' }} title={`Facebook: ${fbCount}`} />
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.8rem', paddingTop: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E1306C', display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>Instagram:</span>
+                <strong style={{ color: 'var(--text-highlight)' }}>{igCount} ({igPct}%)</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0A66C2', display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>LinkedIn:</span>
+                <strong style={{ color: 'var(--text-highlight)' }}>{liCount} ({liPct}%)</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1877F2', display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>Facebook:</span>
+                <strong style={{ color: 'var(--text-highlight)' }}>{fbCount} ({fbPct}%)</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Verification Status Distribution Bar */}
+          <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+                ⚖️ Verification Decision Breakdown
+              </h3>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                {approvalRate}% Approved
+              </span>
+            </div>
+
+            {/* Stacked Status bar */}
+            <div style={{ height: '10px', width: '100%', borderRadius: '5px', overflow: 'hidden', display: 'flex', background: 'rgba(255, 255, 255, 0.05)' }}>
+              <div style={{ width: `${approvedPct}%`, background: 'var(--status-success)', transition: 'width 0.5s ease' }} title={`Approved: ${approvedSubmissions}`} />
+              <div style={{ width: `${pendingPct}%`, background: 'var(--status-warning)', transition: 'width 0.5s ease' }} title={`Pending: ${pendingSubmissions}`} />
+              <div style={{ width: `${rejectedPct}%`, background: 'var(--status-error)', transition: 'width 0.5s ease' }} title={`Rejected: ${rejectedSubmissions}`} />
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.8rem', paddingTop: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--status-success)', display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>Approved:</span>
+                <strong style={{ color: 'var(--status-success)' }}>{approvedSubmissions}</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--status-warning)', display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>Pending:</span>
+                <strong style={{ color: 'var(--status-warning)' }}>{pendingSubmissions}</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--status-error)', display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>Rejected:</span>
+                <strong style={{ color: 'var(--status-error)' }}>{rejectedSubmissions}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Quick Governance Action Shortcuts ── */}
+      <div className="glass-panel" style={{ padding: '1.35rem' }}>
+        <h3 style={{ margin: '0 0 0.85rem 0', fontSize: '0.95rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+          ⚡ Governance Quick Actions
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem' }}>
           {[
-            { icon: '👥', label: 'Manage Users', sub: 'Role assignment & permissions', nav: 'users' },
-            { icon: '🛡️', label: 'Admin Directory', sub: 'Moderation clearances', nav: 'admins' },
-            { icon: '📋', label: 'Inspect Submissions', sub: 'All platform activities', nav: 'submissions' },
-            { icon: '🔗', label: 'Social Accounts', sub: 'Platform API configurations', nav: 'social-accounts' },
+            { icon: '👥', label: 'User Directory', sub: 'Roles, status & credentials', nav: 'users' },
+            { icon: '🛡️', label: 'Admin Governance', sub: 'Clearances & staff privileges', nav: 'admins' },
+            { icon: '📋', label: 'All Submissions', sub: 'Global verification archive', nav: 'submissions' },
+            { icon: '🏛️', label: 'Official Accounts', sub: 'Institutional platform channels', nav: 'social-accounts' },
+            { icon: '⚙️', label: 'Platform Settings', sub: 'Security & policy governance', nav: 'settings' },
           ].map(({ icon, label, sub, nav }) => (
-            <button key={nav} type="button" className="btn-secondary" onClick={() => onNavigateToNav(nav)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', justifyContent: 'flex-start', padding: '0.85rem 1rem' }}>
-              <span style={{ fontSize: '1.2rem' }}>{icon}</span>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sub}</div>
+            <button
+              key={nav}
+              type="button"
+              className="btn-secondary"
+              onClick={() => onNavigateToNav(nav)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                justifyContent: 'flex-start',
+                padding: '0.85rem 1rem',
+                borderRadius: '8px',
+                textAlign: 'left',
+              }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-highlight)' }}>{label}</div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{sub}</div>
               </div>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-highlight)' }}>🔒 Recent System Audit Log</h3>
-          <span className="badge badge-superadmin" style={{ fontSize: '0.72rem' }}>SUPER ADMIN ONLY</span>
+      {/* ── Recent Submissions Across Platform ── */}
+      <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>📋</span>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+              Recent Submissions
+            </h3>
+            <span className="badge badge-info" style={{ fontSize: '0.72rem' }}>
+              Latest {recentSubmissions.length}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onNavigateToNav('submissions')}
+            style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+          >
+            View Submissions Queue →
+          </button>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '0.65rem' }}>Timestamp</th>
-                <th style={{ padding: '0.65rem' }}>Actor</th>
-                <th style={{ padding: '0.65rem' }}>Action</th>
-                <th style={{ padding: '0.65rem' }}>Target</th>
-                <th style={{ padding: '0.65rem' }}>IP Address</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.auditLogs.slice(0, 4).map(log => (
-                <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '0.65rem', color: 'var(--text-muted)' }}>
-                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </td>
-                  <td style={{ padding: '0.65rem', fontWeight: 600, color: 'var(--text-highlight)' }}>{log.actorEmail}</td>
-                  <td style={{ padding: '0.65rem' }}><span className="badge badge-superadmin" style={{ fontSize: '0.7rem' }}>{log.action}</span></td>
-                  <td style={{ padding: '0.65rem', color: 'var(--text-secondary)' }}>{log.target}</td>
-                  <td style={{ padding: '0.65rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>{log.ipAddress}</td>
+
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <SkeletonRow /><SkeletonRow /><SkeletonRow />
+          </div>
+        ) : recentSubmissions.length === 0 ? (
+          <EmptyState
+            icon="📋"
+            title="No Submissions Found"
+            message="No activity verifications have been submitted by creators yet."
+          />
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '0.65rem' }}>Creator</th>
+                  <th style={{ padding: '0.65rem' }}>Platform & Account</th>
+                  <th style={{ padding: '0.65rem' }}>Action</th>
+                  <th style={{ padding: '0.65rem' }}>Post / Proof Link</th>
+                  <th style={{ padding: '0.65rem' }}>Status</th>
+                  <th style={{ padding: '0.65rem' }}>Submitted</th>
+                  <th style={{ padding: '0.65rem', textAlign: 'right' }}>Details</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {recentSubmissions.map(sub => {
+                  const cfg = STATUS_CONFIG[sub.status] || STATUS_CONFIG.PENDING;
+                  return (
+                    <tr key={sub.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <td style={{ padding: '0.65rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-highlight)' }}>{sub.userName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sub.userEmail}</div>
+                      </td>
+                      <td style={{ padding: '0.65rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>{PLATFORM_ICONS[sub.platform] || '🌐'}</span>
+                          <span style={{ fontWeight: 600 }}>{sub.platform}</span>
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                          {sub.socialAccountHandle || sub.socialAccountName}
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.65rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                          {sub.actionType}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.65rem' }}>
+                        {sub.postUrl ? (
+                          <a
+                            href={sub.postUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'var(--primary-light)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem' }}
+                          >
+                            <span>Inspect Post</span>
+                            <span style={{ fontSize: '0.7rem' }}>↗</span>
+                          </a>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.65rem' }}>
+                        <span className={`badge ${cfg.badgeClass}`} style={{ fontSize: '0.72rem' }}>
+                          {cfg.icon} {sub.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.65rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        {timeAgo(sub.createdAt)}
+                      </td>
+                      <td style={{ padding: '0.65rem', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => onNavigateToNav('submissions')}
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem' }}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* ── Recent Activity & Audit Stream ── */}
+      <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+              Recent Activity & Audit Stream
+            </h3>
+          </div>
+          <span className="badge badge-superadmin" style={{ fontSize: '0.72rem' }}>
+            SUPER ADMIN AUDIT TRAIL
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <SkeletonRow /><SkeletonRow />
+          </div>
+        ) : recentActivity.length === 0 ? (
+          <EmptyState
+            icon="🔒"
+            title="No Recent Activity Logged"
+            message="Audit records and moderation decisions will appear here as administrators review submissions."
+          />
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '0.65rem' }}>Timestamp</th>
+                  <th style={{ padding: '0.65rem' }}>Actor</th>
+                  <th style={{ padding: '0.65rem' }}>Role</th>
+                  <th style={{ padding: '0.65rem' }}>Event / Decision</th>
+                  <th style={{ padding: '0.65rem' }}>Target</th>
+                  <th style={{ padding: '0.65rem' }}>Audit Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentActivity.map(item => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '0.65rem', color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {timeAgo(item.timestamp)}
+                    </td>
+                    <td style={{ padding: '0.65rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                      {item.actorName}
+                    </td>
+                    <td style={{ padding: '0.65rem' }}>
+                      <span className={`badge ${item.actorRole === 'SUPER_ADMIN' ? 'badge-superadmin' : item.actorRole === 'ADMIN' ? 'badge-admin' : 'badge-info'}`} style={{ fontSize: '0.7rem' }}>
+                        {item.actorRole}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.65rem' }}>
+                      <span
+                        className={`badge ${
+                          item.action === 'APPROVED'
+                            ? 'badge-success'
+                            : item.action === 'REJECTED'
+                            ? 'badge-error'
+                            : 'badge-warning'
+                        }`}
+                        style={{ fontSize: '0.72rem' }}
+                      >
+                        {item.action}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.65rem', color: 'var(--text-secondary)' }}>
+                      {item.target}
+                    </td>
+                    <td style={{ padding: '0.65rem', color: 'var(--text-muted)', fontSize: '0.8rem', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.details}>
+                      {item.details}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
+
 
 // ─── ADMIN Dashboard ───────────────────────────────────────────────────────
 function AdminDashboard({ onNavigateToNav }) {

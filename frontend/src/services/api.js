@@ -256,6 +256,11 @@ export const fetchAdminDashboard = async () => {
   return await apiFetch('/dashboard/admin');
 };
 
+export const fetchSuperAdminDashboard = async () => {
+  return await apiFetch('/dashboard/super-admin');
+};
+
+
 // Review Queue Endpoints (ADMIN, SUPER_ADMIN)
 export const fetchPendingReviews = async (filters = {}) => {
   const params = new URLSearchParams();
