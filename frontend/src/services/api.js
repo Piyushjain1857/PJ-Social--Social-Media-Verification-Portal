@@ -226,6 +226,26 @@ export const fetchAdminDashboard = async () => {
   return await apiFetch('/dashboard/admin');
 };
 
+// Review Queue Endpoints (ADMIN, SUPER_ADMIN)
+export const fetchPendingReviews = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.page) params.append('page', filters.page);
+  if (filters.limit) params.append('limit', filters.limit);
+  if (filters.search) params.append('search', filters.search);
+  if (filters.platform && filters.platform !== 'ALL') params.append('platform', filters.platform);
+  if (filters.actionType && filters.actionType !== 'ALL') params.append('actionType', filters.actionType);
+  if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+
+  const query = params.toString();
+  return await apiFetch(query ? `/reviews/pending?${query}` : '/reviews/pending');
+};
+
+export const fetchReviewSubmissionDetails = async (id) => {
+  return await apiFetch(`/reviews/submission/${id}`);
+};
+
 /**
  * Resolve a screenshot reference to a fully-qualified authenticated URL.
  *

@@ -8,12 +8,16 @@ const notificationRoutes = require('./notificationRoutes');
 const superAdminRoutes = require('./superAdminRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const uploadRoutes = require('./uploadRoutes');
+const reviewRoutes = require('./reviewRoutes');
 
 // Authentication routes (/api/auth)
 router.use('/auth', authRoutes);
 
 // Activity Submissions & Moderation routes (/api/submissions)
 router.use('/submissions', submissionRoutes);
+
+// Admin Moderation & Review Queue routes (/api/reviews)
+router.use('/reviews', reviewRoutes);
 
 // User Directory & Role Management routes (/api/users)
 router.use('/users', userRoutes);

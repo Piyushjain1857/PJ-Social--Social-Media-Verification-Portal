@@ -197,12 +197,21 @@ async function runTests() {
     });
     assert(userAdminDashRes.status === 403, 'USER is blocked from Admin dashboard (GET /api/dashboard/admin -> 403)');
 
+    // USER is blocked from review queue
+    const userPendingReviewRes = await makeRequest('/reviews/pending', {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    assert(userPendingReviewRes.status === 403, 'USER is blocked from review queue (GET /api/reviews/pending -> 403)');
+
     // Unauthenticated access to dashboard is rejected
     const unauthDashRes = await makeRequest('/dashboard/user');
     assert(unauthDashRes.status === 401, 'Unauthenticated request to dashboard is blocked (401)');
 
     const unauthAdminDashRes = await makeRequest('/dashboard/admin');
     assert(unauthAdminDashRes.status === 401, 'Unauthenticated request to admin dashboard is blocked (401)');
+
+    const unauthReviewsRes = await makeRequest('/reviews/pending');
+    assert(unauthReviewsRes.status === 401, 'Unauthenticated request to review queue is blocked (401)');
 
     console.log('\n3. Testing ADMIN Role Permissions:');
     // ADMIN can access Admin dashboard
@@ -218,6 +227,31 @@ async function runTests() {
       adminDashRes.body.data?.stats?.rejected !== undefined &&
       Array.isArray(adminDashRes.body.data?.recentPending),
       'ADMIN can access Admin dashboard with metrics (GET /api/dashboard/admin)'
+    );
+
+    // ADMIN can access review queue (GET /api/reviews/pending)
+    const adminPendingReviewsRes = await makeRequest('/reviews/pending', {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      adminPendingReviewsRes.status === 200 &&
+      adminPendingReviewsRes.body.success &&
+      Array.isArray(adminPendingReviewsRes.body.data) &&
+      adminPendingReviewsRes.body.pagination?.page !== undefined,
+      'ADMIN can access pending review queue with pagination (GET /api/reviews/pending)'
+    );
+
+    // ADMIN can access detailed submission review endpoint
+    const adminReviewDetailsRes = await makeRequest(`/reviews/submission/${createdSubId}`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert(
+      adminReviewDetailsRes.status === 200 &&
+      adminReviewDetailsRes.body.success &&
+      adminReviewDetailsRes.body.data?.submission?.id === createdSubId &&
+      adminReviewDetailsRes.body.data?.creator?.stats !== undefined &&
+      Array.isArray(adminReviewDetailsRes.body.data?.verificationGuide?.checklist),
+      'ADMIN can access detailed submission review dossier (GET /api/reviews/submission/:id)'
     );
 
     // ADMIN can access moderation queue
@@ -260,6 +294,12 @@ async function runTests() {
       headers: { Authorization: `Bearer ${superToken}` }
     });
     assert(superAdminDashRes.status === 200 && superAdminDashRes.body.success, 'SUPER_ADMIN can access Admin dashboard (GET /api/dashboard/admin)');
+
+    // SUPER_ADMIN can access review queue
+    const superPendingReviewRes = await makeRequest('/reviews/pending', {
+      headers: { Authorization: `Bearer ${superToken}` }
+    });
+    assert(superPendingReviewRes.status === 200 && superPendingReviewRes.body.success, 'SUPER_ADMIN can access review queue (GET /api/reviews/pending)');
 
     // SUPER_ADMIN has full system access
     const superAuditRes = await makeRequest('/superadmin/audit-logs', {
