@@ -40,6 +40,28 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
+
+    // Global listener for session expiration triggered by API 401 responses
+    const handleSessionExpired = (event) => {
+      console.warn('[AuthContext] Session expired:', event.detail?.message);
+      localStorage.removeItem('auth_token');
+      setToken(null);
+      setUser(null);
+      setError(event.detail?.message || 'Your session has expired. Please sign in again.');
+    };
+
+    const handleForbidden = (event) => {
+      console.warn('[AuthContext] Forbidden request intercepted:', event.detail?.message);
+      setError(event.detail?.message || 'Access denied: Insufficient role permissions.');
+    };
+
+    window.addEventListener('auth:session_expired', handleSessionExpired);
+    window.addEventListener('auth:forbidden', handleForbidden);
+
+    return () => {
+      window.removeEventListener('auth:session_expired', handleSessionExpired);
+      window.removeEventListener('auth:forbidden', handleForbidden);
+    };
   }, []);
 
   const login = async (email, password) => {

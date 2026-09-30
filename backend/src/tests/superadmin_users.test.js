@@ -118,12 +118,12 @@ async function testSuperAdminUserManagement() {
   console.log('✓ Pagination works: returned page size', pagedRes.body.data.length, 'limit', pagedRes.body.pagination.limit);
 
   // Search test
-  const searchRes = await makeRequest('/superadmin/users?search=Eleanor', {
+  const searchRes = await makeRequest('/superadmin/users?search=Sarah', {
     headers: { Authorization: `Bearer ${superAdmin.token}` }
   });
-  const foundEleanor = searchRes.body.data.some(u => u.name.includes('Eleanor'));
-  if (!foundEleanor) {
-    throw new Error('Search failed: Eleanor Vance not found by search query');
+  const foundSarah = searchRes.body.data.some(u => u.name.includes('Sarah'));
+  if (!foundSarah) {
+    throw new Error('Search failed: Sarah Connor not found by search query');
   }
   console.log('✓ Search works: successfully queried user by name.');
 

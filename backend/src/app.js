@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const env = require('./config/env');
 const apiRoutes = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
@@ -7,6 +8,20 @@ const errorHandler = require('./middlewares/errorHandler');
 const path = require('path');
 const app = express();
 
+// Disable x-powered-by header to prevent fingerprinting
+app.disable('x-powered-by');
+
+// Security Headers via Helmet
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Maintain support for Vite/client preview assets
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow verified screenshot streaming across origins
+    crossOriginEmbedderPolicy: false,
+    frameguard: { action: 'sameorigin' },
+    noSniff: true,
+    hsts: process.env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true } : false
+  })
+);
 
 // CORS configuration
 const corsOptions = {
@@ -23,7 +38,9 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    return callback(new Error('Blocked by CORS policy'));
+    const corsErr = new Error('Blocked by CORS policy');
+    corsErr.statusCode = 403;
+    return callback(corsErr);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -31,8 +48,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Explicit request size limits to guard against memory exhaustion
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
 // Simple request logger
 app.use((req, res, next) => {

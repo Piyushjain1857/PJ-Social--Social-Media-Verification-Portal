@@ -91,23 +91,30 @@ export default function LoginPage({ onNavigate }) {
     setLocalError('');
     clearError();
 
-    if (!formData.email.trim() || !formData.password) {
-      setLocalError('Please fill in both email and password.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
+      setLocalError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!formData.password) {
+      setLocalError('Please enter your password.');
       return;
     }
 
     if (mode === 'register') {
-      if (!formData.name.trim()) {
-        setLocalError('Please enter your full name.');
+      const trimmedName = formData.name.trim();
+      if (!trimmedName || trimmedName.length < 2 || trimmedName.length > 70) {
+        setLocalError('Full name must be between 2 and 70 characters.');
         return;
       }
-      if (formData.password.length < 6) {
-        setLocalError('Password must be at least 6 characters.');
+      if (formData.password.length < 8) {
+        setLocalError('Password must be at least 8 characters long.');
         return;
       }
 
       setIsSubmitting(true);
-      const res = await register(formData.name, formData.email, formData.password);
+      const res = await register(trimmedName, formData.email.trim(), formData.password);
       setIsSubmitting(false);
 
       if (res.success && res.user) {

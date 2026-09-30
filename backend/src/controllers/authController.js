@@ -15,26 +15,26 @@ const register = async (req, res, next) => {
     const { name, email, password } = req.body;
 
     // Validate name
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    if (!name || typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 70) {
       return res.status(400).json({
         success: false,
-        message: 'Name is required and must be at least 2 characters long.'
+        message: 'Name is required and must be between 2 and 70 characters long.'
       });
     }
 
     // Validate email
-    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    if (!email || typeof email !== 'string' || email.trim().length > 120 || !EMAIL_REGEX.test(email.trim())) {
       return res.status(400).json({
         success: false,
-        message: 'A valid email address is required.'
+        message: 'A valid email address is required (maximum 120 characters).'
       });
     }
 
     // Validate password
-    if (!password || typeof password !== 'string' || password.length < 6) {
+    if (!password || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Password is required and must be at least 6 characters long.'
+        message: 'Password is required and must be at least 8 characters long.'
       });
     }
 

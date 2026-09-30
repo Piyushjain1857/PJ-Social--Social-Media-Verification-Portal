@@ -24,10 +24,53 @@ export const apiFetch = async (endpoint, options = {}) => {
     },
   };
 
-  const response = await fetch(url, config);
-  const data = await response.json();
+  let response;
+  try {
+    response = await fetch(url, config);
+  } catch (networkErr) {
+    const error = new Error('Network connection error. Please verify the backend service is running.');
+    error.status = 0;
+    error.code = 'NETWORK_ERROR';
+    throw error;
+  }
+
+  let data;
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: 'Unable to parse server response as JSON.' };
+    }
+  } else {
+    const text = await response.text();
+    data = { message: text || `HTTP error ${response.status}` };
+  }
 
   if (!response.ok) {
+    // 401: Unauthorized / Session Expiration
+    if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+      window.dispatchEvent(
+        new CustomEvent('auth:session_expired', {
+          detail: {
+            status: 401,
+            code: data.code || 'SESSION_EXPIRED',
+            message: data.message || 'Your session has expired. Please sign in again.'
+          }
+        })
+      );
+    } else if (response.status === 403) {
+      window.dispatchEvent(
+        new CustomEvent('auth:forbidden', {
+          detail: {
+            status: 403,
+            code: data.code || 'FORBIDDEN',
+            message: data.message || 'Access denied. You do not have permission for this resource.'
+          }
+        })
+      );
+    }
+
     const error = new Error(data.message || `Request failed with status ${response.status}`);
     error.status = response.status;
     error.code = data.code;
