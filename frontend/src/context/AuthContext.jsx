@@ -99,6 +99,10 @@ export const AuthProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
+  const updateUserContext = (updatedFields) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedFields } : updatedFields));
+  };
+
   const value = {
     user,
     token,
@@ -108,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateUserContext,
     clearError,
   };
 

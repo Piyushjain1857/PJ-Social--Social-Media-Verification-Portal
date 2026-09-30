@@ -1,13 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const { listUsers, changeRole, getUserProfile } = require('../controllers/userController');
+const {
+  getCurrentUserProfile,
+  updateCurrentUserProfile,
+  changeUserPassword,
+  listUsers,
+  changeRole,
+  getUserProfile
+} = require('../controllers/userController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize, preventSuperAdminPrivilegeEscalation } = require('../middlewares/roleMiddleware');
 
 /**
- * Authenticated User Profile API:
- * Lightweight profile endpoint accessible by any verified authenticated role.
+ * Authenticated User Profile APIs:
+ * Reusable profile management endpoints accessible by any verified authenticated role (USER, ADMIN, SUPER_ADMIN).
  */
+router.get('/me', authenticate, getCurrentUserProfile);
+router.put('/me', authenticate, updateCurrentUserProfile);
+router.put('/change-password', authenticate, changeUserPassword);
+
+// Legacy profile endpoint for backward compatibility
 router.get('/profile', authenticate, getUserProfile);
 
 /**

@@ -114,6 +114,26 @@ export const fetchUserProfile = async () => {
   });
 };
 
+export const fetchMyProfile = async () => {
+  return await apiFetch('/users/me', {
+    method: 'GET',
+  });
+};
+
+export const updateMyProfile = async (profileData) => {
+  return await apiFetch('/users/me', {
+    method: 'PUT',
+    body: JSON.stringify(profileData),
+  });
+};
+
+export const changeUserPassword = async ({ currentPassword, newPassword, confirmPassword }) => {
+  return await apiFetch('/users/change-password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+  });
+};
+
 export const logoutUser = async () => {
   try {
     return await apiFetch('/auth/logout', {
