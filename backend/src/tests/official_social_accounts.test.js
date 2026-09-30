@@ -119,7 +119,7 @@ async function runOfficialSocialAccountsTests() {
     body: {
       platform: 'TIKTOK',
       name: 'TikTok Channel',
-      accountUrl: 'https://tiktok.com/@apex'
+      accountUrl: 'https://tiktok.com/@krmuniv'
     }
   });
   assert.strictEqual(invalidPlatformRes.status, 400, 'Invalid platform must return 400');

@@ -24,18 +24,46 @@ import './styles/app.css';
  *   'dev-dashboard'- Developer DB telemetry console
  *   'role-space'   - Alias: auto-routes to 'dashboard'
  */
+const AUTHENTICATED_SUB_VIEWS = [
+  'dashboard',
+  'users',
+  'admins',
+  'submissions',
+  'review-submissions',
+  'social-accounts',
+  'settings',
+  'submit-activity',
+  'my-submissions',
+  'notifications',
+  'profile',
+  'super-admin-space',
+  'admin-space',
+  'user-space',
+  'role-space'
+];
+
 export default function App() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const getInitialView = () => {
     const hash = window.location.hash.replace('#', '');
     const hasToken = !!localStorage.getItem('auth_token');
-    // Any authenticated workspace views all map to 'dashboard'
-    const authenticatedViews = [
-      'super-admin-space', 'admin-space', 'user-space', 'dashboard', 'role-space'
-    ];
-    if (authenticatedViews.includes(hash)) return 'dashboard';
-    if (hasToken && (hash === 'login' || hash === '')) return 'dashboard';
+
+    // Any authenticated workspace views map to 'dashboard' container layout
+    if (AUTHENTICATED_SUB_VIEWS.includes(hash)) {
+      return hasToken ? 'dashboard' : 'login';
+    }
+
+    if (hasToken && (hash === 'login' || hash === '')) {
+      const savedNav = localStorage.getItem('active_portal_nav');
+      if (savedNav && AUTHENTICATED_SUB_VIEWS.includes(savedNav)) {
+        window.location.hash = savedNav;
+      } else {
+        window.location.hash = 'dashboard';
+      }
+      return 'dashboard';
+    }
+
     const validViews = ['portal', 'login', 'unauthorized', 'dev-dashboard'];
     return validViews.includes(hash) ? hash : 'portal';
   };
@@ -83,30 +111,44 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash) handleNavigate(hash);
+      if (hash) {
+        handleNavigate(hash);
+      } else if (!localStorage.getItem('auth_token')) {
+        setCurrentView('portal');
+      }
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [isAuthenticated]);
 
-  // When user authenticates, automatically navigate to dashboard
+  // When user authenticates, automatically route to the active workspace sub-view
   useEffect(() => {
     if (isAuthenticated && (currentView === 'login' || currentView === 'portal')) {
+      const hash = window.location.hash.replace('#', '');
+      let targetNav = 'dashboard';
+      if (AUTHENTICATED_SUB_VIEWS.includes(hash)) {
+        targetNav = hash;
+      } else {
+        const savedNav = localStorage.getItem('active_portal_nav');
+        if (savedNav && AUTHENTICATED_SUB_VIEWS.includes(savedNav)) {
+          targetNav = savedNav;
+        }
+      }
       setCurrentView('dashboard');
-      window.location.hash = 'dashboard';
+      window.location.hash = targetNav;
     }
   }, [isAuthenticated, currentView]);
 
   const handleNavigate = (view) => {
-    // Alias authenticated workspace views → 'dashboard'
-    const authenticatedViews = [
-      'super-admin-space', 'admin-space', 'user-space', 'role-space', 'dashboard'
-    ];
     const isAuthed = isAuthenticated || !!localStorage.getItem('auth_token');
-    if (authenticatedViews.includes(view)) {
+    if (AUTHENTICATED_SUB_VIEWS.includes(view)) {
+      const normalizedNav = (view === 'role-space' || view.endsWith('-space')) ? 'dashboard' : view;
       if (isAuthed) {
         setCurrentView('dashboard');
-        window.location.hash = 'dashboard';
+        window.location.hash = normalizedNav;
+        try {
+          localStorage.setItem('active_portal_nav', normalizedNav);
+        } catch (e) {}
       } else {
         setCurrentView('login');
         window.location.hash = 'login';

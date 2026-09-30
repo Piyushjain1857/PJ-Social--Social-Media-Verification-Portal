@@ -69,7 +69,7 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
               <button
                 type="button"
                 className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
-                onClick={() => onToggleView('dashboard')}
+                onClick={() => onToggleView(localStorage.getItem('active_portal_nav') || 'dashboard')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
               >
                 {user?.role === 'SUPER_ADMIN' ? '👑' : user?.role === 'ADMIN' ? '🛡️' : '🚀'} My Dashboard

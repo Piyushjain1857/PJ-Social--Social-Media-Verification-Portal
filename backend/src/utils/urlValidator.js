@@ -33,7 +33,7 @@ const validateOfficialAccountUrl = (platform, urlString) => {
   } catch {
     return {
       valid: false,
-      message: 'Invalid URL format. Please provide a complete, well-formed URL (e.g. https://instagram.com/apex_university).'
+      message: 'Invalid URL format. Please provide a complete, well-formed URL (e.g. https://www.instagram.com/krmuniv/).'
     };
   }
 
@@ -51,21 +51,21 @@ const validateOfficialAccountUrl = (platform, urlString) => {
     if (hostname !== 'instagram.com' && !hostname.endsWith('.instagram.com')) {
       return {
         valid: false,
-        message: 'Invalid URL domain. Official Instagram accounts must use the instagram.com domain (e.g. https://instagram.com/apex_university).'
+        message: 'Invalid URL domain. Official Instagram accounts must use the instagram.com domain (e.g. https://www.instagram.com/krmuniv/).'
       };
     }
   } else if (targetPlatform === 'LINKEDIN') {
     if (hostname !== 'linkedin.com' && !hostname.endsWith('.linkedin.com')) {
       return {
         valid: false,
-        message: 'Invalid URL domain. Official LinkedIn accounts must use the linkedin.com domain (e.g. https://linkedin.com/school/apex-university).'
+        message: 'Invalid URL domain. Official LinkedIn accounts must use the linkedin.com domain (e.g. https://www.linkedin.com/school/krmuniv/).'
       };
     }
   } else if (targetPlatform === 'FACEBOOK') {
     if (hostname !== 'facebook.com' && !hostname.endsWith('.facebook.com') && hostname !== 'fb.com') {
       return {
         valid: false,
-        message: 'Invalid URL domain. Official Facebook accounts must use the facebook.com or fb.com domain (e.g. https://facebook.com/apexuniversity).'
+        message: 'Invalid URL domain. Official Facebook accounts must use the facebook.com or fb.com domain (e.g. https://www.facebook.com/krmuniv/).'
       };
     }
   }

@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     const handleSessionExpired = (event) => {
       console.warn('[AuthContext] Session expired:', event.detail?.message);
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('active_portal_nav');
       setToken(null);
       setUser(null);
       setError(event.detail?.message || 'Your session has expired. Please sign in again.');
@@ -113,6 +114,7 @@ export const AuthProvider = ({ children }) => {
       // Continue cleanup regardless
     } finally {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('active_portal_nav');
       setToken(null);
       setUser(null);
       setError(null);

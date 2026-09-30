@@ -16,7 +16,7 @@ const PLATFORM_CONFIG = {
     icon: '📸',
     color: '#E1306C',
     domain: 'instagram.com',
-    placeholder: 'https://instagram.com/apex_university',
+    placeholder: 'https://www.instagram.com/krmuniv/?hl=en',
     handlePrefix: '@'
   },
   LINKEDIN: {
@@ -24,7 +24,7 @@ const PLATFORM_CONFIG = {
     icon: '💼',
     color: '#0A66C2',
     domain: 'linkedin.com',
-    placeholder: 'https://linkedin.com/school/apex-university',
+    placeholder: 'https://www.linkedin.com/school/krmuniv/posts/?feedView=all',
     handlePrefix: ''
   },
   FACEBOOK: {
@@ -32,7 +32,7 @@ const PLATFORM_CONFIG = {
     icon: '👥',
     color: '#1877F2',
     domain: 'facebook.com',
-    placeholder: 'https://facebook.com/apexuniversity',
+    placeholder: 'https://www.facebook.com/krmuniv/',
     handlePrefix: ''
   }
 };
@@ -963,7 +963,7 @@ export default function SocialAccountsView() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. @apex_university or apex-university"
+                  placeholder="e.g. @krmuniv or krmuniv"
                   value={addForm.handle}
                   onChange={(e) => setAddForm(prev => ({ ...prev, handle: e.target.value }))}
                   className="input-field"

@@ -97,19 +97,96 @@ export default function MainLayout({
 }) {
   const { user, logout, login } = useAuth();
 
+  // Helper to determine initial nav for MainLayout on load / reload
+  const getInitialNav = () => {
+    const hash = window.location.hash.replace('#', '');
+    const role = user?.role || 'USER';
+    const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
+
+    // 1. If URL hash matches permitted navigation item for this role, prioritize it
+    if (hash && roleItems.some(item => item.id === hash)) {
+      return hash;
+    }
+
+    // 2. Otherwise check localStorage for previously active navigation
+    try {
+      const savedNav = localStorage.getItem('active_portal_nav');
+      if (savedNav && roleItems.some(item => item.id === savedNav)) {
+        return savedNav;
+      }
+    } catch (e) {}
+
+    // 3. Fallback to dashboard
+    return 'dashboard';
+  };
+
   // Internal active navigation state if not controlled
-  const [internalNav, setInternalNav] = useState('dashboard');
+  const [internalNav, setInternalNav] = useState(getInitialNav);
   const activeNav = controlledActiveNav || internalNav;
 
   const handleNavChange = (navId) => {
+    const role = user?.role || 'USER';
+    const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
+    const isValid = roleItems.some(item => item.id === navId);
+    const targetNav = isValid ? navId : 'dashboard';
+
     if (controlledOnNavChange) {
-      controlledOnNavChange(navId);
+      controlledOnNavChange(targetNav);
     } else {
-      setInternalNav(navId);
+      setInternalNav(targetNav);
     }
+
+    // Keep URL hash and localStorage in sync so reload keeps the exact page!
+    if (window.location.hash.replace('#', '') !== targetNav) {
+      window.location.hash = targetNav;
+    }
+    try {
+      localStorage.setItem('active_portal_nav', targetNav);
+    } catch (e) {}
+
     // Close mobile drawer when an item is selected
     setIsMobileDrawerOpen(false);
   };
+
+  // Keep URL hash and localStorage updated with activeNav
+  useEffect(() => {
+    if (window.location.hash.replace('#', '') !== activeNav) {
+      window.location.hash = activeNav;
+    }
+    try {
+      localStorage.setItem('active_portal_nav', activeNav);
+    } catch (e) {}
+  }, [activeNav]);
+
+  // Synchronize view on browser back / forward navigation (hashchange)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const role = user?.role || 'USER';
+      const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
+      if (hash && roleItems.some(item => item.id === hash)) {
+        if (controlledOnNavChange) {
+          controlledOnNavChange(hash);
+        } else {
+          setInternalNav(hash);
+        }
+        try {
+          localStorage.setItem('active_portal_nav', hash);
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [user?.role, controlledOnNavChange]);
+
+  // Validate activeNav when user role changes
+  useEffect(() => {
+    if (!user) return;
+    const roleItems = ROLE_NAVIGATION[user.role] || ROLE_NAVIGATION.USER;
+    if (!roleItems.some(item => item.id === activeNav)) {
+      handleNavChange('dashboard');
+    }
+  }, [user?.role]);
 
   // Mobile drawer state
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
