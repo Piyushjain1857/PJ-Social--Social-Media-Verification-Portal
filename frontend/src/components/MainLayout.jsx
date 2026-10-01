@@ -652,6 +652,7 @@ export default function MainLayout({
                 <img
                   src={personalization.avatarPhoto}
                   alt={user?.name || 'User'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }}
                 />
               ) : (
                 avatarInitial
@@ -821,6 +822,7 @@ export default function MainLayout({
                 <img
                   src={personalization.avatarPhoto}
                   alt={user?.name || 'User'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }}
                 />
               ) : (
                 avatarInitial
@@ -1114,6 +1116,7 @@ export default function MainLayout({
                     <img
                       src={personalization.avatarPhoto}
                       alt={user?.name || 'User'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }}
                     />
                   ) : (
                     avatarInitial
@@ -1164,6 +1167,7 @@ export default function MainLayout({
                           <img
                             src={personalization.avatarPhoto}
                             alt={user?.name || 'User'}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }}
                           />
                         ) : (
                           avatarInitial
