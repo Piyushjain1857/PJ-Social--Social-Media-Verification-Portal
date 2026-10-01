@@ -62,6 +62,14 @@ export const fetchMyXPHistory = async (params = {}) => {
 };
 
 /**
+ * Fetch full level journey for the current user (all levels with completed/current/locked status)
+ * Returns: { journey: Array, totalLevels, currentLevel, totalXP, isMaxLevel }
+ */
+export const fetchMyLevelJourney = async () => {
+  return await authFetch('/gamification/me/journey');
+};
+
+/**
  * Fetch configured active levels and cumulative thresholds
  */
 export const fetchGamificationLevels = async () => {
@@ -125,6 +133,7 @@ export const generateAdminLevels = async (options = {}) => {
 export default {
   fetchMyGamification,
   fetchMyXPHistory,
+  fetchMyLevelJourney,
   fetchGamificationLevels,
   fetchUserGamification,
   fetchAdminLevels,

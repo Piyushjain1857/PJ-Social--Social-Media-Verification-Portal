@@ -9,6 +9,8 @@ import {
   fetchHealth,
   fetchMyPoints
 } from '../services/api';
+import LevelUpModal from './gamification/LevelUpModal';
+import LevelProgressCard from './gamification/LevelProgressCard';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -228,6 +230,8 @@ export default function MainLayout({
   const [notificationCount, setNotificationCount] = useState(0);
   const [userPoints, setUserPoints] = useState(0);
   const [gamificationData, setGamificationData] = useState(null);
+  const [prevGamificationLevel, setPrevGamificationLevel] = useState(null);
+  const [levelUpModalData, setLevelUpModalData] = useState(null);
   const [apiLatency, setApiLatency] = useState(null);
   const [isApiHealthy, setIsApiHealthy] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -303,7 +307,23 @@ export default function MainLayout({
           try {
             const gamRes = await fetchMyGamification();
             if (gamRes && gamRes.success && gamRes.data) {
-              setGamificationData(gamRes.data);
+              const newGamData = gamRes.data;
+              setGamificationData(newGamData);
+              // Level-up detection: compare previous level with new level
+              setPrevGamificationLevel(prevLevel => {
+                if (prevLevel !== null && newGamData.currentLevel > prevLevel) {
+                  // Trigger level-up modal
+                  setLevelUpModalData({
+                    currentLevel: newGamData.currentLevel,
+                    levelName: newGamData.levelName,
+                    icon: newGamData.icon,
+                    totalXP: newGamData.totalXP,
+                    nextLevel: newGamData.nextLevel,
+                    nextLevelName: newGamData.nextLevelName,
+                  });
+                }
+                return newGamData.currentLevel;
+              });
             }
           } catch (gE) {
             // silent fallback
@@ -688,6 +708,23 @@ export default function MainLayout({
               <span className="sidebar-user-role">{user?.email}</span>
             </div>
           </div>
+
+          {/* Compact Level Card for USER Role */}
+          {user?.role === 'USER' && gamificationData && (
+            <div
+              style={{ cursor: 'pointer', marginBottom: '0.65rem' }}
+              onClick={() => handleNavChange('points')}
+              title="View Level Journey & Gamification"
+            >
+              <LevelProgressCard
+                compact
+                totalXP={gamificationData.totalXP || 0}
+                currentLevel={gamificationData.currentLevel || 1}
+                levelName={gamificationData.levelName || 'Novice'}
+                icon={gamificationData.icon || '🌱'}
+              />
+            </div>
+          )}
 
           <button
             type="button"
@@ -1371,6 +1408,14 @@ export default function MainLayout({
         onClose={() => setIsGlobalSearchOpen(false)}
         onNavigateToNav={handleNavChange}
       />
+
+      {/* Level-Up Celebration Modal */}
+      {levelUpModalData && (
+        <LevelUpModal
+          levelData={levelUpModalData}
+          onClose={() => setLevelUpModalData(null)}
+        />
+      )}
     </div>
   );
 }

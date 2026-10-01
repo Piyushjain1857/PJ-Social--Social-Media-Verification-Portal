@@ -149,19 +149,24 @@ const calculateUserLevel = (xp = 0, customLevels = null) => {
 
   const currentLevelStartXP = currentLevelObj.cumulativeStartXP;
   const xpIntoCurrentLevel = Math.max(0, totalXP - currentLevelStartXP);
-  const nextLevelRequiredXP = currentLevelObj.xpRequired;
+  const nextLevelDeltaXP = currentLevelObj.xpRequired;
+
+  // Next level cumulative threshold (e.g. 4,250 XP for level 18)
+  const targetNextLevelXP = nextLevelObj
+    ? nextLevelObj.cumulativeStartXP
+    : currentLevelObj.cumulativeEndXP + 1;
 
   let xpRemaining = 0;
   let progressPercentage = 100;
 
   if (nextLevelObj) {
-    xpRemaining = Math.max(0, nextLevelRequiredXP - xpIntoCurrentLevel);
-    progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoCurrentLevel / nextLevelRequiredXP) * 100)));
+    xpRemaining = Math.max(0, nextLevelDeltaXP - xpIntoCurrentLevel);
+    progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoCurrentLevel / nextLevelDeltaXP) * 100)));
   } else {
     // Highest level reached
     if (totalXP <= currentLevelObj.cumulativeEndXP) {
       xpRemaining = Math.max(0, currentLevelObj.cumulativeEndXP + 1 - totalXP);
-      progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoCurrentLevel / nextLevelRequiredXP) * 100)));
+      progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoCurrentLevel / nextLevelDeltaXP) * 100)));
     } else {
       xpRemaining = 0;
       progressPercentage = 100;
@@ -177,7 +182,10 @@ const calculateUserLevel = (xp = 0, customLevels = null) => {
     currentLevelStartXP,
     nextLevel: nextLevelObj ? nextLevelObj.levelNumber : null,
     nextLevelName: nextLevelObj ? nextLevelObj.name : null,
-    nextLevelRequiredXP: nextLevelObj ? nextLevelRequiredXP : null,
+    nextLevelRequiredXP: nextLevelObj ? nextLevelDeltaXP : null,
+    nextLevelDeltaXP,
+    nextLevelTargetXP: nextLevelObj ? targetNextLevelXP : null,
+    targetNextLevelXP: nextLevelObj ? targetNextLevelXP : null,
     xpIntoCurrentLevel,
     xpRemaining,
     progressPercentage,
@@ -344,6 +352,7 @@ const getUserGamificationProfile = async (userId) => {
     currentLevelStartXP: levelData.currentLevelStartXP,
     nextLevel: levelData.nextLevel,
     nextLevelRequiredXP: levelData.nextLevelRequiredXP,
+    nextLevelTargetXP: levelData.nextLevelTargetXP,
     xpIntoCurrentLevel: levelData.xpIntoCurrentLevel,
     xpRemaining: levelData.xpRemaining,
     progressPercentage: levelData.progressPercentage,

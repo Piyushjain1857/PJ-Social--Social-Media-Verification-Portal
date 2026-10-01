@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchMyProfile, updateMyProfile, changeUserPassword } from '../../services/api';
+import { fetchMyGamification } from '../../services/gamificationApi';
+import LevelProgressCard from '../gamification/LevelProgressCard';
 
 const PERSONALIZATION_KEY = 'user_portal_personalization';
 
@@ -62,6 +64,9 @@ export default function ProfileView({ onNavigateToNav }) {
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  // Gamification data (USER only)
+  const [gamificationData, setGamificationData] = useState(null);
 
   // Edit Name State
   const [isEditingName, setIsEditingName] = useState(false);
@@ -163,6 +168,18 @@ export default function ProfileView({ onNavigateToNav }) {
         setProfileData(res.user);
         setEditedName(res.user.name || '');
         if (res.stats) setStats(res.stats);
+
+        // Fetch gamification for USER role
+        if (res.user.role === 'USER') {
+          try {
+            const gamRes = await fetchMyGamification();
+            if (gamRes && gamRes.success && gamRes.data) {
+              setGamificationData(gamRes.data);
+            }
+          } catch (gamErr) {
+            // silent - gamification is supplementary
+          }
+        }
       } else {
         throw new Error(res.message || 'Failed to load profile data.');
       }
@@ -800,6 +817,25 @@ export default function ProfileView({ onNavigateToNav }) {
             );
           })}
         </div>
+      )}
+
+      {/* ── 2b. XP Level Card (USER role only) ── */}
+      {gamificationData && (profileData?.role || user?.role) === 'USER' && (
+        <LevelProgressCard
+          totalXP={gamificationData.totalXP || 0}
+          currentLevel={gamificationData.currentLevel || 1}
+          levelName={gamificationData.levelName || 'Novice'}
+          icon={gamificationData.icon || '🌱'}
+          nextLevel={gamificationData.nextLevel}
+          nextLevelName={gamificationData.nextLevelName}
+          nextLevelRequiredXP={gamificationData.nextLevelRequiredXP || 0}
+          xpIntoCurrentLevel={gamificationData.xpIntoCurrentLevel || 0}
+          xpRemaining={gamificationData.xpRemaining || 0}
+          progressPercentage={gamificationData.progressPercentage || 0}
+          isMaxLevel={gamificationData.isMaxLevel || false}
+          currentLevelStartXP={gamificationData.currentLevelStartXP || 0}
+          onViewJourney={onNavigateToNav ? () => onNavigateToNav('points') : null}
+        />
       )}
 
       {/* ── 3. Profile Navigation Tabs ── */}
