@@ -83,15 +83,16 @@ const createPointTransaction = async ({
 
   if (dbStatus.isConnected && prisma) {
     try {
-      // Use transaction to ensure point record creation and user balance increment are atomic
+      // Use transaction to ensure point/XP record creation and user balance increment are atomic
       const [tx, updatedUser] = await prisma.$transaction([
         prisma.pointTransaction.create({
           data: {
             userId,
             submissionId: submissionId || null,
             points: parsedPoints,
+            xp: parsedPoints,
             actionType,
-            description: description || `Points for ${actionType}`,
+            description: description || `XP/Points for ${actionType}`,
             metadata: metadata || null
           },
           include: {
@@ -105,14 +106,17 @@ const createPointTransaction = async ({
           data: {
             totalPoints: {
               increment: parsedPoints
+            },
+            totalXP: {
+              increment: parsedPoints
             }
           },
-          select: { id: true, totalPoints: true, name: true, email: true }
+          select: { id: true, totalPoints: true, totalXP: true, name: true, email: true }
         })
       ]);
 
       createdRecord = tx;
-      updatedTotalPoints = updatedUser.totalPoints;
+      updatedTotalPoints = updatedUser.totalXP ?? updatedUser.totalPoints;
     } catch (err) {
       console.warn('[PointRepo] Prisma transaction failed, falling back to memory store:', err.message);
     }
@@ -163,7 +167,7 @@ const getUserPointsSummary = async (userId) => {
       ] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true, name: true, email: true, role: true, totalPoints: true }
+          select: { id: true, name: true, email: true, role: true, totalPoints: true, totalXP: true }
         }),
         prisma.pointTransaction.findMany({
           where: { userId },
@@ -178,16 +182,16 @@ const getUserPointsSummary = async (userId) => {
         prisma.pointTransaction.groupBy({
           by: ['actionType'],
           where: { userId },
-          _sum: { points: true },
+          _sum: { points: true, xp: true },
           _count: { id: true }
         }),
         prisma.pointTransaction.aggregate({
           where: { userId, createdAt: { gte: startOfWeek } },
-          _sum: { points: true }
+          _sum: { points: true, xp: true }
         }),
         prisma.pointTransaction.aggregate({
           where: { userId, createdAt: { gte: startOfMonth } },
-          _sum: { points: true }
+          _sum: { points: true, xp: true }
         }),
         prisma.submission.findMany({
           where: { userId, status: 'APPROVED' },
@@ -206,32 +210,37 @@ const getUserPointsSummary = async (userId) => {
 
       if (user) {
         const breakdown = {
-          LIKE: { count: 0, points: 0 },
-          COMMENT: { count: 0, points: 0 },
-          STORY: { count: 0, points: 0 },
-          BONUS: { count: 0, points: 0 },
-          ADJUSTMENT: { count: 0, points: 0 }
+          LIKE: { count: 0, points: 0, xp: 0 },
+          COMMENT: { count: 0, points: 0, xp: 0 },
+          STORY: { count: 0, points: 0, xp: 0 },
+          BONUS: { count: 0, points: 0, xp: 0 },
+          ADJUSTMENT: { count: 0, points: 0, xp: 0 }
         };
 
         let calculatedTotal = 0;
         breakdownGroup.forEach(g => {
           const type = g.actionType;
           const count = g._count.id || 0;
-          const points = g._sum.points || 0;
+          const points = g._sum.points || g._sum.xp || 0;
           calculatedTotal += points;
           if (breakdown[type]) {
-            breakdown[type] = { count, points };
+            breakdown[type] = { count, points, xp: points };
           }
         });
+
+        const finalTotal = user.totalXP ?? user.totalPoints ?? calculatedTotal;
 
         return {
           userId: user.id,
           userName: user.name,
           userEmail: user.email,
           totalPoints: user.totalPoints ?? calculatedTotal,
+          totalXP: finalTotal,
           auditedTotalPoints: calculatedTotal,
-          pointsThisWeek: weekGroup._sum.points || 0,
-          pointsThisMonth: monthGroup._sum.points || 0,
+          pointsThisWeek: weekGroup._sum.points || weekGroup._sum.xp || 0,
+          pointsThisMonth: monthGroup._sum.points || monthGroup._sum.xp || 0,
+          xpThisWeek: weekGroup._sum.xp || weekGroup._sum.points || 0,
+          xpThisMonth: monthGroup._sum.xp || monthGroup._sum.points || 0,
           recentTransactions: transactions,
           latestApprovedActivities: approvedSubs,
           breakdown

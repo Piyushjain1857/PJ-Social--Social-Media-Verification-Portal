@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import {
-  fetchMyPoints,
-  fetchMyRank,
-  fetchAllPointTransactions,
-  fetchAdminGamificationOverview,
-  adjustUserPoints,
-  fetchUsers
-} from '../../services/api';
-import PointsCard from './PointsCard';
-import LevelBadge from './LevelBadge';
-import LevelProgress from './LevelProgress';
-import RankCard from './RankCard';
-import Leaderboard from './Leaderboard';
-import PointHistory from './PointHistory';
+import { fetchMyGamification, fetchUserGamification, fetchMyXPHistory } from '../../services/gamificationApi';
+
+const ACTION_ICONS = {
+  LIKE: '❤️',
+  COMMENT: '💬',
+  STORY: '📱',
+  BONUS: '🎁',
+  ADJUSTMENT: '⚖️'
+};
+
+const ACTION_COLORS = {
+  LIKE: '#ec4899',
+  COMMENT: '#3b82f6',
+  STORY: '#a855f7',
+  BONUS: '#eab308',
+  ADJUSTMENT: '#f97316'
+};
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -28,920 +30,499 @@ function formatDate(dateStr) {
 
 /**
  * GamificationSummary Component
- * Comprehensive Gamification Hub for the Social Media Activity Verification Portal.
- * 
- * Provides:
- * 1. User Gamification Dashboard (Total Points, Weekly/Monthly stats, Activity breakdown)
- * 2. Level System & Progress Indicator (Current level, Next level, Points remaining)
- * 3. My Rank Card & comparison
- * 4. Portal-Wide Leaderboard with All Time / Monthly / Weekly timeframes
- * 5. Detailed Point History with search & filters
- * 6. Super Admin Manual Point Adjustment with mandatory reason & audit ledger
- * 7. Future Rewards Foundation Preview
+ * Displays user's XP, Level progression, dynamic thresholds, and XP history.
+ *
+ * Shows:
+ * ⭐ Total XP
+ * 🏆 Current Level
+ * 📈 Progress to next level
+ * ⚡ XP remaining
+ *
+ * Example:
+ * LEVEL 16
+ * Contributor
+ * 3,820 XP
+ * ██████████████░░░░░
+ * 180 XP to Level 17
  */
-export default function GamificationSummary({ onNavigateToNav = null }) {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isAdmin = user?.role === 'ADMIN' || isSuperAdmin;
-
-  // Active Tab: 'overview' | 'leaderboard' | 'history' | 'management'
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Creator summary & rank state
-  const [summary, setSummary] = useState(null);
-  const [rankData, setRankData] = useState(null);
-  const [rankTimeframe, setRankTimeframe] = useState('all_time');
+export default function GamificationSummary({ userId = null, onNavigateToNav = null }) {
+  const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Super Admin Management State
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [adjustTargetUser, setAdjustTargetUser] = useState('');
-  const [adjustPointsValue, setAdjustPointsValue] = useState(10);
-  const [adjustReason, setAdjustReason] = useState('');
-  const [adjustStatus, setAdjustStatus] = useState({ loading: false, error: null, success: null });
-  const [creatorUsers, setCreatorUsers] = useState([]);
+  // History state
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPagination, setHistoryPagination] = useState({ page: 1, limit: 10, totalCount: 0, totalPages: 1 });
 
-  // Super Admin Global Ledger State
-  const [adminLedger, setAdminLedger] = useState([]);
-  const [adminLedgerPagination, setAdminLedgerPagination] = useState({ page: 1, limit: 10, totalPages: 1 });
-  const [adminLedgerFilter, setAdminLedgerFilter] = useState({ search: '', actionType: 'ALL', page: 1 });
-  const [isLoadingLedger, setIsLoadingLedger] = useState(false);
-
-  // Admin Gamification Overview State (ADMIN & SUPER_ADMIN)
-  const [adminOverviewUsers, setAdminOverviewUsers] = useState([]);
-  const [adminOverviewPagination, setAdminOverviewPagination] = useState({ page: 1, limit: 15, totalCount: 0, totalPages: 1 });
-  const [adminOverviewSearch, setAdminOverviewSearch] = useState('');
-  const [isLoadingAdminOverview, setIsLoadingAdminOverview] = useState(false);
-
-  // Fetch creator points and ranking
-  const loadUserGamification = useCallback(async () => {
+  const loadGamification = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [ptsRes, rkRes] = await Promise.all([
-        fetchMyPoints(),
-        fetchMyRank(rankTimeframe)
-      ]);
-
-      if (ptsRes && ptsRes.success) {
-        setSummary(ptsRes.data);
-      }
-      if (rkRes && rkRes.success) {
-        setRankData(rkRes.data);
+      const res = userId ? await fetchUserGamification(userId) : await fetchMyGamification();
+      if (res && res.success) {
+        setData(res.data);
+      } else {
+        throw new Error(res?.message || 'Failed to load gamification data.');
       }
     } catch (err) {
-      setError(err.message || 'Error loading gamification profile.');
+      setError(err.message || 'Error loading XP & Level details.');
     } finally {
       setIsLoading(false);
     }
-  }, [rankTimeframe]);
+  }, [userId]);
 
-  useEffect(() => {
-    loadUserGamification();
-  }, [loadUserGamification]);
-
-  // Load creators list for Super Admin adjustment dropdown
-  useEffect(() => {
-    if (isSuperAdmin) {
-      fetchUsers({ role: 'USER', limit: 100 })
-        .then(res => {
-          if (res && res.success) {
-            const list = Array.isArray(res.data) ? res.data : (res.data?.users || []);
-            setCreatorUsers(list);
-            if (list.length > 0 && !adjustTargetUser) {
-              setAdjustTargetUser(list[0].id);
-            }
-          }
-        })
-        .catch(err => console.warn('Could not load creators list:', err.message));
-    }
-  }, [isSuperAdmin]);
-
-  // Load Super Admin global transactions ledger
-  const loadGlobalLedger = useCallback(async () => {
-    if (!isSuperAdmin) return;
-    setIsLoadingLedger(true);
+  const loadHistory = useCallback(async (page = 1) => {
+    setHistoryLoading(true);
     try {
-      const res = await fetchAllPointTransactions({
-        page: adminLedgerFilter.page,
-        limit: 10,
-        search: adminLedgerFilter.search.trim() || undefined,
-        actionType: adminLedgerFilter.actionType !== 'ALL' ? adminLedgerFilter.actionType : undefined
-      });
+      const res = await fetchMyXPHistory({ page, limit: 8 });
       if (res && res.success) {
-        const list = Array.isArray(res.data) ? res.data : (res.data?.records || []);
-        setAdminLedger(list);
+        setHistory(res.data || []);
         if (res.pagination) {
-          setAdminLedgerPagination(res.pagination);
+          setHistoryPagination(res.pagination);
+          setHistoryPage(res.pagination.page);
         }
       }
     } catch (err) {
-      console.warn('Could not load global transactions ledger:', err.message);
+      console.warn('Could not load XP history:', err.message);
     } finally {
-      setIsLoadingLedger(false);
+      setHistoryLoading(false);
     }
-  }, [isSuperAdmin, adminLedgerFilter]);
+  }, []);
 
   useEffect(() => {
-    if (isSuperAdmin && activeTab === 'management') {
-      loadGlobalLedger();
-    }
-  }, [isSuperAdmin, activeTab, loadGlobalLedger]);
-
-  // Load Admin Creators Overview
-  const loadAdminOverview = useCallback(async () => {
-    if (!isAdmin) return;
-    setIsLoadingAdminOverview(true);
-    try {
-      const res = await fetchAdminGamificationOverview({
-        page: adminOverviewPagination.page,
-        limit: 15,
-        search: adminOverviewSearch.trim() || undefined
-      });
-      if (res && res.success) {
-        const list = Array.isArray(res.data) ? res.data : (res.data?.users || []);
-        setAdminOverviewUsers(list);
-        if (res.pagination) {
-          setAdminOverviewPagination(res.pagination);
-        }
-      }
-    } catch (err) {
-      console.warn('Could not load admin gamification overview:', err.message);
-    } finally {
-      setIsLoadingAdminOverview(false);
-    }
-  }, [isAdmin, adminOverviewPagination.page, adminOverviewSearch]);
+    loadGamification();
+  }, [loadGamification]);
 
   useEffect(() => {
-    if (isAdmin && activeTab === 'admin_overview') {
-      loadAdminOverview();
+    if (showHistory) {
+      loadHistory(historyPage);
     }
-  }, [isAdmin, activeTab, loadAdminOverview]);
+  }, [showHistory, historyPage, loadHistory]);
 
-  // Handle Super Admin Manual Point Adjustment
-  const handleExecuteAdjustment = async (e) => {
-    e.preventDefault();
-    if (!adjustTargetUser) {
-      setAdjustStatus({ loading: false, error: 'Please select a recipient user.', success: null });
-      return;
-    }
-    const ptsNum = parseInt(adjustPointsValue, 10);
-    if (isNaN(ptsNum) || ptsNum === 0) {
-      setAdjustStatus({ loading: false, error: 'Adjustment points must be a non-zero integer.', success: null });
-      return;
-    }
-    if (!adjustReason || !adjustReason.trim()) {
-      setAdjustStatus({ loading: false, error: 'A mandatory reason is required for manual point adjustments.', success: null });
-      return;
-    }
+  if (isLoading) {
+    return (
+      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div className="skeleton" style={{ width: '180px', height: '24px', borderRadius: '4px' }} />
+          <div className="skeleton" style={{ width: '90px', height: '28px', borderRadius: '12px' }} />
+        </div>
+        <div className="skeleton" style={{ height: '80px', borderRadius: '8px', marginBottom: '1rem' }} />
+        <div className="skeleton" style={{ height: '14px', borderRadius: '7px', marginBottom: '0.5rem' }} />
+        <div className="skeleton" style={{ width: '140px', height: '18px', borderRadius: '4px' }} />
+      </div>
+    );
+  }
 
-    setAdjustStatus({ loading: true, error: null, success: null });
-    try {
-      const res = await adjustUserPoints({
-        userId: adjustTargetUser,
-        points: ptsNum,
-        reason: adjustReason.trim()
-      });
+  if (error) {
+    return (
+      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.25rem', borderLeft: '4px solid var(--status-error)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--status-error)', fontSize: '0.95rem' }}>⚠️ Unable to load XP System</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{error}</div>
+          </div>
+          <button type="button" className="btn-secondary" onClick={loadGamification} style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-      if (res && res.success) {
-        setAdjustStatus({
-          loading: false,
-          error: null,
-          success: `Successfully adjusted points by ${ptsNum > 0 ? '+' : ''}${ptsNum}! New total: ${res.data?.newTotalPoints ?? '—'} pts.`
-        });
-        setAdjustReason('');
-        loadGlobalLedger();
-        loadUserGamification();
-        setTimeout(() => {
-          setShowAdjustModal(false);
-          setAdjustStatus({ loading: false, error: null, success: null });
-        }, 1500);
-      } else {
-        throw new Error(res?.message || 'Points adjustment failed.');
-      }
-    } catch (err) {
-      setAdjustStatus({ loading: false, error: err.message || 'Error executing points adjustment.', success: null });
-    }
-  };
+  const {
+    totalXP = 0,
+    currentLevel = 1,
+    levelName = 'Novice',
+    nextLevel = 2,
+    nextLevelRequiredXP = 250,
+    xpIntoCurrentLevel = 0,
+    xpRemaining = 250,
+    progressPercentage = 0,
+    icon = '🌱',
+    isMaxLevel = false
+  } = data || {};
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
-      {/* ─── Hero Gamification Banner ──────────────────────────────────── */}
+    <div
+      className="glass-panel"
+      style={{
+        padding: '1.75rem 1.5rem',
+        marginBottom: '1.25rem',
+        position: 'relative',
+        overflow: 'hidden',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'linear-gradient(135deg, rgba(20, 24, 38, 0.95) 0%, rgba(13, 17, 28, 0.98) 100%)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)'
+      }}
+    >
+      {/* Background Decorative Ambient Glow */}
       <div
-        className="glass-panel"
         style={{
-          padding: '1.75rem 1.5rem',
-          position: 'relative',
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(20, 26, 44, 0.85) 0%, rgba(10, 14, 22, 0.95) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
+          position: 'absolute',
+          top: '-40px',
+          right: '-40px',
+          width: '200px',
+          height: '200px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%)',
+          pointerEvents: 'none'
         }}
-      >
-        {/* Glow Accent */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '-50px',
-            right: '-50px',
-            width: '220px',
-            height: '220px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.22) 0%, transparent 70%)',
-            pointerEvents: 'none'
-          }}
-        />
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '-30px',
+          left: '10%',
+          width: '160px',
+          height: '160px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }}
+      />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.25rem', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div
-              style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '16px',
-                background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(99, 102, 241, 0.25))',
-                border: '1px solid rgba(234, 179, 8, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.8rem',
-                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)'
-              }}
-            >
-              🏆
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <h1 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-highlight)' }}>
-                  Portal Gamification & Ranking
-                </h1>
-                {summary?.level && <LevelBadge level={summary.level} size="md" />}
-              </div>
-              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                Earn verified portal points: <strong>Like (+1 pt)</strong>, <strong>Comment (+2 pts)</strong>, <strong>Story (+2 pts)</strong> upon admin approval.
-              </p>
-            </div>
+      {/* Header Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem'
+            }}
+          >
+            {icon || '🏆'}
           </div>
-
-          {/* Quick Action Buttons */}
-          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-            {isSuperAdmin && (
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => setShowAdjustModal(true)}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span
                 style={{
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                  border: 'none',
-                  fontSize: '0.82rem',
-                  padding: '0.5rem 1rem'
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#38bdf8',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(56, 189, 248, 0.25)'
                 }}
               >
-                ⚖️ Adjust Points
-              </button>
-            )}
-
-            {onNavigateToNav && (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => onNavigateToNav('submit-activity')}
-                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}
-              >
-                ➕ Submit Activity Proof
-              </button>
-            )}
+                LEVEL {currentLevel}
+              </span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+                {levelName}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              Institutional Gamification & Activity Level Engine
+            </div>
           </div>
         </div>
 
-        {/* Level Progression Bar in Hero */}
-        {summary?.level && (
-          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)' }}>
-            <LevelProgress level={summary.level} />
-          </div>
-        )}
-      </div>
-
-      {/* ─── Navigation Tabs ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem', overflowX: 'auto' }}>
-        <button
-          type="button"
-          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: activeTab === 'overview' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
-            color: activeTab === 'overview' ? '#ffffff' : 'var(--text-secondary)',
-            fontWeight: 700,
-            fontSize: '0.84rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}
-        >
-          <span>📊</span> Overview
-        </button>
-
-        <button
-          type="button"
-          className={`tab-btn ${activeTab === 'leaderboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('leaderboard')}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: activeTab === 'leaderboard' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
-            color: activeTab === 'leaderboard' ? '#ffffff' : 'var(--text-secondary)',
-            fontWeight: 700,
-            fontSize: '0.84rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}
-        >
-          <span>🥇</span> Leaderboard
-        </button>
-
-        <button
-          type="button"
-          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: activeTab === 'history' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
-            color: activeTab === 'history' ? '#ffffff' : 'var(--text-secondary)',
-            fontWeight: 700,
-            fontSize: '0.84rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}
-        >
-          <span>📜</span> Point History
-        </button>
-
-        {isAdmin && (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'admin_overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('admin_overview')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: activeTab === 'admin_overview' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
-              color: activeTab === 'admin_overview' ? '#ffffff' : 'var(--text-secondary)',
-              fontWeight: 700,
-              fontSize: '0.84rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}
+            className="btn-secondary"
+            onClick={() => setShowHistory(!showHistory)}
+            style={{ fontSize: '0.78rem', padding: '0.4rem 0.8rem', gap: '0.35rem' }}
           >
-            <span>🛡️</span> Creator Directory Overview
+            <span>📜</span> {showHistory ? 'Hide XP History' : 'View XP History'}
           </button>
-        )}
-
-        {isSuperAdmin && (
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'management' ? 'active' : ''}`}
-            onClick={() => setActiveTab('management')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: activeTab === 'management' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
-              color: activeTab === 'management' ? '#ffffff' : 'var(--text-secondary)',
-              fontWeight: 700,
-              fontSize: '0.84rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}
-          >
-            <span>⚖️</span> Super Admin Ledger & Adjustments
-          </button>
-        )}
+        </div>
       </div>
 
-      {/* ─── TAB 1: OVERVIEW ─────────────────────────────────────────── */}
-      {activeTab === 'overview' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Top Row: PointsCard + RankCard */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', alignItems: 'stretch' }}>
-            <PointsCard
-              summary={summary}
-              isLoading={isLoading}
-              onViewHistory={() => setActiveTab('history')}
-            />
-
-            <RankCard
-              rankData={rankData}
-              isLoading={isLoading}
-              timeframe={rankTimeframe}
-              onTimeframeChange={setRankTimeframe}
-              onOpenLeaderboard={() => setActiveTab('leaderboard')}
-            />
+      {/* Main Focus: Level, Title, XP, Progress Bar */}
+      <div
+        style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.07)',
+          borderRadius: '12px',
+          padding: '1.35rem',
+          marginBottom: '1.25rem'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.85rem' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#94a3b8' }}>
+              LEVEL {currentLevel}
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1.2, marginTop: '0.15rem' }}>
+              {levelName}
+            </div>
           </div>
 
-          {/* Activity Feeds: Recent Point Awards & Latest Approved Activities */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            {/* Recent Point Activity */}
-            <div className="glass-panel" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
-                  ⚡ Recent Point Activity
-                </h4>
-                <button
-                  type="button"
-                  className="btn-ghost"
-                  onClick={() => setActiveTab('history')}
-                  style={{ fontSize: '0.74rem', padding: '0.2rem 0.5rem' }}
-                >
-                  View All →
-                </button>
-              </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#facc15', lineHeight: 1, textShadow: '0 2px 10px rgba(250, 204, 21, 0.25)' }}>
+              {totalXP.toLocaleString()} <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fef08a' }}>XP</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              Verified Cumulative Activity Score
+            </div>
+          </div>
+        </div>
 
-              {isLoading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="skeleton" style={{ height: '48px', borderRadius: '6px' }} />
-                  ))}
-                </div>
-              ) : (summary?.recentTransactions || []).length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                  No recent point activity yet.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {summary.recentTransactions.slice(0, 5).map(tx => (
-                    <div
-                      key={tx.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.65rem 0.85rem',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-sm)'
-                      }}
-                    >
+        {/* Progress Bar */}
+        <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
+          <div
+            style={{
+              height: '14px',
+              width: '100%',
+              backgroundColor: 'rgba(15, 23, 42, 0.8)',
+              borderRadius: '7px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              position: 'relative'
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, Math.max(0, progressPercentage))}%`,
+                background: 'linear-gradient(90deg, #38bdf8 0%, #818cf8 50%, #a855f7 100%)',
+                borderRadius: '7px',
+                transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 0 12px rgba(56, 189, 248, 0.45)'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Progress Footer: 180 XP to Level 17 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.82rem' }}>
+          <div style={{ color: '#e2e8f0', fontWeight: 600 }}>
+            {isMaxLevel ? (
+              <span style={{ color: '#facc15' }}>👑 Maximum Level Reached!</span>
+            ) : (
+              <span>
+                <strong style={{ color: '#38bdf8' }}>{xpRemaining.toLocaleString()} XP</strong> to Level {nextLevel}
+              </span>
+            )}
+          </div>
+          <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+            {xpIntoCurrentLevel.toLocaleString()} / {nextLevelRequiredXP?.toLocaleString() || 250} XP ({progressPercentage}%)
+          </div>
+        </div>
+      </div>
+
+      {/* 4 Stats Cards Grid: Total XP, Current Level, Progress, XP Remaining */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '0.75rem',
+          marginBottom: '1.25rem'
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            borderLeft: '3px solid #facc15',
+            borderRadius: '8px',
+            padding: '0.75rem 0.9rem'
+          }}
+        >
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
+            ⭐ Total XP
+          </div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fef08a', marginTop: '0.2rem' }}>
+            {totalXP.toLocaleString()}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            borderLeft: '3px solid #38bdf8',
+            borderRadius: '8px',
+            padding: '0.75rem 0.9rem'
+          }}
+        >
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
+            🏆 Current Level
+          </div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#7dd3fc', marginTop: '0.2rem' }}>
+            Lvl {currentLevel}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            borderLeft: '3px solid #a855f7',
+            borderRadius: '8px',
+            padding: '0.75rem 0.9rem'
+          }}
+        >
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
+            📈 Progress
+          </div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#d8b4fe', marginTop: '0.2rem' }}>
+            {progressPercentage}%
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            borderLeft: '3px solid #34d399',
+            borderRadius: '8px',
+            padding: '0.75rem 0.9rem'
+          }}
+        >
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
+            ⚡ XP Remaining
+          </div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#6ee7b7', marginTop: '0.2rem' }}>
+            {isMaxLevel ? '0' : xpRemaining.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {/* Rules Explainer Banner */}
+      <div
+        style={{
+          background: 'rgba(15, 23, 42, 0.6)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          borderRadius: '8px',
+          padding: '0.75rem 1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.75rem'
+        }}
+      >
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+          <strong style={{ color: 'var(--text-highlight)' }}>XP Earning Rules:</strong> Earn XP exclusively through verified social activities approved by moderators.
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.74rem', background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(236, 72, 153, 0.25)', fontWeight: 600 }}>
+            ❤️ LIKE: +1 XP
+          </span>
+          <span style={{ fontSize: '0.74rem', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.25)', fontWeight: 600 }}>
+            💬 COMMENT: +2 XP
+          </span>
+          <span style={{ fontSize: '0.74rem', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(168, 85, 247, 0.25)', fontWeight: 600 }}>
+            📱 STORY: +2 XP
+          </span>
+        </div>
+      </div>
+
+      {/* Toggleable XP History View */}
+      {showHistory && (
+        <div
+          style={{
+            marginTop: '1.25rem',
+            paddingTop: '1.25rem',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
+              XP Transactions Ledger ({historyPagination.totalCount} total)
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Page {historyPagination.page} of {historyPagination.totalPages}
+            </span>
+          </div>
+
+          {historyLoading ? (
+            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              Loading XP transactions...
+            </div>
+          ) : history.length === 0 ? (
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No XP transactions recorded yet. Submit activity proofs to begin earning XP!
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {history.map((tx) => {
+                const icon = ACTION_ICONS[tx.actionType] || '⚡';
+                const color = ACTION_COLORS[tx.actionType] || '#38bdf8';
+                const xpValue = tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points;
+
+                return (
+                  <div
+                    key={tx.id}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '6px',
+                      padding: '0.65rem 0.85rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <span style={{ fontSize: '1.1rem' }}>{icon}</span>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-highlight)' }}>
-                          {tx.actionType}
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                          {tx.description || `${tx.actionType} verified`}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
                           {formatDate(tx.createdAt)}
                         </div>
                       </div>
-                      <div
-                        style={{
-                          fontWeight: 800,
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.95rem',
-                          color: tx.points >= 0 ? '#34d399' : '#f43f5e'
-                        }}
-                      >
-                        {tx.points >= 0 ? `+${tx.points}` : tx.points} pts
-                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Latest Approved Activities */}
-            <div className="glass-panel" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
-                  ✅ Latest Approved Proofs
-                </h4>
-                {onNavigateToNav && (
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    onClick={() => onNavigateToNav('my-submissions')}
-                    style={{ fontSize: '0.74rem', padding: '0.2rem 0.5rem' }}
-                  >
-                    All Submissions →
-                  </button>
-                )}
-              </div>
-
-              {isLoading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="skeleton" style={{ height: '48px', borderRadius: '6px' }} />
-                  ))}
-                </div>
-              ) : (summary?.latestApprovedActivities || []).length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                  No approved activities recorded yet.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {summary.latestApprovedActivities.slice(0, 5).map(sub => (
                     <div
-                      key={sub.id}
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.65rem 0.85rem',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-sm)'
+                        fontSize: '0.9rem',
+                        fontWeight: 800,
+                        color,
+                        background: `${color}18`,
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '6px',
+                        border: `1px solid ${color}35`
                       }}
                     >
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-highlight)' }}>
-                          {sub.platform} {sub.actionType}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          Verified {formatDate(sub.updatedAt || sub.createdAt)}
-                        </div>
-                      </div>
-                      <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>
-                        APPROVED ✓
-                      </span>
+                      +{xpValue} XP
                     </div>
-                  ))}
+                  </div>
+                );
+              })}
+
+              {/* Pagination controls */}
+              {historyPagination.totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={historyPage <= 1}
+                    onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={historyPage >= historyPagination.totalPages}
+                    onClick={() => setHistoryPage((p) => p + 1)}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    Next
+                  </button>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Future Rewards System Foundation Card */}
-          <div
-            className="glass-panel"
-            style={{
-              padding: '1.35rem',
-              borderLeft: '4px solid #a855f7',
-              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.06) 0%, rgba(13, 17, 26, 0.7) 100%)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '1.25rem' }}>🎖️</span>
-              <h4 style={{ margin: 0, fontSize: '0.98rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
-                Rewards & Benefits Foundation
-              </h4>
-              <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>COMING SOON</span>
-            </div>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Your verified portal points form the foundation for upcoming institutional perks:
-              exclusive college merchandise, campus event VIP access, ambassador certificates, and digital badges.
-              Keep verifying your genuine engagement!
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ─── TAB 2: LEADERBOARD ───────────────────────────────────────── */}
-      {activeTab === 'leaderboard' && (
-        <Leaderboard />
-      )}
-
-      {/* ─── TAB 3: POINT HISTORY ─────────────────────────────────────── */}
-      {activeTab === 'history' && (
-        <PointHistory />
-      )}
-
-      {/* ─── TAB 4: ADMIN CREATOR GAMIFICATION OVERVIEW ──────────────── */}
-      {activeTab === 'admin_overview' && isAdmin && (
-        <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
-                  🛡️ Creator Gamification Directory
-                </h3>
-                <span className="badge badge-neutral" style={{ fontSize: '0.68rem' }}>
-                  READ-ONLY AUDIT
-                </span>
-              </div>
-              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                Inspect student community points, levels, and verified activity totals. Administrative point modifications are restricted to Super Administrators.
-              </p>
-            </div>
-
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Total Creators: <strong>{adminOverviewPagination.totalCount || adminOverviewUsers.length}</strong>
-            </div>
-          </div>
-
-          {/* Search bar */}
-          <div className="history-filters-bar">
-            <input
-              type="text"
-              className="history-search-input"
-              placeholder="Search creator by name or email..."
-              value={adminOverviewSearch}
-              onChange={(e) => setAdminOverviewSearch(e.target.value)}
-            />
-          </div>
-
-          {/* Creator Table */}
-          {isLoadingAdminOverview ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="skeleton" style={{ height: '52px', borderRadius: '8px' }} />
-              ))}
-            </div>
-          ) : adminOverviewUsers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
-              No creators found matching criteria.
-            </div>
-          ) : (
-            <div className="leaderboard-table-wrapper">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Creator</th>
-                    <th>Level</th>
-                    <th style={{ textAlign: 'center' }}>Approved Submissions</th>
-                    <th style={{ textAlign: 'right' }}>Total Points</th>
-                    <th>Recent Activity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminOverviewUsers.map((creator) => {
-                    const recentAct = creator.recentApprovedSubmissions?.[0] || creator.recentTransactions?.[0];
-                    return (
-                      <tr key={creator.id}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                            <div
-                              style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                color: '#ffffff',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.82rem',
-                                fontWeight: 700
-                              }}
-                            >
-                              {creator.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 700, color: 'var(--text-highlight)' }}>
-                                {creator.name}
-                              </div>
-                              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                                {creator.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <LevelBadge level={creator.level} size="sm" />
-                        </td>
-                        <td style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-highlight)' }}>
-                          {creator.approvedSubmissionsCount ?? '—'}
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#facc15', fontSize: '1rem' }}>
-                          ⭐ {(creator.totalPoints ?? 0).toLocaleString()}
-                        </td>
-                        <td style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                          {recentAct ? (
-                            <span>
-                              {recentAct.platform ? `${recentAct.platform} ${recentAct.actionType}` : recentAct.description || 'Active'}
-                            </span>
-                          ) : (
-                            <span style={{ color: 'var(--text-muted)' }}>—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ─── TAB 5: SUPER ADMIN LEDGER & ADJUSTMENTS ─────────────────── */}
-      {activeTab === 'management' && isSuperAdmin && (
-        <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
-                ⚖️ Global Point Transactions Audit Ledger
-              </h3>
-              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                Complete immutable record of all point rewards, deductions, and manual administrative adjustments
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setShowAdjustModal(true)}
-              style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
-            >
-              ⚖️ Manual Adjustment
-            </button>
-          </div>
-
-          {/* Filter Toolbar for Admin Ledger */}
-          <div className="history-filters-bar">
-            <input
-              type="text"
-              className="history-search-input"
-              placeholder="Search user or reason..."
-              value={adminLedgerFilter.search}
-              onChange={(e) => setAdminLedgerFilter(f => ({ ...f, search: e.target.value, page: 1 }))}
-            />
-
-            <select
-              className="history-select"
-              value={adminLedgerFilter.actionType}
-              onChange={(e) => setAdminLedgerFilter(f => ({ ...f, actionType: e.target.value, page: 1 }))}
-            >
-              <option value="ALL">All Action Types</option>
-              <option value="LIKE">LIKE (+1)</option>
-              <option value="COMMENT">COMMENT (+2)</option>
-              <option value="STORY">STORY (+2)</option>
-              <option value="ADJUSTMENT">ADJUSTMENT (Manual)</option>
-              <option value="BONUS">BONUS</option>
-            </select>
-          </div>
-
-          {/* Ledger Table */}
-          {isLoadingLedger ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="skeleton" style={{ height: '48px', borderRadius: '6px' }} />
-              ))}
-            </div>
-          ) : adminLedger.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
-              No transactions match the filter.
-            </div>
-          ) : (
-            <div className="leaderboard-table-wrapper">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>User ID</th>
-                    <th>Action</th>
-                    <th>Description / Reason</th>
-                    <th style={{ textAlign: 'right' }}>Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminLedger.map((tx) => (
-                    <tr key={tx.id}>
-                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                        {formatDate(tx.createdAt)}
-                      </td>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
-                        {tx.userId?.slice(0, 8)}...
-                      </td>
-                      <td>
-                        <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
-                          {tx.actionType}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                        {tx.description}
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 800, fontFamily: 'var(--font-mono)', color: tx.points >= 0 ? '#34d399' : '#f43f5e' }}>
-                        {tx.points >= 0 ? `+${tx.points}` : tx.points}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─── Super Admin Manual Points Adjustment Modal ─────────────── */}
-      {showAdjustModal && isSuperAdmin && (
-        <div className="points-adjust-modal-overlay" onClick={() => setShowAdjustModal(false)}>
-          <div className="points-adjust-modal" onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.25rem' }}>⚖️</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
-                  Manual Points Adjustment
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => setShowAdjustModal(false)}
-                style={{ fontSize: '1.1rem', padding: '0.2rem 0.5rem' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleExecuteAdjustment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {adjustStatus.error && (
-                <div style={{ padding: '0.65rem 0.85rem', background: 'var(--status-error-bg)', border: '1px solid var(--status-error)', borderRadius: 'var(--radius-sm)', color: '#fca5a5', fontSize: '0.8rem' }}>
-                  ⚠️ {adjustStatus.error}
-                </div>
-              )}
-              {adjustStatus.success && (
-                <div style={{ padding: '0.65rem 0.85rem', background: 'var(--status-success-bg)', border: '1px solid var(--status-success)', borderRadius: 'var(--radius-sm)', color: '#86efac', fontSize: '0.8rem' }}>
-                  ✓ {adjustStatus.success}
-                </div>
-              )}
-
-              {/* Recipient User */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Recipient User *
-                </label>
-                <select
-                  value={adjustTargetUser}
-                  onChange={e => setAdjustTargetUser(e.target.value)}
-                  className="history-select"
-                  style={{ width: '100%' }}
-                  required
-                >
-                  {creatorUsers.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email}) — Current: {u.totalPoints ?? 0} pts
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Adjustment Points */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Point Adjustment (+ for bonus, - for deduction) *
-                </label>
-                <input
-                  type="number"
-                  value={adjustPointsValue}
-                  onChange={e => setAdjustPointsValue(e.target.value)}
-                  className="history-search-input"
-                  style={{ width: '100%' }}
-                  placeholder="e.g. 50 or -20"
-                  step="1"
-                  required
-                />
-              </div>
-
-              {/* Mandatory Reason */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Mandatory Audit Reason *
-                </label>
-                <textarea
-                  value={adjustReason}
-                  onChange={e => setAdjustReason(e.target.value)}
-                  className="history-search-input"
-                  style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
-                  placeholder="e.g. Event participation bonus / Invalid claim correction"
-                  required
-                />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  This reason is recorded in the transaction ledger and sent to the user.
-                </span>
-              </div>
-
-              {/* Modal Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowAdjustModal(false)}
-                  disabled={adjustStatus.loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={adjustStatus.loading}
-                >
-                  {adjustStatus.loading ? 'Saving...' : 'Apply Adjustment'}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

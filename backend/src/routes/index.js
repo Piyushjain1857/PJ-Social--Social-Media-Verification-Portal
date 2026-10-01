@@ -12,6 +12,7 @@ const reviewRoutes = require('./reviewRoutes');
 const socialAccountRoutes = require('./socialAccountRoutes');
 const searchRoutes = require('./searchRoutes');
 const pointsRoutes = require('./pointsRoutes');
+const gamificationRoutes = require('./gamificationRoutes');
 
 // Authentication routes (/api/auth)
 router.use('/auth', authRoutes);
@@ -21,6 +22,9 @@ router.use('/submissions', submissionRoutes);
 
 // Admin Moderation & Review Queue routes (/api/reviews)
 router.use('/reviews', reviewRoutes);
+
+// Gamification XP & Level Engine routes (/api/gamification)
+router.use('/gamification', gamificationRoutes);
 
 // Gamification Points & Transactions routes (/api/points)
 router.use('/points', pointsRoutes);

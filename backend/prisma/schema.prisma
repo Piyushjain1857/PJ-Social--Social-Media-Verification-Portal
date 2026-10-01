@@ -70,6 +70,7 @@ model User {
   role              Role             @default(USER)
   status            UserStatus       @default(ACTIVE)
   totalPoints       Int              @default(0)
+  totalXP           Int              @default(0)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -89,6 +90,7 @@ model User {
   @@index([role, status])
   @@index([createdAt])
   @@index([totalPoints(sort: Desc)])
+  @@index([totalXP(sort: Desc)])
   @@index([role, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@map("users")
@@ -243,14 +245,15 @@ model Notification {
   @@map("notifications")
 }
 
-/// Gamification Point Transactions awarded for approved submissions and adjustments
+/// Gamification Point and XP Transactions awarded for approved submissions and adjustments
 model PointTransaction {
   id           String          @id @default(uuid())
   userId       String
   user         User            @relation("UserPointTransactions", fields: [userId], references: [id], onDelete: Cascade)
   submissionId String?
   submission   Submission?     @relation("SubmissionPointTransactions", fields: [submissionId], references: [id], onDelete: SetNull)
-  points       Int
+  points       Int             @default(0)
+  xp           Int             @default(0)
   actionType   PointActionType
   description  String
   metadata     Json?
@@ -263,4 +266,21 @@ model PointTransaction {
   @@index([userId, createdAt(sort: Desc)])
   @@index([actionType, createdAt(sort: Desc)])
   @@map("point_transactions")
+}
+
+/// Dynamic Gamification Level configuration managed by Super Admin
+model Level {
+  id          String   @id @default(uuid())
+  levelNumber Int      @unique
+  name        String
+  xpRequired  Int      @default(250)
+  icon        String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([levelNumber])
+  @@index([isActive])
+  @@map("levels")
 }

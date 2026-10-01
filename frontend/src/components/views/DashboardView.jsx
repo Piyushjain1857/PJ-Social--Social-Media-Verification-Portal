@@ -11,6 +11,7 @@ import {
 } from '../../services/api';
 import ScreenshotImage from '../ScreenshotImage';
 import PointsSummary from '../common/PointsSummary';
+import GamificationSummary from '../gamification/GamificationSummary';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -316,7 +317,10 @@ function UserDashboard({ onNavigateToNav }) {
         )}
       </div>
 
-      {/* ── Gamification & Points Summary ── */}
+      {/* ── Gamification XP & Level Progression Engine ── */}
+      <GamificationSummary onNavigateToNav={onNavigateToNav} />
+
+      {/* ── Gamification & Points Breakdown ── */}
       <PointsSummary onNavigateToNav={onNavigateToNav} />
 
       {/* ── Trust score + platform breakdown ── */}

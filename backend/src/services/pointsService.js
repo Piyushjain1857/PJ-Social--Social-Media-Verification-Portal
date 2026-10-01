@@ -209,8 +209,10 @@ const awardPoints = async ({
     awarded: true,
     alreadyAwarded: false,
     points,
+    xp: points,
     transaction: result.transaction,
     totalPoints: result.totalPoints,
+    totalXP: result.totalPoints,
     level: newLevel,
     leveledUp: newLevel.level > previousLevel.level
   };

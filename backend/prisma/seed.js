@@ -52,6 +52,9 @@ async function main() {
     console.log(`  ✅  ${user.role.padEnd(12)}  ${user.email}  (id: ${user.id})`);
   }
 
+  const { seedLevels } = require('./seedLevels');
+  await seedLevels();
+
   console.log('\n✨  Seeding complete!');
   console.log('\nDemo credentials:');
   console.log('  superadmin@portal.com  /  SuperAdmin123!');

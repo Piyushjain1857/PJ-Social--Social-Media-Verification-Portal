@@ -776,3 +776,30 @@ export const fetchAdminGamificationOverview = async (params = {}) => {
   const queryString = query.toString();
   return await apiFetch(`/points/admin/overview${queryString ? `?${queryString}` : ''}`);
 };
+
+/**
+ * Gamification XP & Level Engine API Methods (/api/gamification)
+ */
+export const fetchMyGamification = async () => {
+  return await apiFetch('/gamification/me');
+};
+
+export const fetchMyXPHistory = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const queryString = query.toString();
+  return await apiFetch(`/gamification/me/history${queryString ? `?${queryString}` : ''}`);
+};
+
+export const fetchGamificationLevels = async () => {
+  return await apiFetch('/gamification/levels');
+};
+
+export const fetchUserGamification = async (userId) => {
+  return await apiFetch(`/gamification/user/${userId}`);
+};
+
