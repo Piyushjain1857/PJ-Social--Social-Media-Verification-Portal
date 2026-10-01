@@ -1,30 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { fetchMySubmissions, getScreenshotUrl } from '../../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { fetchMySubmissions } from '../../services/api';
 import ScreenshotImage from '../ScreenshotImage';
+import FilterBar from '../common/FilterBar';
+import Pagination from '../common/Pagination';
+import EmptyState from '../common/EmptyState';
+import LoadingSkeleton from '../common/LoadingSkeleton';
 
 export default function MySubmissionsView({ onNavigateToNav }) {
   const [submissions, setSubmissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [platformFilter, setPlatformFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSub, setSelectedSub] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, totalCount: 0, totalPages: 1 });
 
-  const loadSubmissions = async (page = 1) => {
+  // Search & Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [platformFilter, setPlatformFilter] = useState('ALL');
+  const [actionTypeFilter, setActionTypeFilter] = useState('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Modal inspection
+  const [selectedSub, setSelectedSub] = useState(null);
+
+  const loadSubmissions = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetchMySubmissions({
         page,
-        limit: pagination.limit,
+        limit,
         search: searchTerm,
         status: statusFilter,
-        platform: platformFilter
+        platform: platformFilter,
+        actionType: actionTypeFilter,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        sortBy,
+        sortOrder
       });
-      if (res.success) {
+      if (res && res.success) {
         setSubmissions(res.data || []);
         if (res.pagination) {
-          setPagination(res.pagination);
+          setTotalCount(res.pagination.totalCount || 0);
+          setTotalPages(res.pagination.totalPages || 1);
+        } else {
+          setTotalCount((res.data || []).length);
+          setTotalPages(1);
         }
       }
     } catch (err) {
@@ -32,12 +59,11 @@ export default function MySubmissionsView({ onNavigateToNav }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit, searchTerm, statusFilter, platformFilter, actionTypeFilter, startDate, endDate, sortBy, sortOrder]);
 
   useEffect(() => {
-    loadSubmissions(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, platformFilter, searchTerm]);
+    loadSubmissions();
+  }, [loadSubmissions]);
 
   // Dismiss modal on Escape key
   useEffect(() => {
@@ -50,101 +76,169 @@ export default function MySubmissionsView({ onNavigateToNav }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedSub]);
 
-  const handleNextPage = () => {
-    if (pagination.page < pagination.totalPages) {
-      loadSubmissions(pagination.page + 1);
-    }
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('ALL');
+    setPlatformFilter('ALL');
+    setActionTypeFilter('ALL');
+    setStartDate('');
+    setEndDate('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
   };
 
-  const handlePrevPage = () => {
-    if (pagination.page > 1) {
-      loadSubmissions(pagination.page - 1);
-    }
-  };
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    statusFilter !== 'ALL' ||
+    platformFilter !== 'ALL' ||
+    actionTypeFilter !== 'ALL' ||
+    startDate ||
+    endDate ||
+    sortBy !== 'createdAt' ||
+    sortOrder !== 'desc'
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Filter Bar */}
-      <div className="glass-panel" style={{ padding: '1.15rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: 1, minWidth: '260px' }}>
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Search URL or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: '1 1 min(100%, 220px)', minWidth: '180px', padding: '0.55rem 0.85rem' }}
-          />
-
-          <select
-            className="input-field"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ flex: '1 1 min(100%, 140px)', padding: '0.55rem 0.85rem' }}
-          >
-            <option value="">All Statuses</option>
-            <option value="PENDING">Pending Review</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
-
-          <select
-            className="input-field"
-            value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value)}
-            style={{ flex: '1 1 min(100%, 140px)', padding: '0.55rem 0.85rem' }}
-          >
-            <option value="">All Platforms</option>
-            <option value="INSTAGRAM">Instagram</option>
-            <option value="LINKEDIN">LinkedIn</option>
-            <option value="FACEBOOK">Facebook</option>
-            <option value="YOUTUBE">YouTube</option>
-            <option value="TWITTER">X / Twitter</option>
-          </select>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Top Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-highlight)' }}>
+            📊 My Verification Submissions
+          </h2>
+          <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+            Track the live review progress, reviewer feedback, and historical verifications of your submitted evidence.
+          </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => loadSubmissions(pagination.page)}
+            onClick={loadSubmissions}
             disabled={isLoading}
-            style={{ padding: '0.55rem 1rem', fontSize: '0.85rem' }}
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
           >
             {isLoading ? 'Loading...' : '🔄 Refresh'}
           </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => onNavigateToNav('submit-activity')}
-            style={{ fontSize: '0.82rem', padding: '0.55rem 1rem', background: 'var(--role-user)', color: '#07090e', fontWeight: 700 }}
-          >
-            ➕ New Activity
-          </button>
+          {onNavigateToNav && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onNavigateToNav('submit-activity')}
+              style={{ fontSize: '0.82rem', padding: '0.45rem 1rem', background: 'var(--role-user)', color: '#07090e', fontWeight: 700 }}
+            >
+              ➕ New Activity
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Submissions Table / Cards for Mobile Responsive */}
-      <div className="table-responsive-wrapper">
-        <table className="portal-table" style={{ minWidth: '680px' }}>
-          <thead>
-            <tr>
-              <th>Platform & Action</th>
-              <th>Proof / URL</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {submissions.length === 0 ? (
+      {/* Filter Bar */}
+      <FilterBar
+        search={searchTerm}
+        onSearchChange={(v) => { setSearchTerm(v); setPage(1); }}
+        searchPlaceholder="Search post URL, description..."
+        totalCount={totalCount}
+        isLoading={isLoading}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={handleClearFilters}
+        filters={[
+          {
+            id: 'status',
+            label: 'Status',
+            value: statusFilter,
+            onChange: (v) => { setStatusFilter(v); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Statuses' },
+              { value: 'PENDING', label: '⏳ Pending' },
+              { value: 'APPROVED', label: '✓ Approved' },
+              { value: 'REJECTED', label: '✕ Rejected' }
+            ]
+          },
+          {
+            id: 'platform',
+            label: 'Platform',
+            value: platformFilter,
+            onChange: (v) => { setPlatformFilter(v); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Platforms' },
+              { value: 'INSTAGRAM', label: 'Instagram' },
+              { value: 'LINKEDIN', label: 'LinkedIn' },
+              { value: 'FACEBOOK', label: 'Facebook' }
+            ]
+          },
+          {
+            id: 'actionType',
+            label: 'Action Type',
+            value: actionTypeFilter,
+            onChange: (v) => { setActionTypeFilter(v); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Actions' },
+              { value: 'LIKE', label: 'Like' },
+              { value: 'COMMENT', label: 'Comment' },
+              { value: 'STORY', label: 'Story' }
+            ]
+          }
+        ]}
+        dateRange={{
+          startDate,
+          endDate,
+          onStartDateChange: (d) => { setStartDate(d); setPage(1); },
+          onEndDateChange: (d) => { setEndDate(d); setPage(1); }
+        }}
+        sortOptions={[
+          { value: 'createdAt', label: 'Submission Date' },
+          { value: 'status', label: 'Status' },
+          { value: 'platform', label: 'Platform' }
+        ]}
+        sortBy={sortBy}
+        onSortByChange={(s) => { setSortBy(s); setPage(1); }}
+        sortOrder={sortOrder}
+        onToggleSortOrder={() => { setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); setPage(1); }}
+      />
+
+      {/* Submissions List / Table */}
+      {isLoading ? (
+        <LoadingSkeleton rows={4} height="52px" />
+      ) : submissions.length === 0 ? (
+        <EmptyState
+          icon="📤"
+          title="No submissions found"
+          description={
+            hasActiveFilters
+              ? 'No submissions match your active filter settings. Try resetting filters to see your complete history.'
+              : "You haven't submitted any social media activity for verification yet."
+          }
+          onClearFilters={hasActiveFilters ? handleClearFilters : null}
+          clearLabel="Reset filters"
+        >
+          {!hasActiveFilters && onNavigateToNav && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onNavigateToNav('submit-activity')}
+              style={{ marginTop: '0.75rem', background: 'var(--role-user)', color: '#07090e', fontWeight: 700 }}
+            >
+              Submit Your First Activity
+            </button>
+          )}
+        </EmptyState>
+      ) : (
+        <div className="table-responsive-wrapper">
+          <table className="portal-table" style={{ minWidth: '680px' }}>
+            <thead>
               <tr>
-                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  No submissions found matching criteria.
-                </td>
+                <th>Platform & Action</th>
+                <th>Proof / URL</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
-            ) : (
-              submissions.map((sub) => (
+            </thead>
+            <tbody>
+              {submissions.map((sub) => (
                 <tr key={sub.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '0.75rem' }}>
                     <span style={{ fontWeight: 600 }}>{sub.platform}</span>
@@ -155,7 +249,16 @@ export default function MySubmissionsView({ onNavigateToNav }) {
                       href={sub.postUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: 'var(--accent-cyan)', fontSize: '0.82rem', textDecoration: 'none', display: 'block', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      style={{
+                        color: 'var(--accent-cyan)',
+                        fontSize: '0.82rem',
+                        textDecoration: 'none',
+                        display: 'block',
+                        maxWidth: '240px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
                     >
                       🔗 {sub.postUrl}
                     </a>
@@ -179,115 +282,136 @@ export default function MySubmissionsView({ onNavigateToNav }) {
                     </button>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-        {/* Pagination Controls */}
-        {pagination.totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Showing Page {pagination.page} of {pagination.totalPages} (Total: {pagination.totalCount})
-            </span>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                className="btn-secondary"
-                disabled={pagination.page <= 1}
-                onClick={handlePrevPage}
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-              >
-                ← Prev
-              </button>
-              <button
-                className="btn-secondary"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={handleNextPage}
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-              >
-                Next →
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Pagination Controls */}
+      {!isLoading && totalCount > 0 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          limit={limit}
+          onPageChange={(p) => setPage(p)}
+          onLimitChange={(l) => { setLimit(l); setPage(1); }}
+          limitOptions={[10, 20, 50]}
+        />
+      )}
 
-      {/* Inspection Modal */}
+      {/* Detail Inspection Modal Drawer */}
       {selectedSub && (
-        <div
-          className="portal-modal-backdrop"
-          onClick={() => setSelectedSub(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="My Submission Details"
-        >
+        <div className="modal-backdrop" onClick={() => setSelectedSub(null)}>
           <div
-            className="portal-modal-card"
-            style={{ maxWidth: '620px' }}
+            className="modal-content glass-panel"
             onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '640px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}
           >
-            <div className="portal-modal-header">
-              <div className="portal-modal-title-group">
-                <h3>My Submission Details</h3>
-                <p>Activity verification dossier and review history</p>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                🔍 Submission Details
+              </h3>
               <button
                 type="button"
-                className="portal-modal-close-btn"
                 onClick={() => setSelectedSub(null)}
-                aria-label="Close modal"
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
               >
                 ✕
               </button>
             </div>
 
-            <div className="portal-modal-body" style={{ fontSize: '0.9rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div><strong>Status:</strong> {
-                  selectedSub.status === 'APPROVED' ? <span className="badge badge-success">APPROVED</span> :
-                  selectedSub.status === 'REJECTED' ? <span className="badge badge-error">REJECTED</span> :
-                  <span className="badge badge-warning">PENDING</span>
-                }</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ID: <code>{selectedSub.id}</code></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Submission Metadata */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', background: 'rgba(255,255,255,0.02)', padding: '0.85rem', borderRadius: '6px' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Platform</span>
+                  <div style={{ fontWeight: 600 }}>{selectedSub.platform}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Action Type</span>
+                  <div style={{ fontWeight: 600 }}>{selectedSub.actionType}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Submission ID</span>
+                  <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{selectedSub.id}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Status</span>
+                  <div>
+                    {selectedSub.status === 'APPROVED' && <span className="badge badge-success">✓ APPROVED</span>}
+                    {selectedSub.status === 'REJECTED' && <span className="badge badge-error">✕ REJECTED</span>}
+                    {selectedSub.status === 'PENDING' && <span className="badge badge-warning">⏳ PENDING</span>}
+                  </div>
+                </div>
               </div>
 
-              <div><strong>Submitted:</strong> {new Date(selectedSub.createdAt).toLocaleString()}</div>
-              {selectedSub.updatedAt !== selectedSub.createdAt && (
-                 <div><strong>Reviewed On:</strong> {new Date(selectedSub.updatedAt).toLocaleString()}</div>
-              )}
-              <div><strong>Platform:</strong> {selectedSub.platform} • {selectedSub.actionType}</div>
-              <div><strong>Post URL:</strong> <a href={selectedSub.postUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-cyan)', wordBreak: 'break-all' }}>{selectedSub.postUrl}</a></div>
-              {selectedSub.description && <div><strong>Description:</strong> {selectedSub.description}</div>}
-              {selectedSub.screenshotUrl && (
+              {/* URL */}
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target Post URL</span>
+                <div style={{ marginTop: '0.2rem' }}>
+                  <a
+                    href={selectedSub.postUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--accent-cyan)', fontSize: '0.88rem', wordBreak: 'break-all' }}
+                  >
+                    🔗 {selectedSub.postUrl}
+                  </a>
+                </div>
+              </div>
+
+              {/* Screenshot */}
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                  Your Screenshot Evidence
+                </span>
+                <ScreenshotImage
+                  src={selectedSub.screenshotUrl}
+                  alt="Submission Proof Screenshot"
+                  style={{ maxHeight: '280px', borderRadius: '8px', border: '1px solid var(--border-subtle)', width: '100%', objectFit: 'contain', background: '#000' }}
+                />
+              </div>
+
+              {/* Description */}
+              {selectedSub.description && (
                 <div>
-                  <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Proof Screenshot (Click to zoom):</strong>
-                  <ScreenshotImage
-                    screenshotUrl={selectedSub.screenshotUrl}
-                    alt="Submission Proof Screenshot"
-                    thumbnailStyle={{ maxHeight: '350px', width: '100%', background: 'rgba(0,0,0,0.4)' }}
-                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Your Description / Notes</span>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                    {selectedSub.description}
+                  </p>
                 </div>
               )}
-              
+
+              {/* Reviewer Feedback & Logs */}
               {selectedSub.reviews && selectedSub.reviews.length > 0 && (
-                <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginTop: '0.5rem' }}>
-                  <strong>{selectedSub.status === 'REJECTED' ? 'Rejection Reason / Feedback:' : 'Moderator Feedback:'}</strong>
-                  <div style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                    {selectedSub.reviews[0].feedback || "No feedback provided."}
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                    Moderation Feedback & History
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {selectedSub.reviews.map((rev, i) => (
+                      <div key={rev.id || i} style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', fontSize: '0.82rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                          <strong style={{ color: 'var(--text-highlight)' }}>
+                            Reviewed by {rev.adminName || rev.admin?.name || 'Moderator'}
+                          </strong>
+                          <span style={{ color: 'var(--text-muted)' }}>{new Date(rev.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div style={{ color: rev.status === 'APPROVED' ? 'var(--status-success)' : 'var(--status-error)', fontWeight: 600 }}>
+                          Verdict: {rev.status}
+                        </div>
+                        {rev.feedback && (
+                          <div style={{ marginTop: '0.35rem', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
+                            "{rev.feedback}"
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="portal-modal-footer">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setSelectedSub(null)}
-                style={{ minWidth: '100px' }}
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>

@@ -104,38 +104,300 @@ const getAllSubmissions = async () => {
   );
 };
 
+/**
+ * Advanced server-side filtered, sorted, and paginated query for all platform submissions.
+ * Supports status, platform, actionType, reviewerId, userId, date range, search, sorting.
+ */
+const getSubmissionsPaginated = async (filters = {}) => {
+  initializeInMemorySubmissions();
+  const dbStatus = await checkDatabaseConnection();
+
+  const {
+    page = 1,
+    limit = 10,
+    search = '',
+    status = 'ALL',
+    platform = 'ALL',
+    actionType = 'ALL',
+    reviewerId = null,
+    userId = null,
+    startDate = null,
+    endDate = null,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = filters;
+
+  const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+  const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const skip = (parsedPage - 1) * parsedLimit;
+  const trimmedSearch = typeof search === 'string' ? search.trim() : '';
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const where = {};
+
+      if (status && status !== 'ALL') {
+        where.status = status.toUpperCase();
+      }
+
+      if (platform && platform !== 'ALL') {
+        where.platform = platform.toUpperCase();
+      }
+
+      if (actionType && actionType !== 'ALL') {
+        where.actionType = actionType.toUpperCase();
+      }
+
+      if (userId && userId !== 'ALL') {
+        where.userId = userId;
+      }
+
+      if (reviewerId && reviewerId !== 'ALL') {
+        where.reviews = {
+          some: {
+            adminId: reviewerId
+          }
+        };
+      }
+
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) {
+          const from = new Date(startDate);
+          if (!isNaN(from.getTime())) {
+            from.setHours(0, 0, 0, 0);
+            where.createdAt.gte = from;
+          }
+        }
+        if (endDate) {
+          const to = new Date(endDate);
+          if (!isNaN(to.getTime())) {
+            to.setHours(23, 59, 59, 999);
+            where.createdAt.lte = to;
+          }
+        }
+      }
+
+      if (trimmedSearch) {
+        where.OR = [
+          { postUrl: { contains: trimmedSearch, mode: 'insensitive' } },
+          { description: { contains: trimmedSearch, mode: 'insensitive' } },
+          { user: { name: { contains: trimmedSearch, mode: 'insensitive' } } },
+          { user: { email: { contains: trimmedSearch, mode: 'insensitive' } } },
+          { socialAccount: { handle: { contains: trimmedSearch, mode: 'insensitive' } } },
+          { socialAccount: { name: { contains: trimmedSearch, mode: 'insensitive' } } }
+        ];
+      }
+
+      const validSortFields = ['createdAt', 'status', 'platform', 'actionType', 'updatedAt'];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+      const cleanSortOrder = sortOrder && sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+      const [totalCount, records] = await Promise.all([
+        prisma.submission.count({ where }),
+        prisma.submission.findMany({
+          where,
+          include: {
+            user: { select: { id: true, name: true, email: true, status: true } },
+            socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
+            reviews: {
+              include: { admin: { select: { id: true, name: true, email: true } } },
+              orderBy: { createdAt: 'desc' }
+            },
+            internalNotes: {
+              include: { admin: { select: { id: true, name: true } } },
+              orderBy: { createdAt: 'desc' }
+            },
+            clarifications: {
+              include: { admin: { select: { id: true, name: true } } },
+              orderBy: { createdAt: 'desc' }
+            }
+          },
+          orderBy: { [sortField]: cleanSortOrder },
+          skip,
+          take: parsedLimit
+        })
+      ]);
+
+      const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+      return {
+        records,
+        totalCount,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages,
+        hasNext: parsedPage < totalPages,
+        hasPrev: parsedPage > 1
+      };
+    } catch (err) {
+      console.warn('[SubRepo] Prisma getSubmissionsPaginated failed, falling back to memory store:', err.message);
+    }
+  }
+
+  // In-Memory Fallback
+  let memoryRecords = Array.from(inMemorySubmissions.values());
+
+  if (status && status !== 'ALL') {
+    memoryRecords = memoryRecords.filter(s => s.status === status.toUpperCase());
+  }
+  if (platform && platform !== 'ALL') {
+    memoryRecords = memoryRecords.filter(s => s.platform === platform.toUpperCase());
+  }
+  if (actionType && actionType !== 'ALL') {
+    memoryRecords = memoryRecords.filter(s => s.actionType === actionType.toUpperCase());
+  }
+  if (userId && userId !== 'ALL') {
+    memoryRecords = memoryRecords.filter(s => s.userId === userId);
+  }
+  if (reviewerId && reviewerId !== 'ALL') {
+    memoryRecords = memoryRecords.filter(s => s.reviews && s.reviews.some(r => r.adminId === reviewerId));
+  }
+  if (startDate) {
+    const from = new Date(startDate);
+    if (!isNaN(from.getTime())) {
+      from.setHours(0, 0, 0, 0);
+      memoryRecords = memoryRecords.filter(s => new Date(s.createdAt) >= from);
+    }
+  }
+  if (endDate) {
+    const to = new Date(endDate);
+    if (!isNaN(to.getTime())) {
+      to.setHours(23, 59, 59, 999);
+      memoryRecords = memoryRecords.filter(s => new Date(s.createdAt) <= to);
+    }
+  }
+  if (trimmedSearch) {
+    const q = trimmedSearch.toLowerCase();
+    memoryRecords = memoryRecords.filter(s =>
+      (s.postUrl && s.postUrl.toLowerCase().includes(q)) ||
+      (s.description && s.description.toLowerCase().includes(q)) ||
+      (s.userName && s.userName.toLowerCase().includes(q)) ||
+      (s.userEmail && s.userEmail.toLowerCase().includes(q))
+    );
+  }
+
+  const cleanSortOrder = sortOrder && sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+  memoryRecords.sort((a, b) => {
+    let valA = a[sortBy] || a.createdAt;
+    let valB = b[sortBy] || b.createdAt;
+    if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+      valA = new Date(valA).getTime();
+      valB = new Date(valB).getTime();
+    }
+    if (cleanSortOrder === 'asc') {
+      return valA > valB ? 1 : -1;
+    } else {
+      return valA < valB ? 1 : -1;
+    }
+  });
+
+  const totalCount = memoryRecords.length;
+  const paginated = memoryRecords.slice(skip, skip + parsedLimit);
+  const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+  return {
+    records: paginated,
+    totalCount,
+    page: parsedPage,
+    limit: parsedLimit,
+    totalPages,
+    hasNext: parsedPage < totalPages,
+    hasPrev: parsedPage > 1
+  };
+};
+
 const getUserSubmissions = async (userId, filters = {}) => {
   initializeInMemorySubmissions();
   const dbStatus = await checkDatabaseConnection();
 
-  const { page = 1, limit = 10, search, status, platform } = filters;
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const {
+    page = 1,
+    limit = 10,
+    search = '',
+    status = 'ALL',
+    platform = 'ALL',
+    actionType = 'ALL',
+    startDate = null,
+    endDate = null,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = filters;
+
+  const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+  const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const skip = (parsedPage - 1) * parsedLimit;
+  const trimmedSearch = typeof search === 'string' ? search.trim() : '';
 
   if (dbStatus.isConnected && prisma) {
     try {
       const where = { userId };
       
-      if (status) where.status = status.toUpperCase();
-      if (platform) where.platform = platform.toUpperCase();
-      if (search) {
+      if (status && status !== 'ALL') where.status = status.toUpperCase();
+      if (platform && platform !== 'ALL') where.platform = platform.toUpperCase();
+      if (actionType && actionType !== 'ALL') where.actionType = actionType.toUpperCase();
+      
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) {
+          const from = new Date(startDate);
+          if (!isNaN(from.getTime())) {
+            from.setHours(0, 0, 0, 0);
+            where.createdAt.gte = from;
+          }
+        }
+        if (endDate) {
+          const to = new Date(endDate);
+          if (!isNaN(to.getTime())) {
+            to.setHours(23, 59, 59, 999);
+            where.createdAt.lte = to;
+          }
+        }
+      }
+
+      if (trimmedSearch) {
         where.OR = [
-          { postUrl: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
+          { postUrl: { contains: trimmedSearch, mode: 'insensitive' } },
+          { description: { contains: trimmedSearch, mode: 'insensitive' } }
         ];
       }
 
-      const totalCount = await prisma.submission.count({ where });
-      const records = await prisma.submission.findMany({
-        where,
-        include: {
-          socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
-          reviews: { include: { admin: { select: { id: true, name: true } } } }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: parseInt(limit)
-      });
-      return { records, totalCount, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(totalCount / parseInt(limit)) };
+      const validSortFields = ['createdAt', 'status', 'platform', 'actionType', 'updatedAt'];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+      const cleanSortOrder = sortOrder && sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+      const [totalCount, records] = await Promise.all([
+        prisma.submission.count({ where }),
+        prisma.submission.findMany({
+          where,
+          include: {
+            socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
+            reviews: {
+              include: { admin: { select: { id: true, name: true } } },
+              orderBy: { createdAt: 'desc' }
+            },
+            clarifications: {
+              include: { admin: { select: { id: true, name: true } } },
+              orderBy: { createdAt: 'desc' }
+            }
+          },
+          orderBy: { [sortField]: cleanSortOrder },
+          skip,
+          take: parsedLimit
+        })
+      ]);
+
+      const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+      return {
+        records,
+        totalCount,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages,
+        hasNext: parsedPage < totalPages,
+        hasPrev: parsedPage > 1
+      };
     } catch (err) {
       console.warn('[SubRepo] Prisma lookup failed, falling back to memory store:', err.message);
     }
@@ -144,21 +406,59 @@ const getUserSubmissions = async (userId, filters = {}) => {
   let memoryRecords = Array.from(inMemorySubmissions.values())
     .filter(s => s.userId === userId);
     
-  if (status) memoryRecords = memoryRecords.filter(s => s.status === status.toUpperCase());
-  if (platform) memoryRecords = memoryRecords.filter(s => s.platform === platform.toUpperCase());
-  if (search) {
-    const s = search.toLowerCase();
+  if (status && status !== 'ALL') memoryRecords = memoryRecords.filter(s => s.status === status.toUpperCase());
+  if (platform && platform !== 'ALL') memoryRecords = memoryRecords.filter(s => s.platform === platform.toUpperCase());
+  if (actionType && actionType !== 'ALL') memoryRecords = memoryRecords.filter(s => s.actionType === actionType.toUpperCase());
+  if (startDate) {
+    const from = new Date(startDate);
+    if (!isNaN(from.getTime())) {
+      from.setHours(0, 0, 0, 0);
+      memoryRecords = memoryRecords.filter(s => new Date(s.createdAt) >= from);
+    }
+  }
+  if (endDate) {
+    const to = new Date(endDate);
+    if (!isNaN(to.getTime())) {
+      to.setHours(23, 59, 59, 999);
+      memoryRecords = memoryRecords.filter(s => new Date(s.createdAt) <= to);
+    }
+  }
+  if (trimmedSearch) {
+    const s = trimmedSearch.toLowerCase();
     memoryRecords = memoryRecords.filter(sub => 
       (sub.postUrl && sub.postUrl.toLowerCase().includes(s)) ||
       (sub.description && sub.description.toLowerCase().includes(s))
     );
   }
 
-  memoryRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const totalCount = memoryRecords.length;
-  memoryRecords = memoryRecords.slice(skip, skip + parseInt(limit));
+  const cleanSortOrder = sortOrder && sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+  memoryRecords.sort((a, b) => {
+    let valA = a[sortBy] || a.createdAt;
+    let valB = b[sortBy] || b.createdAt;
+    if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+      valA = new Date(valA).getTime();
+      valB = new Date(valB).getTime();
+    }
+    if (cleanSortOrder === 'asc') {
+      return valA > valB ? 1 : -1;
+    } else {
+      return valA < valB ? 1 : -1;
+    }
+  });
 
-  return { records: memoryRecords, totalCount, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(totalCount / parseInt(limit)) };
+  const totalCount = memoryRecords.length;
+  const paginated = memoryRecords.slice(skip, skip + parsedLimit);
+  const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+  return {
+    records: paginated,
+    totalCount,
+    page: parsedPage,
+    limit: parsedLimit,
+    totalPages,
+    hasNext: parsedPage < totalPages,
+    hasPrev: parsedPage > 1
+  };
 };
 
 const getSubmissionById = async (id) => {
@@ -632,6 +932,7 @@ const getQueueNavigation = async (currentId, filters = {}) => {
 
 module.exports = {
   getAllSubmissions,
+  getSubmissionsPaginated,
   getUserSubmissions,
   getSubmissionById,
   getSubmissionByScreenshotRef,

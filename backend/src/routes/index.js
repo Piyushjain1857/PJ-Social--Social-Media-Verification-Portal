@@ -10,6 +10,7 @@ const dashboardRoutes = require('./dashboardRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const socialAccountRoutes = require('./socialAccountRoutes');
+const searchRoutes = require('./searchRoutes');
 
 // Authentication routes (/api/auth)
 router.use('/auth', authRoutes);
@@ -31,6 +32,9 @@ router.use('/superadmin', superAdminRoutes);
 
 // Official Social Accounts (active accounts for submission targeting) (/api/social-accounts)
 router.use('/social-accounts', socialAccountRoutes);
+
+// Unified Global Search endpoint (/api/search)
+router.use('/search', searchRoutes);
 
 // Dashboard data routes (/api/dashboard)
 router.use('/dashboard', dashboardRoutes);

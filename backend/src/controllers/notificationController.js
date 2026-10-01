@@ -1,5 +1,6 @@
 const {
   getUserNotifications,
+  getUserNotificationsPaginated,
   markNotificationAsRead,
   markAllNotificationsAsRead
 } = require('../repositories/notificationRepository');
@@ -8,18 +9,56 @@ const {
  * GET /api/notifications
  * GET /api/notifications/my
  * Protected: Authenticated users (USER, ADMIN, SUPER_ADMIN)
- * Returns notifications addressed exclusively to the authenticated caller.
+ * Returns notifications addressed exclusively to the authenticated caller with search, filtering, and pagination.
  */
 const getNotifications = async (req, res, next) => {
   try {
-    const notifications = await getUserNotifications(req.user.id);
-    const unreadCount = notifications.filter(n => !n.isRead).length;
+    const {
+      page,
+      limit,
+      search,
+      type,
+      isRead,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder
+    } = req.query;
+
+    const result = await getUserNotificationsPaginated(req.user.id, {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : (page ? 10 : 50),
+      search: search || '',
+      type: type || 'ALL',
+      isRead: isRead !== undefined ? isRead : 'ALL',
+      startDate: startDate || null,
+      endDate: endDate || null,
+      sortBy: sortBy || 'createdAt',
+      sortOrder: sortOrder || 'desc'
+    });
 
     return res.status(200).json({
       success: true,
-      count: notifications.length,
-      unreadCount,
-      data: notifications
+      count: result.records.length,
+      unreadCount: result.totalUnread,
+      data: result.records,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      },
+      filters: {
+        search: search || null,
+        type: type || 'ALL',
+        isRead: isRead !== undefined ? isRead : 'ALL',
+        startDate: startDate || null,
+        endDate: endDate || null,
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc'
+      }
     });
   } catch (error) {
     next(error);

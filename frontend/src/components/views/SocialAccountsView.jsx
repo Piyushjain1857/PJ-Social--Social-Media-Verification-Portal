@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   fetchSuperAdminSocialAccounts,
+  fetchSocialAccounts,
   fetchActiveOfficialAccounts,
   fetchOfficialAccountById,
   createSuperAdminSocialAccount,
@@ -9,6 +10,10 @@ import {
   updateSuperAdminSocialAccountStatus,
   deleteSuperAdminSocialAccount
 } from '../../services/api';
+import FilterBar from '../common/FilterBar';
+import Pagination from '../common/Pagination';
+import EmptyState from '../common/EmptyState';
+import LoadingSkeleton from '../common/LoadingSkeleton';
 
 const PLATFORM_CONFIG = {
   INSTAGRAM: {
@@ -52,6 +57,22 @@ export default function SocialAccountsView() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [platformFilter, setPlatformFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState({
+    totalCount: 0,
+    totalPages: 1,
+    currentPage: 1,
+    limit: 10,
+    hasNext: false,
+    hasPrev: false
+  });
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -93,6 +114,7 @@ export default function SocialAccountsView() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
+      setPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -111,45 +133,73 @@ export default function SocialAccountsView() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAddModalOpen, isEditModalOpen, isViewModalOpen, isDeleteModalOpen, addSubmitting, editSubmitting, deleteSubmitting]);
 
-  // Load Accounts
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setDebouncedSearch('');
+    setPlatformFilter('ALL');
+    setStatusFilter('ALL');
+    setStartDate('');
+    setEndDate('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+  };
+
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    debouncedSearch ||
+    platformFilter !== 'ALL' ||
+    statusFilter !== 'ALL' ||
+    startDate ||
+    endDate ||
+    sortBy !== 'createdAt' ||
+    sortOrder !== 'desc'
+  );
+
+  // Load Accounts with full server-side filtering & pagination
   const loadAccounts = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      if (isSuperAdmin) {
-        const res = await fetchSuperAdminSocialAccounts({
-          platform: platformFilter,
-          status: statusFilter,
-          search: debouncedSearch
-        });
-        if (res.success) {
-          setAccounts(res.data || []);
-        } else {
-          setErrorMessage(res.message || 'Failed to load official social accounts.');
+      const queryParams = {
+        platform: platformFilter,
+        status: statusFilter,
+        search: debouncedSearch,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        page,
+        limit,
+        sortBy,
+        sortOrder
+      };
+
+      const res = isSuperAdmin
+        ? await fetchSuperAdminSocialAccounts(queryParams)
+        : await fetchSocialAccounts(queryParams);
+
+      if (res.success) {
+        setAccounts(res.data || []);
+        if (res.pagination) {
+          setPagination({
+            totalCount: res.pagination.totalCount ?? (res.data || []).length,
+            totalPages: res.pagination.totalPages ?? 1,
+            currentPage: res.pagination.page ?? page,
+            limit: res.pagination.limit ?? limit,
+            hasNext: Boolean(res.pagination.hasNext),
+            hasPrev: Boolean(res.pagination.hasPrev)
+          });
         }
       } else {
-        // Read-only view for other roles
-        const res = await fetchActiveOfficialAccounts(platformFilter);
-        if (res.success) {
-          let list = res.data || [];
-          if (debouncedSearch.trim()) {
-            const q = debouncedSearch.toLowerCase();
-            list = list.filter(a =>
-              (a.name && a.name.toLowerCase().includes(q)) ||
-              (a.handle && a.handle.toLowerCase().includes(q)) ||
-              (a.description && a.description.toLowerCase().includes(q))
-            );
-          }
-          setAccounts(list);
-        }
+        setErrorMessage(res.message || 'Failed to load official social accounts.');
       }
     } catch (err) {
       setErrorMessage(err.message || 'Error connecting to service.');
     } finally {
       setIsLoading(false);
     }
-  }, [isSuperAdmin, platformFilter, statusFilter, debouncedSearch]);
+  }, [isSuperAdmin, platformFilter, statusFilter, debouncedSearch, startDate, endDate, page, limit, sortBy, sortOrder]);
 
   useEffect(() => {
     loadAccounts();
@@ -449,127 +499,58 @@ export default function SocialAccountsView() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Search box */}
-          <div style={{ flex: '1 1 280px', position: 'relative' }}>
-            <input
-              type="text"
-              id="input-search-social-accounts"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by account name, handle, URL, or description..."
-              className="input-field"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.9rem',
-                fontSize: '0.9rem',
-                borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-primary)'
-              }}
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Refresh button */}
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={loadAccounts}
-            disabled={isLoading}
-            style={{ padding: '0.65rem 1rem', fontSize: '0.85rem' }}
-          >
-            {isLoading ? '⏳ Refreshing...' : '🔄 Refresh'}
-          </button>
-        </div>
-
-        {/* Platform Tabs & Status Filters */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem' }}>
-          {/* Platform Tabs */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            {[
-              { id: 'ALL', label: 'All Platforms', icon: '🌐' },
-              { id: 'INSTAGRAM', label: 'Instagram', icon: '📸' },
-              { id: 'LINKEDIN', label: 'LinkedIn', icon: '💼' },
-              { id: 'FACEBOOK', label: 'Facebook', icon: '👥' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                id={`filter-platform-${tab.id.toLowerCase()}`}
-                onClick={() => setPlatformFilter(tab.id)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.4rem 0.85rem',
-                  borderRadius: '20px',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  border: platformFilter === tab.id ? '1px solid var(--role-superadmin)' : '1px solid var(--border-subtle)',
-                  background: platformFilter === tab.id ? 'rgba(168, 85, 247, 0.18)' : 'rgba(255, 255, 255, 0.03)',
-                  color: platformFilter === tab.id ? 'var(--text-highlight)' : 'var(--text-secondary)'
-                }}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Status Filters (Only for Super Admin) */}
-          {isSuperAdmin && (
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Status:</span>
-              {[
-                { id: 'ALL', label: 'All' },
-                { id: 'ACTIVE', label: 'Active' },
-                { id: 'INACTIVE', label: 'Inactive' }
-              ].map(st => (
-                <button
-                  key={st.id}
-                  type="button"
-                  id={`filter-status-${st.id.toLowerCase()}`}
-                  onClick={() => setStatusFilter(st.id)}
-                  style={{
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: '6px',
-                    fontSize: '0.78rem',
-                    cursor: 'pointer',
-                    border: statusFilter === st.id ? '1px solid var(--border-strong)' : '1px solid transparent',
-                    background: statusFilter === st.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                    color: statusFilter === st.id ? 'var(--text-highlight)' : 'var(--text-muted)'
-                  }}
-                >
-                  {st.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <FilterBar
+        search={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search accounts by name, handle, URL, or notes..."
+        filters={[
+          {
+            id: 'platform',
+            label: 'Platform Network',
+            value: platformFilter,
+            onChange: (val) => { setPlatformFilter(val); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Platforms' },
+              { value: 'INSTAGRAM', label: 'Instagram (📸)' },
+              { value: 'LINKEDIN', label: 'LinkedIn (💼)' },
+              { value: 'FACEBOOK', label: 'Facebook (👥)' }
+            ]
+          },
+          ...(isSuperAdmin ? [
+            {
+              id: 'status',
+              label: 'Channel Status',
+              value: statusFilter,
+              onChange: (val) => { setStatusFilter(val); setPage(1); },
+              options: [
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'ACTIVE', label: 'Active Channels' },
+                { value: 'INACTIVE', label: 'Inactive / Paused' }
+              ]
+            }
+          ] : [])
+        ]}
+        dateRange={{
+          startDate,
+          onStartDateChange: (d) => { setStartDate(d); setPage(1); },
+          endDate,
+          onEndDateChange: (d) => { setEndDate(d); setPage(1); }
+        }}
+        sortOptions={[
+          { value: 'createdAt', label: 'Creation Date' },
+          { value: 'name', label: 'Channel Name' },
+          { value: 'platform', label: 'Platform' },
+          { value: 'handle', label: 'Social Handle' }
+        ]}
+        sortBy={sortBy}
+        onSortByChange={(val) => { setSortBy(val); setPage(1); }}
+        sortOrder={sortOrder}
+        onToggleSortOrder={() => { setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); setPage(1); }}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalCount={pagination.totalCount || accounts.length}
+        isLoading={isLoading}
+      />
 
       {/* Non-SuperAdmin Notice */}
       {!isSuperAdmin && (
@@ -580,32 +561,27 @@ export default function SocialAccountsView() {
 
       {/* Accounts List / Cards */}
       {isLoading ? (
-        <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⏳</div>
-          <div>Loading official college social accounts...</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className="glass-panel skeleton-card" style={{ height: '220px' }} />
+          ))}
         </div>
       ) : accounts.length === 0 ? (
-        <div className="glass-panel" style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏛️</div>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-highlight)', fontSize: '1.15rem' }}>
-            No Official Social Media Accounts Found
-          </h3>
-          <p style={{ margin: 0, fontSize: '0.88rem' }}>
-            {searchTerm || platformFilter !== 'ALL' || statusFilter !== 'ALL'
-              ? 'No official accounts match your search or filter criteria.'
-              : 'No official accounts have been registered yet.'}
-          </p>
-          {isSuperAdmin && (
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleOpenAdd}
-              style={{ marginTop: '1.25rem', padding: '0.6rem 1.25rem' }}
-            >
-              Add First Official Account
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon="🏛️"
+          title="No Official Social Media Accounts Found"
+          description={
+            hasActiveFilters
+              ? `No accounts match your filter criteria (${[
+                  searchTerm && `"${searchTerm}"`,
+                  platformFilter !== 'ALL' && `Platform: ${platformFilter}`,
+                  statusFilter !== 'ALL' && `Status: ${statusFilter}`
+                ].filter(Boolean).join(', ')}). Try resetting filters.`
+              : 'No official accounts have been registered yet.'
+          }
+          actionText={hasActiveFilters ? 'Clear All Filters' : isSuperAdmin ? 'Add First Official Account' : null}
+          onAction={hasActiveFilters ? handleClearFilters : isSuperAdmin ? handleOpenAdd : null}
+        />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
           {accounts.map(acc => {
@@ -841,6 +817,18 @@ export default function SocialAccountsView() {
           })}
         </div>
       )}
+
+      {/* Pagination Controls */}
+      <Pagination
+        page={page}
+        totalPages={pagination.totalPages}
+        totalCount={pagination.totalCount || accounts.length}
+        limit={limit}
+        onPageChange={(p) => setPage(p)}
+        onLimitChange={(l) => { setLimit(l); setPage(1); }}
+        limitOptions={[10, 25, 50]}
+        isLoading={isLoading}
+      />
 
       {/* ─────────────────────────────────────────────────────────────────────────────
           MODAL: ADD OFFICIAL ACCOUNT (SUPER_ADMIN ONLY)

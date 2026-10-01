@@ -115,15 +115,40 @@ const listUsersManagement = async (req, res, next) => {
     const search = req.query.search || '';
     const role = req.query.role || 'ALL';
     const status = req.query.status || 'ALL';
+    const startDate = req.query.startDate || null;
+    const endDate = req.query.endDate || null;
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder || 'desc';
 
-    const result = await getUsersPaginated({ page, limit, search, role, status });
+    const result = await getUsersPaginated({
+      page,
+      limit,
+      search,
+      role,
+      status,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder
+    });
 
     return res.status(200).json({
       success: true,
       count: result.users.length,
       data: result.users,
       pagination: result.pagination,
-      stats: result.stats
+      stats: result.stats,
+      filters: {
+        page,
+        limit,
+        search,
+        role,
+        status,
+        startDate,
+        endDate,
+        sortBy,
+        sortOrder
+      }
     });
   } catch (error) {
     next(error);

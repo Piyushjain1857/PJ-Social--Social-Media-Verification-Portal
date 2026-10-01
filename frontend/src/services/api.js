@@ -193,16 +193,37 @@ export const fetchMySubmissions = async (filters = {}) => {
   if (filters.page) params.append('page', filters.page);
   if (filters.limit) params.append('limit', filters.limit);
   if (filters.search) params.append('search', filters.search);
-  if (filters.status) params.append('status', filters.status);
-  if (filters.platform) params.append('platform', filters.platform);
+  if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+  if (filters.platform && filters.platform !== 'ALL') params.append('platform', filters.platform);
+  if (filters.actionType && filters.actionType !== 'ALL') params.append('actionType', filters.actionType);
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+  if (filters.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
 
   const query = params.toString();
   const url = query ? `/submissions/my?${query}` : '/submissions/my';
   return await apiFetch(url);
 };
 
-export const fetchAllSubmissions = async () => {
-  return await apiFetch('/submissions');
+export const fetchAllSubmissions = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.page) params.append('page', filters.page);
+  if (filters.limit) params.append('limit', filters.limit);
+  if (filters.search) params.append('search', filters.search);
+  if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+  if (filters.platform && filters.platform !== 'ALL') params.append('platform', filters.platform);
+  if (filters.actionType && filters.actionType !== 'ALL') params.append('actionType', filters.actionType);
+  if (filters.reviewerId) params.append('reviewerId', filters.reviewerId);
+  if (filters.userId) params.append('userId', filters.userId);
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+  if (filters.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+
+  const query = params.toString();
+  const url = query ? `/submissions?${query}` : '/submissions';
+  return await apiFetch(url);
 };
 
 export const createSubmission = (submissionData, onProgress) => {
@@ -278,8 +299,20 @@ export const rejectSubmission = async (id, feedback) => {
 };
 
 // User Directory & Role Management Endpoints
-export const fetchUsers = async () => {
-  return await apiFetch('/users');
+export const fetchUsers = async (params = {}) => {
+  const q = new URLSearchParams();
+  if (params.page) q.append('page', params.page);
+  if (params.limit) q.append('limit', params.limit);
+  if (params.search) q.append('search', params.search);
+  if (params.role && params.role !== 'ALL') q.append('role', params.role);
+  if (params.status && params.status !== 'ALL') q.append('status', params.status);
+  if (params.startDate) q.append('startDate', params.startDate);
+  if (params.endDate) q.append('endDate', params.endDate);
+  if (params.sortBy) q.append('sortBy', params.sortBy);
+  if (params.sortOrder) q.append('sortOrder', params.sortOrder);
+
+  const qs = q.toString();
+  return await apiFetch(qs ? `/users?${qs}` : '/users');
 };
 
 export const updateUserRole = async (userId, role) => {
@@ -290,12 +323,24 @@ export const updateUserRole = async (userId, role) => {
 };
 
 // Notifications Endpoints
-export const fetchNotifications = async () => {
-  return await apiFetch('/notifications');
+export const fetchNotifications = async (params = {}) => {
+  const q = new URLSearchParams();
+  if (params.page) q.append('page', params.page);
+  if (params.limit) q.append('limit', params.limit);
+  if (params.search) q.append('search', params.search);
+  if (params.type && params.type !== 'ALL') q.append('type', params.type);
+  if (params.isRead !== undefined && params.isRead !== 'ALL') q.append('isRead', params.isRead);
+  if (params.startDate) q.append('startDate', params.startDate);
+  if (params.endDate) q.append('endDate', params.endDate);
+  if (params.sortBy) q.append('sortBy', params.sortBy);
+  if (params.sortOrder) q.append('sortOrder', params.sortOrder);
+
+  const qs = q.toString();
+  return await apiFetch(qs ? `/notifications?${qs}` : '/notifications');
 };
 
-export const fetchMyNotifications = async () => {
-  return await apiFetch('/notifications');
+export const fetchMyNotifications = async (params = {}) => {
+  return await fetchNotifications(params);
 };
 
 export const markNotificationRead = async (id) => {
@@ -450,13 +495,27 @@ export const fetchSystemStats = async () => {
 };
 
 // Super Admin User Management Endpoints
-export const fetchSuperAdminUsers = async ({ page = 1, limit = 10, search = '', role = 'ALL', status = 'ALL' } = {}) => {
+export const fetchSuperAdminUsers = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  role = 'ALL',
+  status = 'ALL',
+  startDate,
+  endDate,
+  sortBy,
+  sortOrder
+} = {}) => {
   const params = new URLSearchParams();
   if (page) params.append('page', page);
   if (limit) params.append('limit', limit);
   if (search) params.append('search', search);
   if (role && role !== 'ALL') params.append('role', role);
   if (status && status !== 'ALL') params.append('status', status);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (sortOrder) params.append('sortOrder', sortOrder);
 
   const qs = params.toString();
   return await apiFetch(qs ? `/superadmin/users?${qs}` : '/superadmin/users');
@@ -503,12 +562,68 @@ export const fetchOfficialAccountById = async (id) => {
   return await apiFetch(`/social-accounts/${id}`);
 };
 
-// Super Admin Official Social Accounts Management (SUPER_ADMIN only)
-export const fetchSuperAdminSocialAccounts = async ({ platform, status, search } = {}) => {
+// Unified Global Search API
+export const fetchGlobalSearch = async (query, limit = 5) => {
+  if (!query || !query.trim()) {
+    return {
+      success: true,
+      query: '',
+      totalMatches: 0,
+      categories: { submissions: [], users: [], admins: [], socialAccounts: [], notifications: [] }
+    };
+  }
+  return await apiFetch(`/search?q=${encodeURIComponent(query.trim())}&limit=${limit}`);
+};
+
+// General Official Social Accounts (available to all authenticated users)
+export const fetchSocialAccounts = async ({
+  platform,
+  status,
+  search,
+  page,
+  limit,
+  startDate,
+  endDate,
+  sortBy,
+  sortOrder
+} = {}) => {
   const params = new URLSearchParams();
   if (platform && platform !== 'ALL') params.append('platform', platform);
   if (status && status !== 'ALL') params.append('status', status);
   if (search) params.append('search', search);
+  if (page) params.append('page', page);
+  if (limit) params.append('limit', limit);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (sortOrder) params.append('sortOrder', sortOrder);
+
+  const qs = params.toString();
+  return await apiFetch(qs ? `/social-accounts?${qs}` : '/social-accounts');
+};
+
+// Super Admin Official Social Accounts Management (SUPER_ADMIN only)
+export const fetchSuperAdminSocialAccounts = async ({
+  platform,
+  status,
+  search,
+  page,
+  limit,
+  startDate,
+  endDate,
+  sortBy,
+  sortOrder
+} = {}) => {
+  const params = new URLSearchParams();
+  if (platform && platform !== 'ALL') params.append('platform', platform);
+  if (status && status !== 'ALL') params.append('status', status);
+  if (search) params.append('search', search);
+  if (page) params.append('page', page);
+  if (limit) params.append('limit', limit);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (sortOrder) params.append('sortOrder', sortOrder);
 
   const qs = params.toString();
   return await apiFetch(qs ? `/superadmin/social-accounts?${qs}` : '/superadmin/social-accounts');

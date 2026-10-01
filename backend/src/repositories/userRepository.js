@@ -186,7 +186,11 @@ const getUsersPaginated = async ({
   limit = 10,
   search = '',
   role = 'ALL',
-  status = 'ALL'
+  status = 'ALL',
+  startDate = null,
+  endDate = null,
+  sortBy = 'createdAt',
+  sortOrder = 'desc'
 }) => {
   await initializeInMemoryUsers();
   const dbStatus = await checkDatabaseConnection();
@@ -196,14 +200,41 @@ const getUsersPaginated = async ({
   const skip = (parsedPage - 1) * parsedLimit;
   const trimmedSearch = typeof search === 'string' ? search.trim().toLowerCase() : '';
 
+  const validSortFields = ['name', 'email', 'role', 'status', 'createdAt', 'updatedAt'];
+  const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+  const cleanSortOrder = sortOrder && sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
   if (dbStatus.isConnected && prisma) {
     try {
       const where = {};
       if (role && role !== 'ALL') {
-        where.role = role;
+        if (role === 'ADMINS') {
+          where.role = { in: ['ADMIN', 'SUPER_ADMIN'] };
+        } else if (role.includes(',')) {
+          where.role = { in: role.split(',').map(r => r.trim()).filter(Boolean) };
+        } else {
+          where.role = role;
+        }
       }
       if (status && status !== 'ALL') {
         where.status = status;
+      }
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) {
+          const from = new Date(startDate);
+          if (!isNaN(from.getTime())) {
+            from.setHours(0, 0, 0, 0);
+            where.createdAt.gte = from;
+          }
+        }
+        if (endDate) {
+          const to = new Date(endDate);
+          if (!isNaN(to.getTime())) {
+            to.setHours(23, 59, 59, 999);
+            where.createdAt.lte = to;
+          }
+        }
       }
       if (trimmedSearch) {
         where.OR = [
@@ -233,7 +264,7 @@ const getUsersPaginated = async ({
               }
             }
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { [sortField]: cleanSortOrder }
         }),
         // Global stats for quick metrics
         prisma.user.findMany({
@@ -290,13 +321,48 @@ const getUsersPaginated = async ({
       u.name.toLowerCase().includes(trimmedSearch) ||
       u.email.toLowerCase().includes(trimmedSearch);
 
-    const matchesRole = role === 'ALL' || u.role === role;
+    let matchesRole = true;
+    if (role && role !== 'ALL') {
+      if (role === 'ADMINS') {
+        matchesRole = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN';
+      } else if (role.includes(',')) {
+        matchesRole = role.split(',').map(r => r.trim()).includes(u.role);
+      } else {
+        matchesRole = u.role === role;
+      }
+    }
     const matchesStatus = status === 'ALL' || u.status === status;
 
-    return matchesSearch && matchesRole && matchesStatus;
+    let matchesDate = true;
+    if (startDate) {
+      const from = new Date(startDate);
+      if (!isNaN(from.getTime()) && new Date(u.createdAt) < from) matchesDate = false;
+    }
+    if (endDate) {
+      const to = new Date(endDate);
+      to.setHours(23, 59, 59, 999);
+      if (!isNaN(to.getTime()) && new Date(u.createdAt) > to) matchesDate = false;
+    }
+
+    return matchesSearch && matchesRole && matchesStatus && matchesDate;
   });
 
-  filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  filtered.sort((a, b) => {
+    let valA = a[sortField] || a.createdAt;
+    let valB = b[sortField] || b.createdAt;
+    if (sortField === 'createdAt' || sortField === 'updatedAt') {
+      valA = new Date(valA).getTime();
+      valB = new Date(valB).getTime();
+    } else if (typeof valA === 'string') {
+      valA = valA.toLowerCase();
+      valB = (valB || '').toLowerCase();
+    }
+    if (cleanSortOrder === 'asc') {
+      return valA > valB ? 1 : -1;
+    } else {
+      return valA < valB ? 1 : -1;
+    }
+  });
 
   const totalCount = filtered.length;
   const totalPages = Math.ceil(totalCount / parsedLimit) || 1;

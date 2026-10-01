@@ -1,5 +1,6 @@
 const {
   getAllOfficialAccounts,
+  getOfficialAccountsPaginated,
   getActiveOfficialAccounts,
   getOfficialAccountById,
   createOfficialAccount,
@@ -15,36 +16,45 @@ const {
 /**
  * GET /api/superadmin/social-accounts
  * Protected: SUPER_ADMIN only
- * Returns all official college social media accounts with search, platform, and status filtering.
+ * Returns all official college social media accounts with search, platform, status filtering, sorting & pagination.
  */
 const listAccounts = async (req, res, next) => {
   try {
-    const { platform, status, search } = req.query;
-    let accounts = await getAllOfficialAccounts();
+    const { platform, status, search, page, limit, startDate, endDate, sortBy, sortOrder } = req.query;
 
-    if (platform && platform !== 'ALL') {
-      accounts = accounts.filter(a => a.platform === platform.toUpperCase());
-    }
-
-    if (status && status !== 'ALL') {
-      const wantActive = status.toUpperCase() === 'ACTIVE' || status === 'true';
-      accounts = accounts.filter(a => a.isActive === wantActive);
-    }
-
-    if (search && search.trim()) {
-      const q = search.trim().toLowerCase();
-      accounts = accounts.filter(a =>
-        (a.name && a.name.toLowerCase().includes(q)) ||
-        (a.handle && a.handle.toLowerCase().includes(q)) ||
-        (a.accountUrl && a.accountUrl.toLowerCase().includes(q)) ||
-        (a.description && a.description.toLowerCase().includes(q))
-      );
-    }
+    const result = await getOfficialAccountsPaginated({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : (page ? 10 : 50),
+      search: search || '',
+      platform: platform || 'ALL',
+      status: status || 'ALL',
+      startDate: startDate || null,
+      endDate: endDate || null,
+      sortBy: sortBy || 'createdAt',
+      sortOrder: sortOrder || 'desc'
+    });
 
     return res.status(200).json({
       success: true,
-      count: accounts.length,
-      data: accounts
+      count: result.records.length,
+      data: result.records,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      },
+      filters: {
+        platform: platform || 'ALL',
+        status: status || 'ALL',
+        search: search || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc'
+      }
     });
   } catch (error) {
     next(error);

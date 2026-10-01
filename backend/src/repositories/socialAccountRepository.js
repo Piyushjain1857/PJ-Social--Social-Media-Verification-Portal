@@ -126,6 +126,190 @@ const getAllOfficialAccounts = async () => {
 };
 
 /**
+ * Get official accounts with server-side pagination, search, platform, status filtering, and sorting.
+ */
+const getOfficialAccountsPaginated = async (filters = {}) => {
+  await initializeInMemoryAccounts();
+  const dbStatus = await checkDatabaseConnection();
+
+  const {
+    page = 1,
+    limit = 10,
+    search = '',
+    platform = 'ALL',
+    status = 'ALL',
+    startDate = null,
+    endDate = null,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = filters;
+
+  const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+  const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const skip = (parsedPage - 1) * parsedLimit;
+  const trimmedSearch = typeof search === 'string' ? search.trim() : '';
+
+  const validSort = ['name', 'handle', 'platform', 'isActive', 'createdAt', 'updatedAt'];
+  const sortField = validSort.includes(sortBy) ? sortBy : 'createdAt';
+  const cleanSortOrder = sortOrder && sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const where = {};
+
+      if (platform && platform !== 'ALL') {
+        where.platform = platform.toUpperCase();
+      }
+
+      if (status && status !== 'ALL') {
+        const wantActive = status.toUpperCase() === 'ACTIVE' || status === 'true';
+        where.isActive = wantActive;
+      }
+
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) {
+          const from = new Date(startDate);
+          if (!isNaN(from.getTime())) {
+            from.setHours(0, 0, 0, 0);
+            where.createdAt.gte = from;
+          }
+        }
+        if (endDate) {
+          const to = new Date(endDate);
+          if (!isNaN(to.getTime())) {
+            to.setHours(23, 59, 59, 999);
+            where.createdAt.lte = to;
+          }
+        }
+      }
+
+      if (trimmedSearch) {
+        where.OR = [
+          { name: { contains: trimmedSearch, mode: 'insensitive' } },
+          { handle: { contains: trimmedSearch, mode: 'insensitive' } },
+          { accountUrl: { contains: trimmedSearch, mode: 'insensitive' } },
+          { profileUrl: { contains: trimmedSearch, mode: 'insensitive' } },
+          { description: { contains: trimmedSearch, mode: 'insensitive' } }
+        ];
+      }
+
+      const [totalCount, accounts] = await Promise.all([
+        prisma.socialAccount.count({ where }),
+        prisma.socialAccount.findMany({
+          where,
+          include: {
+            _count: {
+              select: { submissions: true }
+            }
+          },
+          orderBy: { [sortField]: cleanSortOrder },
+          skip,
+          take: parsedLimit
+        })
+      ]);
+
+      const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+      const records = accounts.map(a => ({
+        id: a.id,
+        platform: a.platform,
+        name: a.name || a.handle,
+        handle: a.handle,
+        accountUrl: a.accountUrl || a.profileUrl,
+        profileUrl: a.profileUrl || a.accountUrl,
+        description: a.description || '',
+        isActive: a.isActive,
+        isVerified: a.isVerified,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+        submissionsCount: a._count?.submissions || 0
+      }));
+
+      return {
+        records,
+        totalCount,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages,
+        hasNext: parsedPage < totalPages,
+        hasPrev: parsedPage > 1
+      };
+    } catch (err) {
+      console.warn('[SocialRepo] Prisma getOfficialAccountsPaginated failed, falling back to memory store:', err.message);
+    }
+  }
+
+  // In-Memory Fallback
+  let memoryRecords = Array.from(inMemoryAccounts.values()).map(a => ({
+    ...a,
+    submissionsCount: 0
+  }));
+
+  if (platform && platform !== 'ALL') {
+    memoryRecords = memoryRecords.filter(a => a.platform === platform.toUpperCase());
+  }
+  if (status && status !== 'ALL') {
+    const wantActive = status.toUpperCase() === 'ACTIVE' || status === 'true';
+    memoryRecords = memoryRecords.filter(a => a.isActive === wantActive);
+  }
+  if (startDate) {
+    const from = new Date(startDate);
+    if (!isNaN(from.getTime())) {
+      from.setHours(0, 0, 0, 0);
+      memoryRecords = memoryRecords.filter(a => new Date(a.createdAt) >= from);
+    }
+  }
+  if (endDate) {
+    const to = new Date(endDate);
+    if (!isNaN(to.getTime())) {
+      to.setHours(23, 59, 59, 999);
+      memoryRecords = memoryRecords.filter(a => new Date(a.createdAt) <= to);
+    }
+  }
+  if (trimmedSearch) {
+    const q = trimmedSearch.toLowerCase();
+    memoryRecords = memoryRecords.filter(a =>
+      (a.name && a.name.toLowerCase().includes(q)) ||
+      (a.handle && a.handle.toLowerCase().includes(q)) ||
+      (a.accountUrl && a.accountUrl.toLowerCase().includes(q)) ||
+      (a.description && a.description.toLowerCase().includes(q))
+    );
+  }
+
+  memoryRecords.sort((a, b) => {
+    let valA = a[sortField] || a.createdAt;
+    let valB = b[sortField] || b.createdAt;
+    if (sortField === 'createdAt' || sortField === 'updatedAt') {
+      valA = new Date(valA).getTime();
+      valB = new Date(valB).getTime();
+    } else if (typeof valA === 'string') {
+      valA = valA.toLowerCase();
+      valB = (valB || '').toLowerCase();
+    }
+    if (cleanSortOrder === 'asc') {
+      return valA > valB ? 1 : -1;
+    } else {
+      return valA < valB ? 1 : -1;
+    }
+  });
+
+  const totalCount = memoryRecords.length;
+  const paginated = memoryRecords.slice(skip, skip + parsedLimit);
+  const totalPages = Math.ceil(totalCount / parsedLimit) || 1;
+
+  return {
+    records: paginated,
+    totalCount,
+    page: parsedPage,
+    limit: parsedLimit,
+    totalPages,
+    hasNext: parsedPage < totalPages,
+    hasPrev: parsedPage > 1
+  };
+};
+
+/**
  * Get only active official accounts for submission creation
  */
 const getActiveOfficialAccounts = async (platformFilter = null) => {
@@ -360,6 +544,7 @@ const deleteOfficialAccount = async (id) => {
 
 module.exports = {
   getAllOfficialAccounts,
+  getOfficialAccountsPaginated,
   getActiveOfficialAccounts,
   getOfficialAccountById,
   createOfficialAccount,

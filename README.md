@@ -20,6 +20,7 @@ VeriSocial is an enterprise-grade full-stack platform engineered to verify creat
 - [Security Guardrails & IDOR Protection](#-security-guardrails--idor-protection)
 - [API Reference Matrix](#-api-reference-matrix)
 - [Automated Testing Suite](#-automated-testing-suite)
+- [Global Search & Filtering Architecture](#-global-search--filtering-architecture)
 
 ---
 
@@ -380,7 +381,7 @@ The portal provides 3 pre-seeded demo accounts ready for testing:
 
 ## 🧪 Automated Testing Suite
 
-The repository includes a comprehensive 9-suite test harness verifying every layer of the platform:
+The repository includes a comprehensive 10-suite test harness verifying every layer of the platform:
 
 ```bash
 npm test
@@ -396,3 +397,29 @@ npm test
 7. **`profile_management.test.js`**: Validates password changes, policy checks, name updates, and privilege escalation prevention.
 8. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
 9. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
+10. **`search_and_filter.test.js`**: Validates server-side searching, multi-criteria filtering (status, platform, role, date range, reviewer, user), sorting (asc/desc), pagination, result count metrics, and strict RBAC enforcement across all directory endpoints.
+
+---
+
+## 🔍 Global Search & Filtering Architecture
+
+VeriSocial implements a high-performance, server-side search and filtering engine across all key portals:
+- **Global Search Modal (`⌘K` / `Ctrl+K`)**: Instant modal search accessible anywhere in the portal with keyboard navigation (`↑`/`↓`/`Enter`/`Esc`), live categorization, and direct deep-linking into Submissions, Users, Admins, Social Accounts, and Notifications.
+- **Unified `/api/search` Endpoint**: Server-side cross-entity search returning grouped results with strict RBAC:
+  - `USER`: searches only user's own submissions, user's own notifications, and active official accounts.
+  - `ADMIN`: searches all submissions, creator users, notifications, and official accounts.
+  - `SUPER_ADMIN`: searches all submissions, all users, administrators, official accounts, and system notifications.
+- **Submissions & My Submissions**: Filter by `status` (PENDING, APPROVED, REJECTED), `platform` (INSTAGRAM, LINKEDIN, FACEBOOK), `actionType` (LIKE, COMMENT, STORY), `reviewerId` (moderator), `userId` (creator), date range (`startDate`, `endDate`), and text search across post permalinks, notes, or creator names.
+- **Platform Directory (Users & Admins)**: Search by name or email, filter by `role` (USER, ADMIN, SUPER_ADMIN), `status` (ACTIVE, INACTIVE, SUSPENDED), date range, and sort by registration date, name, or role.
+- **Official Social Accounts**: Search handles or descriptions, filter by platform and active status, and sort by creation date or name.
+- **Notification Center**: Search alert titles or messages, filter by alert category (APPROVAL, REJECTION, ACCOUNT_ALERT, SYSTEM_ALERT) and read status (UNREAD, READ), with date range and sort controls.
+
+### Performance & Database Optimizations:
+- **Database Indexes**: Compound indexes in PostgreSQL/Prisma on `Submission(status, createdAt)`, `Submission(userId, status, createdAt)`, `Submission(platform, status)`, `User(role, status)`, `User(name)`, `SocialAccount(platform, isActive)`, and `Notification(userId, isRead, createdAt)`.
+- **Reusable Frontend Components**: Modular UI primitives in `frontend/src/components/common/`:
+  - `GlobalSearchModal.jsx`: Command-palette style global search with keyboard navigation (`⌘K` / `Ctrl+K`).
+  - `FilterBar.jsx`: Debounced search, multi-filter dropdowns, date pickers, sort toggles, and clear filters.
+  - `Pagination.jsx`: Smart ellipsis pagination, page size selector, and result count summaries.
+  - `EmptyState.jsx`: Clean glassmorphic zero-state cards with reset actions.
+  - `LoadingSkeleton.jsx`: Shimmer table and card skeletons.
+- **Server-Side Pagination & Filtering**: Zero client-side bloat — queries leverage Prisma `skip`, `take`, and `count` to maintain lightning-fast response times even on large datasets.

@@ -8,6 +8,10 @@ import {
   updateSuperAdminUserStatus,
   fetchUsers
 } from '../../services/api';
+import FilterBar from '../common/FilterBar';
+import Pagination from '../common/Pagination';
+import EmptyState from '../common/EmptyState';
+import LoadingSkeleton from '../common/LoadingSkeleton';
 
 export default function UsersView() {
   const { user: currentUser } = useAuth();
@@ -38,6 +42,10 @@ export default function UsersView() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -103,51 +111,105 @@ export default function UsersView() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isCreateModalOpen, isEditModalOpen, isDetailsModalOpen, isStatusConfirmOpen, createSubmitting, editSubmitting, statusSubmitting]);
 
+  // Clear all filters handler
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setDebouncedSearch('');
+    setRoleFilter('ALL');
+    setStatusFilter('ALL');
+    setStartDate('');
+    setEndDate('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    debouncedSearch ||
+    roleFilter !== 'ALL' ||
+    statusFilter !== 'ALL' ||
+    startDate ||
+    endDate ||
+    sortBy !== 'createdAt' ||
+    sortOrder !== 'desc'
+  );
+
   // Load users directory
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
+      const queryParams = {
+        page: currentPage,
+        limit: pageSize,
+        search: debouncedSearch,
+        role: roleFilter,
+        status: statusFilter,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc'
+      };
+
       if (isSuperAdmin) {
-        const res = await fetchSuperAdminUsers({
-          page: currentPage,
-          limit: pageSize,
-          search: debouncedSearch,
-          role: roleFilter,
-          status: statusFilter
-        });
+        const res = await fetchSuperAdminUsers(queryParams);
 
         if (res.success) {
           setUsers(res.data || []);
-          if (res.pagination) setPagination(res.pagination);
+          if (res.pagination) {
+            setPagination({
+              totalCount: res.pagination.totalCount ?? 0,
+              totalPages: res.pagination.totalPages ?? 1,
+              currentPage: res.pagination.currentPage ?? currentPage,
+              limit: res.pagination.limit ?? pageSize,
+              hasNextPage: Boolean(res.pagination.hasNext),
+              hasPrevPage: Boolean(res.pagination.hasPrev)
+            });
+          }
           if (res.stats) setStats(res.stats);
         } else {
           throw new Error(res.message || 'Failed to fetch users');
         }
       } else {
         // Fallback for ADMIN role
-        const res = await fetchUsers();
+        const res = await fetchUsers(queryParams);
         if (res.success) {
           const list = res.data || [];
           setUsers(list);
-          setStats({
-            total: list.length,
-            active: list.filter(u => u.status === 'ACTIVE').length,
-            inactive: list.filter(u => u.status === 'INACTIVE').length,
-            suspended: list.filter(u => u.status === 'SUSPENDED').length,
-            usersCount: list.filter(u => u.role === 'USER').length,
-            adminsCount: list.filter(u => u.role === 'ADMIN').length,
-            superAdminsCount: list.filter(u => u.role === 'SUPER_ADMIN').length
-          });
-          setPagination({
-            totalCount: list.length,
-            totalPages: 1,
-            currentPage: 1,
-            limit: list.length,
-            hasNextPage: false,
-            hasPrevPage: false
-          });
+          if (res.pagination) {
+            setPagination({
+              totalCount: res.pagination.totalCount ?? list.length,
+              totalPages: res.pagination.totalPages ?? 1,
+              currentPage: res.pagination.currentPage ?? currentPage,
+              limit: res.pagination.limit ?? pageSize,
+              hasNextPage: Boolean(res.pagination.hasNext),
+              hasPrevPage: Boolean(res.pagination.hasPrev)
+            });
+          } else {
+            setPagination({
+              totalCount: list.length,
+              totalPages: 1,
+              currentPage: 1,
+              limit: list.length,
+              hasNextPage: false,
+              hasPrevPage: false
+            });
+          }
+          if (res.stats) {
+            setStats(res.stats);
+          } else {
+            setStats({
+              total: list.length,
+              active: list.filter(u => u.status === 'ACTIVE').length,
+              inactive: list.filter(u => u.status === 'INACTIVE').length,
+              suspended: list.filter(u => u.status === 'SUSPENDED').length,
+              usersCount: list.filter(u => u.role === 'USER').length,
+              adminsCount: list.filter(u => u.role === 'ADMIN').length,
+              superAdminsCount: list.filter(u => u.role === 'SUPER_ADMIN').length
+            });
+          }
         }
       }
     } catch (err) {
@@ -155,7 +217,7 @@ export default function UsersView() {
     } finally {
       setIsLoading(false);
     }
-  }, [isSuperAdmin, currentPage, pageSize, debouncedSearch, roleFilter, statusFilter]);
+  }, [isSuperAdmin, currentPage, pageSize, debouncedSearch, roleFilter, statusFilter, startDate, endDate, sortBy, sortOrder]);
 
   useEffect(() => {
     loadUsers();
@@ -461,85 +523,57 @@ export default function UsersView() {
       )}
 
       {/* ── Search & Filter Controls ── */}
-      <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.85rem', flex: 1 }}>
-          {/* Search Box */}
-          <div style={{ position: 'relative', minWidth: '260px', flex: '1 1 280px' }}>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="Search by user name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '0.55rem 0.85rem 0.55rem 2.2rem', fontSize: '0.85rem' }}
-            />
-            <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
-              🔍
-            </span>
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                style={{ position: 'absolute', right: '0.65rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Role Filter */}
-          <select
-            className="input-field"
-            value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-            style={{ padding: '0.55rem 0.85rem', width: 'auto', fontSize: '0.85rem' }}
-            aria-label="Filter by role"
-          >
-            <option value="ALL">All Roles ({stats.total})</option>
-            <option value="USER">Creators (USER)</option>
-            <option value="ADMIN">Moderators (ADMIN)</option>
-            <option value="SUPER_ADMIN">Super Admins (SUPER_ADMIN)</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            className="input-field"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-            style={{ padding: '0.55rem 0.85rem', width: 'auto', fontSize: '0.85rem' }}
-            aria-label="Filter by status"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-            <option value="SUSPENDED">Suspended</option>
-          </select>
-
-          {/* Page size */}
-          <select
-            className="input-field"
-            value={pageSize}
-            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-            style={{ padding: '0.55rem 0.85rem', width: 'auto', fontSize: '0.85rem' }}
-            aria-label="Items per page"
-          >
-            <option value={10}>10 per page</option>
-            <option value={25}>25 per page</option>
-            <option value={50}>50 per page</option>
-          </select>
-        </div>
-
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={loadUsers}
-          disabled={isLoading}
-          style={{ padding: '0.55rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-        >
-          <span>🔄</span>
-          <span>{isLoading ? 'Loading...' : 'Refresh'}</span>
-        </button>
-      </div>
+      <FilterBar
+        search={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search by user name or email..."
+        filters={[
+          {
+            id: 'role',
+            label: 'Clearance Role',
+            value: roleFilter,
+            onChange: (val) => { setRoleFilter(val); setCurrentPage(1); },
+            options: [
+              { value: 'ALL', label: `All Roles (${stats.total || pagination.totalCount || 0})` },
+              { value: 'USER', label: 'Creators (USER)' },
+              { value: 'ADMIN', label: 'Moderators (ADMIN)' },
+              { value: 'SUPER_ADMIN', label: 'Super Admins (SUPER_ADMIN)' }
+            ]
+          },
+          {
+            id: 'status',
+            label: 'Account Status',
+            value: statusFilter,
+            onChange: (val) => { setStatusFilter(val); setCurrentPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Statuses' },
+              { value: 'ACTIVE', label: 'Active' },
+              { value: 'INACTIVE', label: 'Inactive' },
+              { value: 'SUSPENDED', label: 'Suspended' }
+            ]
+          }
+        ]}
+        dateRange={{
+          startDate,
+          onStartDateChange: (d) => { setStartDate(d); setCurrentPage(1); },
+          endDate,
+          onEndDateChange: (d) => { setEndDate(d); setCurrentPage(1); }
+        }}
+        sortOptions={[
+          { value: 'createdAt', label: 'Joined Date' },
+          { value: 'name', label: 'Full Name' },
+          { value: 'email', label: 'Email Address' },
+          { value: 'role', label: 'Clearance Role' }
+        ]}
+        sortBy={sortBy}
+        onSortByChange={(val) => { setSortBy(val); setCurrentPage(1); }}
+        sortOrder={sortOrder}
+        onToggleSortOrder={() => { setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); setCurrentPage(1); }}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalCount={pagination.totalCount}
+        isLoading={isLoading}
+      />
 
       {/* ── Users Table ── */}
       <div className="table-responsive-wrapper">
@@ -556,20 +590,25 @@ export default function UsersView() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr>
-                <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <div className="status-dot checking" style={{ margin: '0 auto 0.75rem auto' }} />
-                  <div>Loading platform directory...</div>
-                </td>
-              </tr>
+              <LoadingSkeleton rows={5} columns={6} />
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👥</div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-highlight)', fontSize: '1rem' }}>No users found</div>
-                  <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                    {searchTerm ? `No users match the search query "${searchTerm}".` : 'Try changing your role or status filter.'}
-                  </div>
+                <td colSpan="6" style={{ padding: '2rem 1rem' }}>
+                  <EmptyState
+                    icon="👥"
+                    title="No Users Found"
+                    description={
+                      hasActiveFilters
+                        ? `No users match your active search and filter criteria (${[
+                            searchTerm && `"${searchTerm}"`,
+                            roleFilter !== 'ALL' && `Role: ${roleFilter}`,
+                            statusFilter !== 'ALL' && `Status: ${statusFilter}`
+                          ].filter(Boolean).join(', ')}).`
+                        : "There are currently no registered users matching this directory."
+                    }
+                    actionText={hasActiveFilters ? "Clear All Filters" : null}
+                    onAction={hasActiveFilters ? handleClearFilters : null}
+                  />
                 </td>
               </tr>
             ) : (
@@ -726,41 +765,16 @@ export default function UsersView() {
       </div>
 
       {/* ── Pagination Controls ── */}
-      {pagination.totalCount > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', padding: '0.5rem 0' }}>
-          <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-            Showing <strong>{(currentPage - 1) * pageSize + 1}</strong> to{' '}
-            <strong>{Math.min(currentPage * pageSize, pagination.totalCount)}</strong> of{' '}
-            <strong>{pagination.totalCount}</strong> users
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
-            >
-              ← Prev
-            </button>
-
-            <span style={{ fontSize: '0.82rem', padding: '0 0.5rem', color: 'var(--text-secondary)' }}>
-              Page <strong>{currentPage}</strong> of <strong>{pagination.totalPages || 1}</strong>
-            </span>
-
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={currentPage >= pagination.totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}
-            >
-              Next →
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={currentPage}
+        totalPages={pagination.totalPages}
+        totalCount={pagination.totalCount}
+        limit={pageSize}
+        onPageChange={(p) => setCurrentPage(p)}
+        onLimitChange={(l) => { setPageSize(l); setCurrentPage(1); }}
+        limitOptions={[10, 25, 50]}
+        isLoading={isLoading}
+      />
 
       {/* ====================================================================
           1. CREATE USER MODAL

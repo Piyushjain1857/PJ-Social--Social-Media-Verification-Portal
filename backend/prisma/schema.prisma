@@ -75,6 +75,11 @@ model User {
   @@index([email])
   @@index([role])
   @@index([status])
+  @@index([name])
+  @@index([role, status])
+  @@index([createdAt])
+  @@index([role, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
   @@map("users")
 }
 
@@ -100,6 +105,12 @@ model SocialAccount {
   @@index([userId])
   @@index([platform])
   @@index([isActive])
+  @@index([platform, isActive])
+  @@index([handle])
+  @@index([name])
+  @@index([createdAt(sort: Desc)])
+  @@index([platform, createdAt(sort: Desc)])
+  @@index([isActive, createdAt(sort: Desc)])
   @@map("social_accounts")
 }
 
@@ -129,6 +140,15 @@ model Submission {
   @@index([platform, actionType])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([platform, status])
+  @@index([actionType])
+  @@index([platform, createdAt(sort: Desc)])
+  @@index([actionType, createdAt(sort: Desc)])
+  @@index([platform, status, createdAt(sort: Desc)])
+  @@index([actionType, status, createdAt(sort: Desc)])
   @@map("submissions")
 }
 
@@ -148,6 +168,8 @@ model Review {
   @@index([adminId])
   @@index([status])
   @@index([createdAt])
+  @@index([adminId, createdAt(sort: Desc)])
+  @@index([submissionId, createdAt(sort: Desc)])
   @@map("reviews")
 }
 
@@ -202,5 +224,9 @@ model Notification {
   @@index([createdAt])
   @@index([userId, isRead])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, type])
+  @@index([type])
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([userId, type, createdAt(sort: Desc)])
   @@map("notifications")
 }

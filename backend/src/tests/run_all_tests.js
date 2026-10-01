@@ -11,6 +11,7 @@ const testFiles = [
   'security_audit.test.js',
   'workflow.test.js',
   'admin_review_workspace.test.js',
+  'search_and_filter.test.js',
   'notification.test.js',
   'official_social_accounts.test.js',
   'profile_management.test.js',

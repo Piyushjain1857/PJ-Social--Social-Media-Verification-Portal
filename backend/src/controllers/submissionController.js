@@ -1,5 +1,6 @@
 const {
   getAllSubmissions,
+  getSubmissionsPaginated,
   getUserSubmissions,
   getSubmissionById,
   createSubmission,
@@ -151,14 +152,30 @@ const create = async (req, res, next) => {
  */
 const getMy = async (req, res, next) => {
   try {
-    const { page, limit, search, status, platform } = req.query;
-    
-    const result = await getUserSubmissions(req.user.id, {
-      page: page ? parseInt(page) : 1,
-      limit: limit ? parseInt(limit) : 10,
+    const {
+      page,
+      limit,
       search,
       status,
-      platform
+      platform,
+      actionType,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder
+    } = req.query;
+    
+    const result = await getUserSubmissions(req.user.id, {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      search,
+      status,
+      platform,
+      actionType,
+      startDate,
+      endDate,
+      sortBy: sortBy || 'createdAt',
+      sortOrder: sortOrder || 'desc'
     });
     
     return res.status(200).json({
@@ -169,7 +186,19 @@ const getMy = async (req, res, next) => {
         page: result.page,
         limit: result.limit,
         totalCount: result.totalCount,
-        totalPages: result.totalPages
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      },
+      filters: {
+        search: search || null,
+        status: status || 'ALL',
+        platform: platform || 'ALL',
+        actionType: actionType || 'ALL',
+        startDate: startDate || null,
+        endDate: endDate || null,
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc'
       }
     });
   } catch (error) {
@@ -180,16 +209,65 @@ const getMy = async (req, res, next) => {
 /**
  * GET /api/submissions
  * Protected: ADMIN, SUPER_ADMIN only
- * Returns all submissions across the platform for review/moderation.
+ * Returns all submissions across the platform with full server-side filtering, sorting, pagination & search.
  * USER role receives 403 Forbidden via route middleware.
  */
 const getAll = async (req, res, next) => {
   try {
-    const submissions = await getAllSubmissions();
+    const {
+      page,
+      limit,
+      search,
+      status,
+      platform,
+      actionType,
+      reviewerId,
+      userId,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder
+    } = req.query;
+
+    const result = await getSubmissionsPaginated({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      search,
+      status,
+      platform,
+      actionType,
+      reviewerId,
+      userId,
+      startDate,
+      endDate,
+      sortBy: sortBy || 'createdAt',
+      sortOrder: sortOrder || 'desc'
+    });
+
     return res.status(200).json({
       success: true,
-      count: submissions.length,
-      data: submissions
+      count: result.records.length,
+      data: result.records,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      },
+      filters: {
+        search: search || null,
+        status: status || 'ALL',
+        platform: platform || 'ALL',
+        actionType: actionType || 'ALL',
+        reviewerId: reviewerId || null,
+        userId: userId || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc'
+      }
     });
   } catch (error) {
     next(error);

@@ -1,0 +1,19 @@
+{
+  "watch": [
+    "src/server.js",
+    "src/controllers",
+    "src/routes",
+    "src/repositories",
+    "src/services",
+    "src/middlewares",
+    "src/utils"
+  ],
+  "ignore": [
+    "src/tests",
+    "uploads",
+    "prisma",
+    "*.test.js",
+    "*.log"
+  ],
+  "ext": "js,json"
+}

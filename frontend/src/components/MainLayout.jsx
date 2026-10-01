@@ -48,6 +48,7 @@ import SubmitActivityView from './views/SubmitActivityView';
 import MySubmissionsView from './views/MySubmissionsView';
 import NotificationsView from './views/NotificationsView';
 import ProfileView from './views/ProfileView';
+import GlobalSearchModal from './common/GlobalSearchModal';
 
 /**
  * Role-Based Navigation Definitions strictly enforced from authenticated role data:
@@ -223,13 +224,19 @@ export default function MainLayout({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close dropdowns on Escape key
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+
+  // Close dropdowns on Escape key and handle ⌘K / Ctrl+K global search shortcut
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsGlobalSearchOpen(prev => !prev);
+      } else if (event.key === 'Escape') {
         setIsMobileDrawerOpen(false);
         setIsProfileMenuOpen(false);
         setIsNotifMenuOpen(false);
+        setIsGlobalSearchOpen(false);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -604,6 +611,43 @@ export default function MainLayout({
             </div>
           </div>
 
+          {/* Global Search Quick Trigger */}
+          <div className="layout-navbar-center" style={{ flex: 1, maxWidth: '380px', margin: '0 1rem' }}>
+            <button
+              type="button"
+              className="navbar-search-btn"
+              onClick={() => setIsGlobalSearchOpen(true)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.42rem 0.85rem',
+                fontSize: '0.84rem',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title="Search submissions, users, accounts, notifications... (⌘K / Ctrl+K)"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.95rem' }}>🔍</span>
+                <span className="navbar-search-placeholder">Quick search portal...</span>
+              </span>
+              <kbd style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                padding: '0.12rem 0.4rem',
+                borderRadius: '4px',
+                fontSize: '0.72rem',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#cbd5e1'
+              }}>⌘K</kbd>
+            </button>
+          </div>
+
           {/* Navbar Right Actions */}
           <div className="layout-navbar-right">
             {/* API Health & Latency indicator */}
@@ -931,6 +975,13 @@ export default function MainLayout({
           </div>
         </main>
       </div>
+
+      {/* Global Search Modal (⌘K / Ctrl+K) */}
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        onNavigateToNav={handleNavChange}
+      />
     </div>
   );
 }

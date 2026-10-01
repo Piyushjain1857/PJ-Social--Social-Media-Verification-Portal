@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   fetchNotifications,
   markNotificationRead,
   markAllNotificationsRead
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import FilterBar from '../common/FilterBar';
+import Pagination from '../common/Pagination';
+import EmptyState from '../common/EmptyState';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -83,28 +86,101 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('ALL'); // ALL, UNREAD, READ, APPROVALS, REJECTIONS, ACCOUNT
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL'); // ALL, APPROVAL, REJECTION, ACCOUNT_ALERT, SYSTEM_ALERT
+  const [readFilter, setReadFilter] = useState('ALL'); // ALL, UNREAD, READ
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState({
+    totalCount: 0,
+    totalPages: 1,
+    currentPage: 1,
+    limit: 10,
+    hasNext: false,
+    hasPrev: false
+  });
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [markingIds, setMarkingIds] = useState(new Set());
   const [statusMessage, setStatusMessage] = useState(null);
 
-  const loadNotifications = async () => {
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setDebouncedSearch('');
+    setTypeFilter('ALL');
+    setReadFilter('ALL');
+    setStartDate('');
+    setEndDate('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+  };
+
+  const hasActiveFilters = Boolean(
+    searchQuery ||
+    debouncedSearch ||
+    typeFilter !== 'ALL' ||
+    readFilter !== 'ALL' ||
+    startDate ||
+    endDate ||
+    sortBy !== 'createdAt' ||
+    sortOrder !== 'desc'
+  );
+
+  const loadNotifications = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetchNotifications();
+      let isReadParam;
+      if (readFilter === 'UNREAD') isReadParam = false;
+      else if (readFilter === 'READ') isReadParam = true;
+
+      const res = await fetchNotifications({
+        page,
+        limit,
+        search: debouncedSearch,
+        type: typeFilter !== 'ALL' ? typeFilter : undefined,
+        isRead: isReadParam,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        sortBy,
+        sortOrder
+      });
+
       if (res.success && res.data) {
         setNotifications(res.data);
+        if (res.pagination) {
+          setPagination(res.pagination);
+        }
+        if (res.unreadCount !== undefined) {
+          setUnreadCount(res.unreadCount);
+        }
       }
     } catch (err) {
       console.warn('Notifications fetch warning:', err.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit, debouncedSearch, typeFilter, readFilter, startDate, endDate, sortBy, sortOrder]);
 
   useEffect(() => {
     loadNotifications();
-  }, []);
+  }, [loadNotifications]);
 
   const handleMarkAsRead = async (notifId) => {
     if (markingIds.has(notifId)) return;
@@ -158,34 +234,8 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
   };
 
   // Metrics computation
-  const totalCount = notifications.length;
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-  const readCount = totalCount - unreadCount;
-
-  // Filter and search
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter(notif => {
-      const meta = getNotificationMeta(notif);
-
-      // Tab filtering
-      if (activeFilter === 'UNREAD' && notif.isRead) return false;
-      if (activeFilter === 'READ' && !notif.isRead) return false;
-      if (activeFilter === 'APPROVALS' && meta.category !== 'approval') return false;
-      if (activeFilter === 'REJECTIONS' && meta.category !== 'rejection') return false;
-      if (activeFilter === 'ACCOUNT' && meta.category !== 'account') return false;
-
-      // Text search
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = notif.title?.toLowerCase().includes(query);
-        const matchesMsg = notif.message?.toLowerCase().includes(query);
-        const matchesType = notif.type?.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesMsg && !matchesType) return false;
-      }
-
-      return true;
-    });
-  }, [notifications, activeFilter, searchQuery]);
+  const totalCount = pagination.totalCount || notifications.length;
+  const readCount = Math.max(0, totalCount - unreadCount);
 
   return (
     <div className="notif-page-container">
@@ -273,137 +323,140 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
         </div>
       )}
 
-      {/* Filter Tabs and Search Bar */}
-      <div className="notif-controls-row">
-        <div className="notif-filter-tabs">
-          <button
-            type="button"
-            className={`notif-filter-tab ${activeFilter === 'ALL' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('ALL')}
-          >
-            <span>All</span>
-            <span className="notif-filter-count">{totalCount}</span>
-          </button>
+      {/* Quick Category Tabs */}
+      <div className="notif-filter-tabs" style={{ marginBottom: '0.5rem' }}>
+        <button
+          type="button"
+          className={`notif-filter-tab ${typeFilter === 'ALL' && readFilter === 'ALL' ? 'active' : ''}`}
+          onClick={() => { setTypeFilter('ALL'); setReadFilter('ALL'); setPage(1); }}
+        >
+          <span>All</span>
+          <span className="notif-filter-count">{totalCount}</span>
+        </button>
 
-          <button
-            type="button"
-            className={`notif-filter-tab ${activeFilter === 'UNREAD' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('UNREAD')}
-          >
-            <span>Unread</span>
-            <span className="notif-filter-count">{unreadCount}</span>
-          </button>
+        <button
+          type="button"
+          className={`notif-filter-tab ${readFilter === 'UNREAD' ? 'active' : ''}`}
+          onClick={() => { setReadFilter('UNREAD'); setTypeFilter('ALL'); setPage(1); }}
+        >
+          <span>Unread</span>
+          <span className="notif-filter-count">{unreadCount}</span>
+        </button>
 
-          <button
-            type="button"
-            className={`notif-filter-tab ${activeFilter === 'READ' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('READ')}
-          >
-            <span>Read</span>
-            <span className="notif-filter-count">{readCount}</span>
-          </button>
+        <button
+          type="button"
+          className={`notif-filter-tab ${readFilter === 'READ' ? 'active' : ''}`}
+          onClick={() => { setReadFilter('READ'); setTypeFilter('ALL'); setPage(1); }}
+        >
+          <span>Read</span>
+          <span className="notif-filter-count">{readCount}</span>
+        </button>
 
-          <button
-            type="button"
-            className={`notif-filter-tab ${activeFilter === 'APPROVALS' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('APPROVALS')}
-          >
-            <span>🎉 Approvals</span>
-          </button>
+        <button
+          type="button"
+          className={`notif-filter-tab ${typeFilter === 'APPROVAL' ? 'active' : ''}`}
+          onClick={() => { setTypeFilter('APPROVAL'); setReadFilter('ALL'); setPage(1); }}
+        >
+          <span>🎉 Approvals</span>
+        </button>
 
-          <button
-            type="button"
-            className={`notif-filter-tab ${activeFilter === 'REJECTIONS' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('REJECTIONS')}
-          >
-            <span>❌ Rejections</span>
-          </button>
+        <button
+          type="button"
+          className={`notif-filter-tab ${typeFilter === 'REJECTION' ? 'active' : ''}`}
+          onClick={() => { setTypeFilter('REJECTION'); setReadFilter('ALL'); setPage(1); }}
+        >
+          <span>❌ Rejections</span>
+        </button>
 
-          <button
-            type="button"
-            className={`notif-filter-tab ${activeFilter === 'ACCOUNT' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('ACCOUNT')}
-          >
-            <span>🛡️ Admin Actions</span>
-          </button>
-        </div>
-
-        {/* Search input */}
-        <div style={{ position: 'relative', minWidth: '220px' }}>
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Search notifications..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              padding: '0.4rem 0.75rem 0.4rem 2rem',
-              fontSize: '0.82rem',
-              borderRadius: 'var(--radius-md)'
-            }}
-          />
-          <span style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.85rem' }}>
-            🔍
-          </span>
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              style={{
-                position: 'absolute',
-                right: '0.5rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                fontSize: '0.75rem'
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          className={`notif-filter-tab ${typeFilter === 'ACCOUNT_ALERT' ? 'active' : ''}`}
+          onClick={() => { setTypeFilter('ACCOUNT_ALERT'); setReadFilter('ALL'); setPage(1); }}
+        >
+          <span>🛡️ Admin Actions</span>
+        </button>
       </div>
 
+      {/* Professional Search & Filter Bar */}
+      <FilterBar
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search notifications by title or message..."
+        filters={[
+          {
+            id: 'type',
+            label: 'Alert Type',
+            value: typeFilter,
+            onChange: (val) => { setTypeFilter(val); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Alert Types' },
+              { value: 'APPROVAL', label: 'Approvals (🎉)' },
+              { value: 'REJECTION', label: 'Rejections (❌)' },
+              { value: 'ACCOUNT_ALERT', label: 'Account Alerts (🛡️)' },
+              { value: 'SYSTEM_ALERT', label: 'System Notices (📢)' }
+            ]
+          },
+          {
+            id: 'readStatus',
+            label: 'Read Status',
+            value: readFilter,
+            onChange: (val) => { setReadFilter(val); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Statuses' },
+              { value: 'UNREAD', label: 'Unread Only' },
+              { value: 'READ', label: 'Read Only' }
+            ]
+          }
+        ]}
+        dateRange={{
+          startDate,
+          onStartDateChange: (d) => { setStartDate(d); setPage(1); },
+          endDate,
+          onEndDateChange: (d) => { setEndDate(d); setPage(1); }
+        }}
+        sortOptions={[
+          { value: 'createdAt', label: 'Received Date' },
+          { value: 'title', label: 'Alert Title' },
+          { value: 'type', label: 'Alert Category' }
+        ]}
+        sortBy={sortBy}
+        onSortByChange={(val) => { setSortBy(val); setPage(1); }}
+        sortOrder={sortOrder}
+        onToggleSortOrder={() => { setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); setPage(1); }}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalCount={pagination.totalCount}
+        isLoading={isLoading}
+      />
+
       {/* Notifications List */}
-      {filteredNotifications.length === 0 ? (
-        <div className="glass-panel notif-empty-state" style={{ padding: '3.5rem 2rem' }}>
-          <div className="notif-empty-icon" style={{ fontSize: '3rem' }}>
-            {activeFilter === 'UNREAD' ? '🎉' : searchQuery ? '🔍' : '🔕'}
-          </div>
-          <h3 className="notif-empty-title" style={{ fontSize: '1.1rem' }}>
-            {searchQuery
-              ? `No notifications matching "${searchQuery}"`
-              : activeFilter === 'UNREAD'
-              ? 'You have zero unread notifications'
-              : 'No notifications in this view'}
-          </h3>
-          <p className="notif-empty-desc" style={{ maxWidth: '380px' }}>
-            {activeFilter === 'UNREAD'
-              ? "You're completely caught up! New verification alerts or administrator actions will appear here automatically."
-              : searchQuery
-              ? 'Try searching with a different keyword or resetting your filter tabs.'
-              : 'Notifications generated during the verification workflow and moderation reviews will appear here.'}
-          </p>
-          {(activeFilter !== 'ALL' || searchQuery) && (
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
-                setActiveFilter('ALL');
-                setSearchQuery('');
-              }}
-              style={{ marginTop: '0.5rem', padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
-            >
-              Reset Filters
-            </button>
-          )}
+      {isLoading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {[1, 2, 3].map(n => (
+            <div key={n} className="glass-panel skeleton-card" style={{ height: '90px' }} />
+          ))}
         </div>
+      ) : notifications.length === 0 ? (
+        <EmptyState
+          icon={readFilter === 'UNREAD' ? '🎉' : '🔕'}
+          title={
+            readFilter === 'UNREAD'
+              ? 'Zero Unread Notifications'
+              : 'No Notifications Found'
+          }
+          description={
+            hasActiveFilters
+              ? 'No notifications match your active search and filter criteria. Try resetting filters.'
+              : readFilter === 'UNREAD'
+              ? "You're completely caught up! New alerts and moderation updates will appear here automatically."
+              : 'Notifications generated during verification and moderation activities will appear here.'
+          }
+          actionText={hasActiveFilters ? 'Clear All Filters' : null}
+          onAction={hasActiveFilters ? handleClearFilters : null}
+        />
       ) : (
         <div className="notif-cards-list">
-          {filteredNotifications.map((notif) => {
+          {notifications.map((notif) => {
             const meta = getNotificationMeta(notif);
             const isUnread = !notif.isRead;
             const isMarkingThis = markingIds.has(notif.id);
@@ -541,6 +594,18 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
           })}
         </div>
       )}
+
+      {/* Pagination */}
+      <Pagination
+        page={page}
+        totalPages={pagination.totalPages}
+        totalCount={pagination.totalCount}
+        limit={limit}
+        onPageChange={(p) => setPage(p)}
+        onLimitChange={(l) => { setLimit(l); setPage(1); }}
+        limitOptions={[10, 25, 50]}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { fetchUsers, updateUserRole } from '../../services/api';
+import FilterBar from '../common/FilterBar';
+import Pagination from '../common/Pagination';
+import EmptyState from '../common/EmptyState';
 
 export default function AdminsView() {
   const [admins, setAdmins] = useState([]);
@@ -7,27 +10,102 @@ export default function AdminsView() {
   const [statusMessage, setStatusMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const loadAdmins = async () => {
+  // Search & Filter state
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL'); // ALL, ADMIN, SUPER_ADMIN
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState({
+    totalCount: 0,
+    totalPages: 1,
+    currentPage: 1,
+    limit: 10,
+    hasNext: false,
+    hasPrev: false
+  });
+
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setDebouncedSearch('');
+    setRoleFilter('ALL');
+    setStartDate('');
+    setEndDate('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPage(1);
+  };
+
+  const hasActiveFilters = Boolean(
+    search ||
+    debouncedSearch ||
+    roleFilter !== 'ALL' ||
+    startDate ||
+    endDate ||
+    sortBy !== 'createdAt' ||
+    sortOrder !== 'desc'
+  );
+
+  const loadAdmins = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetchUsers();
+      // Query server for administrative accounts
+      const queryRole = roleFilter === 'ALL' ? 'ADMINS' : roleFilter;
+      const res = await fetchUsers({
+        page,
+        limit,
+        search: debouncedSearch,
+        role: queryRole,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        sortBy,
+        sortOrder
+      });
+
       if (res.success) {
-        const adminUsers = (res.data || []).filter(
-          u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'
-        );
-        setAdmins(adminUsers);
+        const list = res.data || [];
+        setAdmins(list);
+        if (res.pagination) {
+          setPagination(res.pagination);
+        } else {
+          setPagination({
+            totalCount: list.length,
+            totalPages: 1,
+            currentPage: 1,
+            limit: list.length,
+            hasNext: false,
+            hasPrev: false
+          });
+        }
+      } else {
+        throw new Error(res.message || 'Failed to load administrator directory.');
       }
     } catch (err) {
       setErrorMessage(err.message || 'Failed to load administrator directory.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit, debouncedSearch, roleFilter, startDate, endDate, sortBy, sortOrder]);
 
   useEffect(() => {
     loadAdmins();
-  }, []);
+  }, [loadAdmins]);
 
   const handleDemoteAdmin = async (userId) => {
     if (!window.confirm('Are you sure you want to demote this administrator to regular USER?')) return;
@@ -45,7 +123,7 @@ export default function AdminsView() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
       {/* Security Clearance Overview */}
       <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--role-superadmin)' }}>
         <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', color: 'var(--text-highlight)' }}>
@@ -59,8 +137,9 @@ export default function AdminsView() {
       </div>
 
       {statusMessage && (
-        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--status-success)', color: 'var(--status-success)', fontSize: '0.9rem' }}>
-          ✓ {statusMessage}
+        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--status-success)', color: 'var(--status-success)', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>✓ {statusMessage}</span>
+          <button type="button" onClick={() => setStatusMessage(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>✕</button>
         </div>
       )}
 
@@ -71,21 +150,68 @@ export default function AdminsView() {
         </div>
       )}
 
+      {/* Filter and Search Bar */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search administrators by name or email..."
+        filters={[
+          {
+            id: 'role',
+            label: 'Clearance Tier',
+            value: roleFilter,
+            onChange: (val) => { setRoleFilter(val); setPage(1); },
+            options: [
+              { value: 'ALL', label: 'All Administrators (Tier 1 & 2)' },
+              { value: 'ADMIN', label: 'Moderators (ADMIN)' },
+              { value: 'SUPER_ADMIN', label: 'Super Admins (SUPER_ADMIN)' }
+            ]
+          }
+        ]}
+        dateRange={{
+          startDate,
+          onStartDateChange: (d) => { setStartDate(d); setPage(1); },
+          endDate,
+          onEndDateChange: (d) => { setEndDate(d); setPage(1); }
+        }}
+        sortOptions={[
+          { value: 'createdAt', label: 'Access Granted Date' },
+          { value: 'name', label: 'Administrator Name' },
+          { value: 'email', label: 'Email Address' },
+          { value: 'role', label: 'Clearance Level' }
+        ]}
+        sortBy={sortBy}
+        onSortByChange={(val) => { setSortBy(val); setPage(1); }}
+        sortOrder={sortOrder}
+        onToggleSortOrder={() => { setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc'); setPage(1); }}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalCount={pagination.totalCount}
+        isLoading={isLoading}
+      />
+
       {/* Loading Skeletons */}
       {isLoading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
-          {[1, 2, 3].map((n) => (
+          {[1, 2, 3, 4].map((n) => (
             <div key={n} className="glass-panel skeleton-card" style={{ height: '180px' }} />
           ))}
         </div>
       ) : admins.length === 0 ? (
-        <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🛡️</div>
-          <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-highlight)' }}>No Administrators Found</h4>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-            There are currently no staff accounts with administrative privileges.
-          </p>
-        </div>
+        <EmptyState
+          icon="🛡️"
+          title="No Administrators Found"
+          description={
+            hasActiveFilters
+              ? `No staff match the criteria (${[
+                  search && `"${search}"`,
+                  roleFilter !== 'ALL' && `Clearance: ${roleFilter}`
+                ].filter(Boolean).join(', ')}). Try resetting filters.`
+              : 'There are currently no staff accounts with administrative privileges.'
+          }
+          actionText={hasActiveFilters ? 'Clear All Filters' : null}
+          onAction={hasActiveFilters ? handleClearFilters : null}
+        />
       ) : (
         /* Admin Cards Grid */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
@@ -144,6 +270,18 @@ export default function AdminsView() {
           ))}
         </div>
       )}
+
+      {/* Pagination Controls */}
+      <Pagination
+        page={page}
+        totalPages={pagination.totalPages}
+        totalCount={pagination.totalCount}
+        limit={limit}
+        onPageChange={(p) => setPage(p)}
+        onLimitChange={(l) => { setLimit(l); setPage(1); }}
+        limitOptions={[10, 25, 50]}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

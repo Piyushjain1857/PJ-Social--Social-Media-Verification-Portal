@@ -1,4 +1,4 @@
-const { getAllUsers, updateUserRole, findUserById, updateUser } = require('../repositories/userRepository');
+const { getAllUsers, getUsersPaginated, updateUserRole, findUserById, updateUser } = require('../repositories/userRepository');
 const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
@@ -337,6 +337,41 @@ const getUserProfile = async (req, res, next) => {
  */
 const listUsers = async (req, res, next) => {
   try {
+    const { page, limit, search, role, status, startDate, endDate, sortBy, sortOrder } = req.query;
+
+    if (page || limit || search || role || status || startDate || endDate || sortBy) {
+      const result = await getUsersPaginated({
+        page: page ? parseInt(page, 10) : 1,
+        limit: limit ? parseInt(limit, 10) : 10,
+        search: search || '',
+        role: role || 'ALL',
+        status: status || 'ALL',
+        startDate: startDate || null,
+        endDate: endDate || null,
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc'
+      });
+
+      return res.status(200).json({
+        success: true,
+        count: result.users.length,
+        data: result.users,
+        pagination: result.pagination,
+        stats: result.stats,
+        filters: {
+          page: result.pagination.currentPage,
+          limit: result.pagination.limit,
+          search: search || null,
+          role: role || 'ALL',
+          status: status || 'ALL',
+          startDate: startDate || null,
+          endDate: endDate || null,
+          sortBy: sortBy || 'createdAt',
+          sortOrder: sortOrder || 'desc'
+        }
+      });
+    }
+
     const users = await getAllUsers();
     return res.status(200).json({
       success: true,
