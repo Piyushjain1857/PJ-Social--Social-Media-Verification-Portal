@@ -82,6 +82,14 @@ export default function UsersView() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedUserDetails, setSelectedUserDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
+
+  const handleCopyId = (id) => {
+    if (!id) return;
+    navigator.clipboard?.writeText(id);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
 
   const [isStatusConfirmOpen, setIsStatusConfirmOpen] = useState(false);
   const [statusTargetUser, setStatusTargetUser] = useState(null);
@@ -577,15 +585,15 @@ export default function UsersView() {
 
       {/* ── Users Table ── */}
       <div className="table-responsive-wrapper">
-        <table className="portal-table" style={{ minWidth: '850px' }}>
+        <table className="portal-table" style={{ width: '100%' }}>
           <thead>
             <tr>
-              <th>User Profile</th>
-              <th>Clearance &amp; Role</th>
-              <th>Status</th>
-              <th>Activity</th>
-              <th>Joined Date</th>
-              <th style={{ textAlign: 'right' }}>Governance Actions</th>
+              <th style={{ padding: '0.85rem 0.95rem' }}>User Profile</th>
+              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Clearance &amp; Role</th>
+              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Status</th>
+              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Activity</th>
+              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Joined Date</th>
+              <th style={{ padding: '0.85rem 0.95rem', textAlign: 'right', whiteSpace: 'nowrap' }}>Governance Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -625,19 +633,19 @@ export default function UsersView() {
                     }}
                   >
                     {/* User Identity */}
-                    <td style={{ padding: '0.85rem 1.25rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <td style={{ padding: '0.75rem 0.95rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                         <div
                           style={{
-                            width: '36px',
-                            height: '36px',
+                            width: '34px',
+                            height: '34px',
                             borderRadius: '50%',
                             background: getAvatarBg(u.role),
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: 700,
-                            fontSize: '0.85rem',
+                            fontSize: '0.82rem',
                             color: '#ffffff',
                             flexShrink: 0
                           }}
@@ -645,15 +653,15 @@ export default function UsersView() {
                           {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-highlight)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-highlight)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
                             {isCurrent && (
-                              <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary-light)', padding: '0.05rem 0.4rem' }}>
+                              <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary-light)', padding: '0.05rem 0.35rem' }}>
                                 You
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.email}
                           </div>
                         </div>
@@ -661,17 +669,17 @@ export default function UsersView() {
                     </td>
 
                     {/* Role */}
-                    <td style={{ padding: '0.85rem 1rem' }}>
+                    <td style={{ padding: '0.75rem 0.65rem', whiteSpace: 'nowrap' }}>
                       {getRoleBadge(u.role)}
                     </td>
 
                     {/* Status */}
-                    <td style={{ padding: '0.85rem 1rem' }}>
+                    <td style={{ padding: '0.75rem 0.65rem', whiteSpace: 'nowrap' }}>
                       {getStatusBadge(u.status)}
                     </td>
 
                     {/* Activity */}
-                    <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    <td style={{ padding: '0.75rem 0.65rem', fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       {u.role === 'USER' && (
                         <span>{u.submissionsCount ?? 0} submission(s)</span>
                       )}
@@ -684,13 +692,13 @@ export default function UsersView() {
                     </td>
 
                     {/* Joined Date */}
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                    <td style={{ padding: '0.75rem 0.65rem', color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
 
                     {/* Actions */}
-                    <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <td style={{ padding: '0.75rem 0.95rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         {/* View Details */}
                         <button
                           type="button"
@@ -790,19 +798,43 @@ export default function UsersView() {
           <div
             className="portal-modal-card"
             style={{
-              maxWidth: '540px',
-              border: '1px solid rgba(99, 102, 241, 0.35)',
+              maxWidth: '560px',
+              width: '100%',
+              background: 'linear-gradient(165deg, rgba(22, 27, 44, 0.98), rgba(13, 17, 28, 0.99))',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.15)',
+              borderRadius: '18px',
+              padding: '1.75rem',
+              backdropFilter: 'blur(20px)',
+              position: 'relative'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="portal-modal-header">
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  ➕ Provision New User
-                </h3>
-                <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                  Create a new Normal User, Admin Moderator, or Super Administrator.
-                </p>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(99, 102, 241, 0.15))',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.3rem',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
+                }}>
+                  ➕
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
+                    Provision New User
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Create a new Normal User, Admin Moderator, or Super Administrator
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
@@ -810,22 +842,35 @@ export default function UsersView() {
                 onClick={() => setIsCreateModalOpen(false)}
                 disabled={createSubmitting}
                 aria-label="Close modal"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
               >
                 ✕
               </button>
             </div>
 
             {createError && (
-              <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', color: '#f87171', fontSize: '0.84rem', marginBottom: '1rem' }}>
-                ⚠️ {createError}
+              <div style={{ padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', color: '#f87171', fontSize: '0.84rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>⚠️</span> <span>{createError}</span>
               </div>
             )}
 
-            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               {/* Name */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Full Name *
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                  <span>👤</span> Full Name <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -834,14 +879,22 @@ export default function UsersView() {
                   placeholder="e.g. Alex Morgan"
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.95rem',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '10px',
+                    fontSize: '0.88rem',
+                    color: 'var(--text-highlight)'
+                  }}
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Email Address *
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                  <span>✉️</span> Email Address <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="email"
@@ -850,22 +903,48 @@ export default function UsersView() {
                   placeholder="alex.morgan@company.com"
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.95rem',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '10px',
+                    fontSize: '0.88rem',
+                    color: 'var(--text-highlight)'
+                  }}
                 />
               </div>
 
               {/* Password */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Initial Password (Min. 8 characters) *
+              <div style={{
+                padding: '0.85rem 1rem',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                    <span>🔑</span> Initial Password <span style={{ color: '#ef4444' }}>*</span> <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'none', fontWeight: 400 }}>(Min. 8 chars)</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setCreateForm({ ...createForm, password: generateRandomPassword() })}
-                    style={{ background: 'none', border: 'none', color: 'var(--primary-light)', fontSize: '0.74rem', cursor: 'pointer', padding: 0 }}
+                    style={{
+                      background: 'rgba(99, 102, 241, 0.12)',
+                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                      color: '#a5b4fc',
+                      borderRadius: '6px',
+                      padding: '0.2rem 0.55rem',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    🎲 Regenerate
+                    <span>🎲</span> Generate Strong
                   </button>
                 </div>
                 <div style={{ position: 'relative' }}>
@@ -875,12 +954,36 @@ export default function UsersView() {
                     required
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    style={{ width: '100%', padding: '0.6rem 2.2rem 0.6rem 0.85rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 2.4rem 0.65rem 0.95rem',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: 'var(--text-highlight)'
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowCreatePassword(!showCreatePassword)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                    style={{
+                      position: 'absolute',
+                      right: '0.75rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '6px',
+                      padding: '0.2rem 0.45rem',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title={showCreatePassword ? 'Hide password' : 'Show password'}
                   >
                     {showCreatePassword ? '👁️' : '🔒'}
                   </button>
@@ -890,14 +993,23 @@ export default function UsersView() {
               {/* Role & Status */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Account Role *
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                    <span>🛡️</span> Account Role <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <select
                     className="input-field"
                     value={createForm.role}
                     onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                    style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: 'var(--text-highlight)',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="USER">USER (Creator)</option>
                     <option value="ADMIN">ADMIN (Moderator)</option>
@@ -906,14 +1018,23 @@ export default function UsersView() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Initial Status *
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                    <span>⚡</span> Initial Status <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <select
                     className="input-field"
                     value={createForm.status}
                     onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
-                    style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: 'var(--text-highlight)',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="ACTIVE">ACTIVE</option>
                     <option value="INACTIVE">INACTIVE</option>
@@ -923,13 +1044,26 @@ export default function UsersView() {
               </div>
 
               {/* Modal Actions */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: '0.85rem',
+                marginTop: '0.5rem',
+                paddingTop: '1.25rem',
+                borderTop: '1px solid rgba(255, 255, 255, 0.07)'
+              }}>
                 <button
                   type="button"
                   className="btn-secondary"
                   disabled={createSubmitting}
                   onClick={() => setIsCreateModalOpen(false)}
-                  style={{ padding: '0.55rem 1rem', fontSize: '0.85rem' }}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    borderRadius: '10px'
+                  }}
                 >
                   Cancel
                 </button>
@@ -937,9 +1071,28 @@ export default function UsersView() {
                   type="submit"
                   className="btn-primary"
                   disabled={createSubmitting}
-                  style={{ padding: '0.55rem 1.25rem', fontSize: '0.85rem', fontWeight: 600 }}
+                  style={{
+                    padding: '0.65rem 1.4rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                    background: 'linear-gradient(135deg, #10b981, #059669)'
+                  }}
                 >
-                  {createSubmitting ? 'Creating...' : '✓ Provision Account'}
+                  {createSubmitting ? (
+                    <>
+                      <span className="status-dot checking" style={{ width: '8px', height: '8px' }} />
+                      <span>Provisioning...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✓</span> Provision Account
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -961,19 +1114,43 @@ export default function UsersView() {
           <div
             className="portal-modal-card"
             style={{
-              maxWidth: '540px',
-              border: '1px solid rgba(99, 102, 241, 0.35)',
+              maxWidth: '560px',
+              width: '100%',
+              background: 'linear-gradient(165deg, rgba(22, 27, 44, 0.98), rgba(13, 17, 28, 0.99))',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.15)',
+              borderRadius: '18px',
+              padding: '1.75rem',
+              backdropFilter: 'blur(20px)',
+              position: 'relative'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="portal-modal-header">
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  ✏️ Edit User Account
-                </h3>
-                <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                  Update details, assign roles, or reset account security.
-                </p>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.15))',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.3rem',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)'
+                }}>
+                  ✏️
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
+                    Edit User Account
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Update details, assign roles, or reset account security
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
@@ -981,22 +1158,35 @@ export default function UsersView() {
                 onClick={() => setIsEditModalOpen(false)}
                 disabled={editSubmitting}
                 aria-label="Close modal"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
               >
                 ✕
               </button>
             </div>
 
             {editError && (
-              <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', color: '#f87171', fontSize: '0.84rem', marginBottom: '1rem' }}>
-                ⚠️ {editError}
+              <div style={{ padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', color: '#f87171', fontSize: '0.84rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>⚠️</span> <span>{editError}</span>
               </div>
             )}
 
-            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               {/* Name */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Full Name *
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                  <span>👤</span> Full Name <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1004,14 +1194,22 @@ export default function UsersView() {
                   required
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.95rem',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '10px',
+                    fontSize: '0.88rem',
+                    color: 'var(--text-highlight)'
+                  }}
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Email Address *
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                  <span>✉️</span> Email Address <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="email"
@@ -1019,21 +1217,38 @@ export default function UsersView() {
                   required
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.95rem',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '10px',
+                    fontSize: '0.88rem',
+                    color: 'var(--text-highlight)'
+                  }}
                 />
               </div>
 
               {/* Role & Status */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Role Assignment *
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                    <span>🛡️</span> Role Assignment <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <select
                     className="input-field"
                     value={editForm.role}
                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                    style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: 'var(--text-highlight)',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="USER">USER (Creator)</option>
                     <option value="ADMIN">ADMIN (Moderator)</option>
@@ -1042,14 +1257,23 @@ export default function UsersView() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Account Status *
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+                    <span>⚡</span> Account Status <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <select
                     className="input-field"
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                    style={{ width: '100%', padding: '0.6rem 0.85rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: 'var(--text-highlight)',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="ACTIVE">ACTIVE</option>
                     <option value="INACTIVE">INACTIVE</option>
@@ -1059,10 +1283,15 @@ export default function UsersView() {
               </div>
 
               {/* Reset Password Optional */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Reset Password (Leave blank to keep current)
+              <div style={{
+                padding: '0.85rem 1rem',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                    <span>🔑</span> Reset Password <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'none', fontWeight: 400 }}>(Optional)</span>
                   </label>
                   <button
                     type="button"
@@ -1070,38 +1299,91 @@ export default function UsersView() {
                       setEditForm({ ...editForm, password: generateRandomPassword() });
                       setShowEditPassword(true);
                     }}
-                    style={{ background: 'none', border: 'none', color: 'var(--primary-light)', fontSize: '0.74rem', cursor: 'pointer', padding: 0 }}
+                    style={{
+                      background: 'rgba(99, 102, 241, 0.12)',
+                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                      color: '#a5b4fc',
+                      borderRadius: '6px',
+                      padding: '0.2rem 0.55rem',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    🎲 Suggest Password
+                    <span>🎲</span> Suggest Strong Password
                   </button>
                 </div>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showEditPassword ? 'text' : 'password'}
                     className="input-field"
-                    placeholder="Enter new password (optional)"
+                    placeholder="Leave blank to keep existing password"
                     value={editForm.password}
                     onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                    style={{ width: '100%', padding: '0.6rem 2.2rem 0.6rem 0.85rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 2.4rem 0.65rem 0.95rem',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: 'var(--text-highlight)'
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowEditPassword(!showEditPassword)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                    style={{
+                      position: 'absolute',
+                      right: '0.75rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '6px',
+                      padding: '0.2rem 0.45rem',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title={showEditPassword ? 'Hide password' : 'Show password'}
                   >
                     {showEditPassword ? '👁️' : '🔒'}
                   </button>
                 </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                  Leave blank to maintain the user's current encrypted credentials.
+                </div>
               </div>
 
               {/* Modal Actions */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: '0.85rem',
+                marginTop: '0.5rem',
+                paddingTop: '1.25rem',
+                borderTop: '1px solid rgba(255, 255, 255, 0.07)'
+              }}>
                 <button
                   type="button"
                   className="btn-secondary"
                   disabled={editSubmitting}
                   onClick={() => setIsEditModalOpen(false)}
-                  style={{ padding: '0.55rem 1rem', fontSize: '0.85rem' }}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    borderRadius: '10px'
+                  }}
                 >
                   Cancel
                 </button>
@@ -1109,9 +1391,27 @@ export default function UsersView() {
                   type="submit"
                   className="btn-primary"
                   disabled={editSubmitting}
-                  style={{ padding: '0.55rem 1.25rem', fontSize: '0.85rem', fontWeight: 600 }}
+                  style={{
+                    padding: '0.65rem 1.4rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+                  }}
                 >
-                  {editSubmitting ? 'Saving...' : 'Save Changes'}
+                  {editSubmitting ? (
+                    <>
+                      <span className="status-dot checking" style={{ width: '8px', height: '8px' }} />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>💾</span> Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -1134,139 +1434,348 @@ export default function UsersView() {
             className="portal-modal-card"
             style={{
               maxWidth: '640px',
+              width: '100%',
+              background: 'linear-gradient(165deg, rgba(22, 27, 44, 0.98), rgba(13, 17, 28, 0.99))',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.15)',
+              borderRadius: '18px',
+              padding: '1.75rem',
+              backdropFilter: 'blur(20px)',
+              position: 'relative'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="portal-modal-header">
-              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                📋 User Profile & Activity Dossier
-              </h3>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.15))',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.3rem',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)'
+                }}>
+                  📋
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
+                    User Profile & Activity Dossier
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Full identity credentials and verification activity record
+                  </div>
+                </div>
+              </div>
               <button
                 type="button"
                 className="portal-modal-close-btn"
                 onClick={() => setIsDetailsModalOpen(false)}
                 aria-label="Close modal"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
               >
                 ✕
               </button>
             </div>
 
             {detailsLoading ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <div className="status-dot checking" style={{ margin: '0 auto 0.75rem auto' }} />
-                <div>Fetching user dossier...</div>
+              <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div className="status-dot checking" style={{ margin: '0 auto 1rem auto', transform: 'scale(1.3)' }} />
+                <div style={{ fontSize: '0.92rem', fontWeight: 500 }}>Decrypting and loading user dossier...</div>
               </div>
             ) : selectedUserDetails ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {/* Header card with avatar & role */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-md)' }}>
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: getAvatarBg(selectedUserDetails.role),
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '1.15rem',
-                      color: '#ffffff'
-                    }}
-                  >
-                    {selectedUserDetails.name ? selectedUserDetails.name.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-                      {selectedUserDetails.name}
+                {/* User Identity Banner */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1.25rem',
+                  padding: '1.15rem 1.35rem',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01))',
+                  border: '1px solid rgba(255, 255, 255, 0.07)',
+                  borderRadius: '14px',
+                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
+                    <div
+                      style={{
+                        width: '54px',
+                        height: '54px',
+                        borderRadius: '14px',
+                        background: getAvatarBg(selectedUserDetails.role),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '1.35rem',
+                        color: '#ffffff',
+                        boxShadow: '0 8px 20px -4px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.12)',
+                        flexShrink: 0
+                      }}
+                    >
+                      {selectedUserDetails.name ? selectedUserDetails.name.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                      {selectedUserDetails.email}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.35rem' }}>
-                      {getRoleBadge(selectedUserDetails.role)}
-                      {getStatusBadge(selectedUserDetails.status)}
+                    <div>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
+                        {selectedUserDetails.name}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>✉️</span>
+                        <span>{selectedUserDetails.email}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        {getRoleBadge(selectedUserDetails.role)}
+                        {getStatusBadge(selectedUserDetails.status)}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Account Details Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
-                  <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>User ID</div>
-                    <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-highlight)', wordBreak: 'break-all' }}>
+                {/* Account Details & Metrics Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.85rem' }}>
+                  {/* User ID Box with 1-click Copy */}
+                  <div
+                    style={{
+                      padding: '0.9rem 1rem',
+                      background: 'rgba(255, 255, 255, 0.025)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>🆔</span> User ID
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyId(selectedUserDetails.id)}
+                        style={{
+                          background: copiedId ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                          border: `1px solid ${copiedId ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
+                          color: copiedId ? '#10b981' : 'var(--text-secondary)',
+                          borderRadius: '6px',
+                          padding: '0.15rem 0.5rem',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title="Copy full UUID"
+                      >
+                        {copiedId ? '✓ Copied' : '📋 Copy'}
+                      </button>
+                    </div>
+                    <div
+                      onClick={() => handleCopyId(selectedUserDetails.id)}
+                      style={{
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                        fontSize: '0.76rem',
+                        color: 'var(--text-highlight)',
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        padding: '0.35rem 0.6rem',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        border: '1px solid rgba(255, 255, 255, 0.04)',
+                        cursor: 'pointer'
+                      }}
+                      title={selectedUserDetails.id}
+                    >
                       {selectedUserDetails.id}
                     </div>
                   </div>
 
-                  <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Member Since</div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
-                      {new Date(selectedUserDetails.createdAt).toLocaleDateString()}
+                  {/* Member Since Box */}
+                  <div
+                    style={{
+                      padding: '0.9rem 1rem',
+                      background: 'rgba(255, 255, 255, 0.025)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span>📅</span> Registration Date
+                    </span>
+                    <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
+                      {new Date(selectedUserDetails.createdAt).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Verified platform member
                     </div>
                   </div>
 
-                  <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Submissions</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--role-user)' }}>
-                      {selectedUserDetails.submissionsCount ?? 0}
+                  {/* Submissions Box */}
+                  <div
+                    style={{
+                      padding: '0.9rem 1rem',
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(16, 185, 129, 0.01))',
+                      border: '1px solid rgba(16, 185, 129, 0.15)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span>📤</span> Submissions
+                    </span>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#34d399', lineHeight: 1.1 }}>
+                      {selectedUserDetails.submissionsCount ?? (selectedUserDetails.submissions?.length || 0)}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Proofs submitted for review
                     </div>
                   </div>
 
-                  <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Moderations</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--role-admin)' }}>
+                  {/* Moderations Box */}
+                  <div
+                    style={{
+                      padding: '0.9rem 1rem',
+                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(99, 102, 241, 0.01))',
+                      border: '1px solid rgba(99, 102, 241, 0.15)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span>⚖️</span> Moderations
+                    </span>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#a5b4fc', lineHeight: 1.1 }}>
                       {selectedUserDetails.reviewsCount ?? 0}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Submissions reviewed & audited
                     </div>
                   </div>
                 </div>
 
                 {/* Submissions or Reviews history if present */}
-                {selectedUserDetails.submissions && selectedUserDetails.submissions.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.5rem' }}>
-                      Recent Verification Submissions ({selectedUserDetails.submissions.length})
+                {selectedUserDetails.submissions && selectedUserDetails.submissions.length > 0 ? (
+                  <div style={{ marginTop: '0.25rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>Recent Activity Logs</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{selectedUserDetails.submissions.length} total</span>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '160px', overflowY: 'auto', paddingRight: '4px' }}>
                       {selectedUserDetails.submissions.map(s => (
-                        <div key={s.id} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
-                          <span>{s.platform} • {s.actionType}</span>
-                          <span className={`badge ${s.status === 'APPROVED' ? 'badge-success' : s.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`} style={{ fontSize: '0.68rem' }}>
+                        <div
+                          key={s.id}
+                          style={{
+                            padding: '0.6rem 0.85rem',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid rgba(255, 255, 255, 0.04)',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '0.82rem'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.9rem' }}>
+                              {s.platform === 'INSTAGRAM' ? '📸' : s.platform === 'TWITTER' ? '🐦' : s.platform === 'FACEBOOK' ? '👥' : s.platform === 'YOUTUBE' ? '▶️' : '🌐'}
+                            </span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-highlight)' }}>{s.platform}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>•</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{s.actionType}</span>
+                          </div>
+                          <span className={`badge ${s.status === 'APPROVED' ? 'badge-success' : s.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`} style={{ fontSize: '0.7rem', padding: '0.2rem 0.55rem' }}>
                             {s.status}
                           </span>
                         </div>
                       ))}
                     </div>
                   </div>
-                )}
+                ) : null}
 
-                {/* Quick Actions in Dossier */}
-                {isSuperAdmin && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+                {/* Modal Footer Actions */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  gap: '0.85rem',
+                  paddingTop: '1.25rem',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.07)',
+                  marginTop: '0.5rem'
+                }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setIsDetailsModalOpen(false)}
+                    style={{
+                      padding: '0.6rem 1.15rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      borderRadius: '10px'
+                    }}
+                  >
+                    Close Dossier
+                  </button>
+
+                  {isSuperAdmin && (
                     <button
                       type="button"
-                      className="btn-secondary"
+                      className="btn-primary"
                       onClick={() => {
                         setIsDetailsModalOpen(false);
                         openEditModal(selectedUserDetails);
                       }}
-                      style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
+                      style={{
+                        padding: '0.6rem 1.25rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+                      }}
                     >
-                      ✏️ Edit This User
+                      <span>✏️</span> Edit User Credentials
                     </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => setIsDetailsModalOpen(false)}
-                      style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
-                    >
-                      Close Dossier
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ) : (
-              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 Unable to load user details.
               </div>
             )}
@@ -1289,23 +1798,50 @@ export default function UsersView() {
             className="portal-modal-card"
             style={{
               maxWidth: '480px',
+              width: '100%',
+              background: 'linear-gradient(165deg, rgba(22, 27, 44, 0.98), rgba(13, 17, 28, 0.99))',
               border: statusTargetNewValue === 'ACTIVE'
-                ? '1px solid rgba(34, 197, 94, 0.4)'
-                : '1px solid rgba(239, 68, 68, 0.4)',
+                ? '1px solid rgba(34, 197, 94, 0.25)'
+                : '1px solid rgba(239, 68, 68, 0.25)',
+              boxShadow: statusTargetNewValue === 'ACTIVE'
+                ? '0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(34, 197, 94, 0.15)'
+                : '0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(239, 68, 68, 0.15)',
+              borderRadius: '18px',
+              padding: '1.75rem',
+              backdropFilter: 'blur(20px)',
+              position: 'relative'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="portal-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: statusTargetNewValue === 'ACTIVE'
+                    ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.1))'
+                    : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1))',
+                  border: statusTargetNewValue === 'ACTIVE'
+                    ? '1px solid rgba(34, 197, 94, 0.3)'
+                    : '1px solid rgba(239, 68, 68, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.3rem',
+                  boxShadow: statusTargetNewValue === 'ACTIVE'
+                    ? '0 4px 12px rgba(34, 197, 94, 0.15)'
+                    : '0 4px 12px rgba(239, 68, 68, 0.15)'
+                }}>
                   {statusTargetNewValue === 'ACTIVE' ? '⚡' : '⛔'}
-                </span>
+                </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
                     Confirm Status Change
                   </h3>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Target: <strong>{statusTargetUser.name}</strong> ({statusTargetUser.email})
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Target: <strong style={{ color: 'var(--text-highlight)' }}>{statusTargetUser.name}</strong> ({statusTargetUser.email})
                   </div>
                 </div>
               </div>
@@ -1315,28 +1851,59 @@ export default function UsersView() {
                 onClick={() => setIsStatusConfirmOpen(false)}
                 disabled={statusSubmitting}
                 aria-label="Close modal"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div className="portal-modal-body">
-              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.55 }}>
+            <div style={{
+              padding: '1rem',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              marginBottom: '1.25rem'
+            }}>
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6 }}>
                 {statusTargetNewValue === 'ACTIVE' ? (
-                  <>Are you sure you want to <strong>activate</strong> this account? The user will immediately be granted permission to authenticate and access platform capabilities.</>
+                  <>Are you sure you want to <strong style={{ color: '#22c55e' }}>activate</strong> this account? The user will immediately be granted permission to authenticate and access platform capabilities.</>
                 ) : (
-                  <>Are you sure you want to change status to <strong>{statusTargetNewValue}</strong>? The user will be blocked from logging in or submitting verification proofs.</>
+                  <>Are you sure you want to change status to <strong style={{ color: '#ef4444' }}>{statusTargetNewValue}</strong>? The user will be blocked from logging in or submitting verification proofs.</>
                 )}
               </p>
             </div>
 
-            <div className="portal-modal-footer">
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '0.85rem',
+              paddingTop: '1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.07)'
+            }}>
               <button
                 type="button"
                 className="btn-secondary"
                 disabled={statusSubmitting}
                 onClick={() => setIsStatusConfirmOpen(false)}
-                style={{ fontSize: '0.85rem' }}
+                style={{
+                  padding: '0.6rem 1.2rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  borderRadius: '10px'
+                }}
               >
                 Cancel
               </button>
@@ -1345,7 +1912,15 @@ export default function UsersView() {
                 className={statusTargetNewValue === 'ACTIVE' ? 'btn-success' : 'btn-danger'}
                 disabled={statusSubmitting}
                 onClick={handleStatusConfirmSubmit}
-                style={{ fontSize: '0.85rem' }}
+                style={{
+                  padding: '0.6rem 1.4rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  borderRadius: '10px',
+                  boxShadow: statusTargetNewValue === 'ACTIVE'
+                    ? '0 4px 14px rgba(34, 197, 94, 0.35)'
+                    : '0 4px 14px rgba(239, 68, 68, 0.35)'
+                }}
               >
                 {statusSubmitting ? 'Updating...' : `Confirm ${statusTargetNewValue}`}
               </button>

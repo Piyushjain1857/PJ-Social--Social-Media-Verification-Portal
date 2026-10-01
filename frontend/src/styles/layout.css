@@ -4,14 +4,16 @@
    ========================================================================== */
 
 /* Layout Root Shell */
+/* Layout Root Shell - Lock viewport so desktop sidebar remains fixed and never scrolls */
 .app-layout-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   width: 100%;
   background-color: var(--bg-base);
   color: var(--text-primary);
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 /* ==========================================================================
@@ -21,7 +23,8 @@
   width: 270px;
   flex-shrink: 0;
   height: 100vh;
-  position: sticky;
+  height: 100dvh;
+  position: relative;
   top: 0;
   display: flex;
   flex-direction: column;
@@ -30,6 +33,8 @@
   -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--border-subtle);
   z-index: 90;
+  overflow: hidden;
+  overscroll-behavior: none;
   transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease;
 }
 
@@ -40,6 +45,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .sidebar-brand {
@@ -120,11 +126,22 @@
 /* Sidebar Navigation Items */
 .sidebar-nav-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  scrollbar-width: none; /* Hide scrollbar Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+  overscroll-behavior: contain;
+}
+
+.sidebar-nav-container::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .sidebar-section-heading {
@@ -248,6 +265,122 @@
   border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
+/* Sidebar Points & Gamification Section */
+.sidebar-points-section {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sidebar-points-badge-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(249, 115, 22, 0.2));
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.15);
+}
+
+.sidebar-points-widget {
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  margin: 0.2rem 0;
+}
+
+.sidebar-points-widget:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(234, 179, 8, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 12px rgba(234, 179, 8, 0.12);
+  transform: translateY(-1px);
+}
+
+.sidebar-points-widget:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 1px;
+}
+
+.sidebar-points-widget-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sidebar-points-tier {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-points-tier-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.sidebar-points-tier-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.sidebar-points-tier-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-highlight);
+}
+
+.sidebar-points-tier-lvl {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sidebar-points-xp-count {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #facc15;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-points-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sidebar-points-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.sidebar-points-widget-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
   padding: 1rem 1.25rem;
@@ -256,6 +389,7 @@
   flex-direction: column;
   gap: 0.75rem;
   background: rgba(7, 9, 14, 0.5);
+  flex-shrink: 0;
 }
 
 .sidebar-user-card {
@@ -333,7 +467,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Top Navbar */
@@ -342,6 +480,7 @@
   position: sticky;
   top: 0;
   z-index: 80;
+  flex-shrink: 0;
   background: rgba(7, 9, 14, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -1035,6 +1174,7 @@
   transform: translateX(-100%);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
 }
 
 .mobile-drawer.open {
@@ -1047,6 +1187,7 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .mobile-drawer-close-btn {

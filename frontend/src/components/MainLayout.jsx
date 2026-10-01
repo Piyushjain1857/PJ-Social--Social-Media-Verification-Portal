@@ -51,6 +51,9 @@ import NotificationsView from './views/NotificationsView';
 import ProfileView from './views/ProfileView';
 import LevelManagementView from './views/LevelManagementView';
 import GlobalSearchModal from './common/GlobalSearchModal';
+import GamificationSummary from './gamification/GamificationSummary';
+import PointsSummary from './common/PointsSummary';
+import { fetchMyGamification } from '../services/gamificationApi';
 
 /**
  * Role-Based Navigation Definitions strictly enforced from authenticated role data:
@@ -87,6 +90,7 @@ export const ROLE_NAVIGATION = {
     { id: 'my-submissions', label: 'My Submissions', icon: '📋', description: 'Track your submission verification statuses' },
     { id: 'notifications', label: 'Notifications', icon: '🔔', description: 'Verification updates & alerts', hasBadge: true },
     { id: 'profile', label: 'Profile', icon: '👤', description: 'Creator profile & connected handles' },
+    { id: 'points', label: 'Points & Rewards', icon: '🏆', description: 'Verified points balance & XP level milestones' },
   ]
 };
 
@@ -223,6 +227,7 @@ export default function MainLayout({
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [userPoints, setUserPoints] = useState(0);
+  const [gamificationData, setGamificationData] = useState(null);
   const [apiLatency, setApiLatency] = useState(null);
   const [isApiHealthy, setIsApiHealthy] = useState(true);
 
@@ -291,6 +296,15 @@ export default function MainLayout({
               setUserPoints(ptRes.data.totalPoints ?? 0);
             }
           } catch (ptE) {
+            // silent fallback
+          }
+
+          try {
+            const gamRes = await fetchMyGamification();
+            if (gamRes && gamRes.success && gamRes.data) {
+              setGamificationData(gamRes.data);
+            }
+          } catch (gE) {
             // silent fallback
           }
         }
@@ -393,6 +407,37 @@ export default function MainLayout({
     switch (activeNav) {
       case 'dashboard':
         return <DashboardView onNavigateToNav={handleNavChange} />;
+      case 'points':
+      case 'gamification':
+        return (
+          <div className="layout-content-area">
+            <div className="layout-page-header">
+              <div className="layout-header-title-wrap">
+                <h1 className="layout-header-title">
+                  <span>🏆</span> Verification Points &amp; XP Progression
+                </h1>
+                <p className="layout-header-subtitle">
+                  Monitor your approved verification rewards, level progression milestones, and recent point transactions.
+                </p>
+              </div>
+              <div className="layout-header-actions">
+                <button
+                  type="button"
+                  className="btn-portal-primary"
+                  onClick={() => handleNavChange('submit-activity')}
+                >
+                  <span>➕</span> Submit Activity
+                </button>
+              </div>
+            </div>
+
+            <GamificationSummary onNavigateToNav={handleNavChange} />
+
+            <div style={{ marginTop: '2rem' }}>
+              <PointsSummary onNavigateToNav={handleNavChange} />
+            </div>
+          </div>
+        );
       case 'levels':
       case 'super-admin/levels':
         return <LevelManagementView />;
@@ -466,7 +511,7 @@ export default function MainLayout({
         {/* Sidebar Navigation Items */}
         <nav className="sidebar-nav-container">
           <div className="sidebar-section-heading">Navigation Menu</div>
-          {navItems.map((item) => {
+          {navItems.filter(item => item.id !== 'points').map((item) => {
             const isActive = activeNav === item.id;
             let badge = null;
             if (item.isUrgentBadge && pendingReviewCount > 0) {
@@ -492,6 +537,58 @@ export default function MainLayout({
               </button>
             );
           })}
+
+          {/* Dedicated Points & Gamification Section in Sidebar */}
+          {currentRole === 'USER' && (
+            <div className="sidebar-points-section">
+              <div className="sidebar-section-heading">Points &amp; Rewards</div>
+              <button
+                type="button"
+                id="sidebar-nav-points"
+                className={`sidebar-nav-item ${activeNav === 'points' ? 'active role-user' : ''}`}
+                onClick={() => handleNavChange('points')}
+                aria-current={activeNav === 'points' ? 'page' : undefined}
+              >
+                <div className="sidebar-nav-item-content">
+                  <span className="sidebar-nav-icon">🏆</span>
+                  <span>Points &amp; XP</span>
+                </div>
+                <span className="sidebar-points-badge-pill">{userPoints} Pts</span>
+              </button>
+
+              <div
+                className="sidebar-points-widget"
+                onClick={() => handleNavChange('points')}
+                title="View full points activity and XP milestones"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange('points'); }}
+              >
+                <div className="sidebar-points-widget-top">
+                  <div className="sidebar-points-tier">
+                    <span className="sidebar-points-tier-icon">{gamificationData?.icon || '🌱'}</span>
+                    <div className="sidebar-points-tier-text">
+                      <span className="sidebar-points-tier-name">{gamificationData?.levelName || 'Novice'}</span>
+                      <span className="sidebar-points-tier-lvl">Level {gamificationData?.currentLevel || 1}</span>
+                    </div>
+                  </div>
+                  <span className="sidebar-points-xp-count">{gamificationData?.totalXP ?? userPoints} XP</span>
+                </div>
+
+                <div className="sidebar-points-bar-bg">
+                  <div
+                    className="sidebar-points-bar-fill"
+                    style={{ width: `${Math.min(100, Math.max(0, gamificationData?.progressPercentage ?? 0))}%` }}
+                  />
+                </div>
+
+                <div className="sidebar-points-widget-footer">
+                  <span>{gamificationData?.xpRemaining != null ? `${gamificationData.xpRemaining} XP to next` : 'Max Level'}</span>
+                  <span>{gamificationData?.progressPercentage ?? 0}%</span>
+                </div>
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Sidebar Footer */}
@@ -559,7 +656,7 @@ export default function MainLayout({
 
         <nav className="sidebar-nav-container">
           <div className="sidebar-section-heading">Workspace Navigation</div>
-          {navItems.map((item) => {
+          {navItems.filter(item => item.id !== 'points').map((item) => {
             const isActive = activeNav === item.id;
             let badge = null;
             if (item.isUrgentBadge && pendingReviewCount > 0) {
@@ -573,7 +670,7 @@ export default function MainLayout({
                 key={item.id}
                 type="button"
                 className={`sidebar-nav-item ${isActive ? `active role-${getRoleClass(currentRole)}` : ''}`}
-                onClick={() => handleNavChange(item.id)}
+                onClick={() => { handleNavChange(item.id); setIsMobileDrawerOpen(false); }}
               >
                 <div className="sidebar-nav-item-content">
                   <span className="sidebar-nav-icon">{item.icon}</span>
@@ -583,6 +680,55 @@ export default function MainLayout({
               </button>
             );
           })}
+
+          {/* Dedicated Points & Gamification Section in Mobile Drawer */}
+          {currentRole === 'USER' && (
+            <div className="sidebar-points-section">
+              <div className="sidebar-section-heading">Points &amp; Rewards</div>
+              <button
+                type="button"
+                className={`sidebar-nav-item ${activeNav === 'points' ? 'active role-user' : ''}`}
+                onClick={() => { handleNavChange('points'); setIsMobileDrawerOpen(false); }}
+              >
+                <div className="sidebar-nav-item-content">
+                  <span className="sidebar-nav-icon">🏆</span>
+                  <span>Points &amp; XP</span>
+                </div>
+                <span className="sidebar-points-badge-pill">{userPoints} Pts</span>
+              </button>
+
+              <div
+                className="sidebar-points-widget"
+                onClick={() => { handleNavChange('points'); setIsMobileDrawerOpen(false); }}
+                title="View full points activity and XP milestones"
+                role="button"
+                tabIndex={0}
+              >
+                <div className="sidebar-points-widget-top">
+                  <div className="sidebar-points-tier">
+                    <span className="sidebar-points-tier-icon">{gamificationData?.icon || '🌱'}</span>
+                    <div className="sidebar-points-tier-text">
+                      <span className="sidebar-points-tier-name">{gamificationData?.levelName || 'Novice'}</span>
+                      <span className="sidebar-points-tier-lvl">Level {gamificationData?.currentLevel || 1}</span>
+                    </div>
+                  </div>
+                  <span className="sidebar-points-xp-count">{gamificationData?.totalXP ?? userPoints} XP</span>
+                </div>
+
+                <div className="sidebar-points-bar-bg">
+                  <div
+                    className="sidebar-points-bar-fill"
+                    style={{ width: `${Math.min(100, Math.max(0, gamificationData?.progressPercentage ?? 0))}%` }}
+                  />
+                </div>
+
+                <div className="sidebar-points-widget-footer">
+                  <span>{gamificationData?.xpRemaining != null ? `${gamificationData.xpRemaining} XP to next` : 'Max Level'}</span>
+                  <span>{gamificationData?.progressPercentage ?? 0}%</span>
+                </div>
+              </div>
+            </div>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -680,11 +826,13 @@ export default function MainLayout({
 
           {/* Navbar Right Actions */}
           <div className="layout-navbar-right">
-            {/* API Health & Latency indicator */}
-            <div className="api-status-pill" title="API Gateway Status">
-              <span className={`status-dot ${isApiHealthy ? 'online' : 'offline'}`} />
-              <span>{isApiHealthy ? `API :5001 (${apiLatency || 12}ms)` : 'Offline'}</span>
-            </div>
+            {/* API Health & Latency indicator - Hidden for normal USER, visible for ADMIN and SUPER_ADMIN */}
+            {currentRole !== 'USER' && (
+              <div className="api-status-pill" title="API Gateway Status">
+                <span className={`status-dot ${isApiHealthy ? 'online' : 'offline'}`} />
+                <span>{isApiHealthy ? `API :5001 (${apiLatency || 12}ms)` : 'Offline'}</span>
+              </div>
+            )}
 
             {/* Creator Verified Points Pill */}
             {currentRole === 'USER' && (

@@ -637,6 +637,8 @@ textarea:disabled {
 .table-responsive-wrapper {
   width: 100%;
   overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
@@ -644,6 +646,12 @@ textarea:disabled {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   margin: 1rem 0;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .portal-table {

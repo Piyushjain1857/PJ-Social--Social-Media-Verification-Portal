@@ -5,11 +5,15 @@
 
 const API_BASE = '/api';
 
+const getToken = () => {
+  return localStorage.getItem('auth_token') || localStorage.getItem('token');
+};
+
 /**
  * Helper to fetch with JWT token from localStorage
  */
 async function authFetch(endpoint, options = {}) {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
