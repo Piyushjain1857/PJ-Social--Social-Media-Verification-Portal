@@ -164,19 +164,47 @@ async function runSecurityAudit() {
   console.log('\n--- 5. Testing IDOR Vulnerability Defenses ---');
 
   // Fetch a submission not owned by USER
+  const userPayload = jwt.decode(userToken);
+  const currentUserId = userPayload?.id;
+
   const adminSubs = await makeRequest('/submissions', {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
-  const notOwnedSub = adminSubs.body?.data?.find(s => s.userId !== 'usr-user-003');
+  let notOwnedSub = adminSubs.body?.data?.find(s => s.userId !== currentUserId);
 
-  if (notOwnedSub) {
-    const idorSubRes = await makeRequest(`/submissions/${notOwnedSub.id}`, {
-      headers: { Authorization: `Bearer ${userToken}` }
+  if (!notOwnedSub) {
+    // Create a temporary secondary user and a submission to guarantee an IDOR target exists
+    const tempOtherEmail = `other-creator-${Date.now()}@portal.com`;
+    const regRes = await makeRequest('/auth/register', {
+      method: 'POST',
+      body: { name: 'Other Creator', email: tempOtherEmail, password: 'OtherPassword123!' }
     });
-    assert.strictEqual(idorSubRes.status, 403, 'USER cannot access another users submission via ID parameter (IDOR protected)');
-    assert.strictEqual(idorSubRes.body?.code, 'FORBIDDEN_OWNERSHIP');
-    console.log('✓ IDOR blocked: Normal user cannot view other users submissions');
+    const otherToken = regRes.body?.token;
+    const activeAccs = await makeRequest('/social-accounts/active', {
+      headers: { Authorization: `Bearer ${otherToken}` }
+    });
+    const targetAcc = activeAccs.body?.data?.[0];
+    const createdSub = await makeRequest('/submissions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${otherToken}` },
+      body: {
+        platform: targetAcc.platform,
+        actionType: 'LIKE',
+        postUrl: 'https://instagram.com/p/C0987654321',
+        screenshotUrl: '/api/uploads/screenshots/test.png',
+        socialAccountId: targetAcc.id
+      }
+    });
+    notOwnedSub = createdSub.body?.data;
   }
+
+  assert(notOwnedSub, 'Must have a submission not owned by USER to test IDOR');
+  const idorSubRes = await makeRequest(`/submissions/${notOwnedSub.id}`, {
+    headers: { Authorization: `Bearer ${userToken}` }
+  });
+  assert.strictEqual(idorSubRes.status, 403, 'USER cannot access another users submission via ID parameter (IDOR protected)');
+  assert.strictEqual(idorSubRes.body?.code, 'FORBIDDEN_OWNERSHIP');
+  console.log('✓ IDOR blocked: Normal user cannot view other users submissions');
 
   // IDOR on notification read: USER cannot mark another users notification
   const idorNotifRes = await makeRequest('/notifications/notif-someone-else/read', {

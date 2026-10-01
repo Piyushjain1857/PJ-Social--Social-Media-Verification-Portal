@@ -8,6 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "db:seed": "node prisma/seed.js",
+    "test": "node src/tests/run_all_tests.js",
+    "test:all": "node src/tests/run_all_tests.js",
     "test:rbac": "node src/tests/rbac.test.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"

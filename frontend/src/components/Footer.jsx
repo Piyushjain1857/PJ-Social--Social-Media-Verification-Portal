@@ -15,7 +15,7 @@ export default function Footer() {
           </div>
 
           <div className="footer-copyright">
-            © {new Date().getFullYear()} Social Media Verification Portal. Initial Full-Stack Foundation.
+            © {new Date().getFullYear()} Social Media Verification Portal. Make By <a href="https://linkedin.com/in/piyushjain1857" target="_blank" style={{color: '#3b82f6', textDecoration: 'none'}} >Piyush Jain</a>
           </div>
 
           <div className="footer-badges">

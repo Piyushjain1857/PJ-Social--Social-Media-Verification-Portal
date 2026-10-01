@@ -9,7 +9,7 @@ const initializeInMemoryAccounts = async () => {
     {
       id: 'soc-official-001',
       platform: 'INSTAGRAM',
-      name: 'K.R. Mangalam University Official Instagram Page',
+      name: 'K.R. Mangalam University Official Instagram',
       handle: '@krmuniv',
       accountUrl: 'https://www.instagram.com/krmuniv/?hl=en',
       profileUrl: 'https://www.instagram.com/krmuniv/?hl=en',

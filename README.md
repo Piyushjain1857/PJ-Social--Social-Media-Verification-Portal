@@ -1,302 +1,393 @@
-# 🛡️ Social Media Activity Verification Portal
+# 🛡️ VeriSocial: Social Media Activity Verification Portal
 
-An enterprise-grade full-stack platform designed to verify creator campaign activities across major social media networks (**Instagram**, **LinkedIn**, **Facebook**) with **3-Tier Role-Based Access Control (RBAC)**: **Super Admin**, **Admin**, and **Normal User**.
-
----
-
-## 📌 Project Architecture
-
-```
-Social Media Verification Portal/
-├── backend/
-│   ├── prisma/
-│   │   ├── migrations/
-│   │   │   └── 20260930185800_init_portal_schema/
-│   │   │       └── migration.sql # Complete PostgreSQL schema migration
-│   │   └── schema.prisma         # Models: User, SocialAccount, Submission, Review, Notification
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── db.js             # PrismaClient singleton & connection health check
-│   │   │   └── env.js            # Environment variables loader
-│   │   ├── controllers/
-│   │   │   ├── authController.js         # Register, login, me, logout
-│   │   │   ├── healthController.js       # Health, DB status & schema telemetry endpoints
-│   │   │   ├── notificationController.js # Authenticated user notifications
-│   │   │   ├── submissionController.js   # Activity creation, user submissions, admin review
-│   │   │   ├── superAdminController.js   # Audit logs & platform telemetry
-│   │   │   └── userController.js         # User directory & role governance
-│   │   ├── middlewares/
-│   │   │   ├── authMiddleware.js         # JWT validation & user attachment
-│   │   │   ├── roleMiddleware.js         # Reusable RBAC authorize & escalation guard
-│   │   │   └── errorHandler.js           # Global express error handler
-│   │   ├── repositories/
-│   │   │   ├── notificationRepository.js # Notifications store (in-memory + Prisma)
-│   │   │   ├── submissionRepository.js   # Submissions & reviews store (in-memory + Prisma)
-│   │   │   └── userRepository.js         # Users store (in-memory + Prisma)
-│   │   ├── routes/
-│   │   │   ├── authRoutes.js             # /api/auth
-│   │   │   ├── healthRoutes.js           # /api/health, /api/database/status, /api/info
-│   │   │   ├── notificationRoutes.js     # /api/notifications
-│   │   │   ├── submissionRoutes.js       # /api/submissions
-│   │   │   ├── superAdminRoutes.js       # /api/superadmin
-│   │   │   ├── userRoutes.js             # /api/users
-│   │   │   └── index.js                  # Main API routing registry
-│   │   ├── tests/
-│   │   │   └── rbac.test.js              # Automated 17-point RBAC security suite
-│   │   ├── utils/
-│   │   │   ├── hash.js                   # bcrypt password hashing and comparison
-│   │   │   └── jwt.js                    # JWT signing and verification
-│   │   ├── app.js                        # Express app setup (CORS, parser, logger)
-│   │   └── server.js                     # Resilient server listener with port conflict fallback
-│   ├── .env                              # Local backend environment (PORT=5001)
-│   ├── .env.example                      # Example environment template
-│   ├── .gitignore                        # Backend gitignore
-│   └── package.json                      # Includes `npm run test:rbac`
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── DevDatabaseDashboard.jsx # Development Database & Telemetry Inspector
-│   │   │   ├── Footer.jsx        # Branding and footer metadata
-│   │   │   ├── Header.jsx        # Role-aware navigation & quick role switch simulation
-│   │   │   ├── HealthCheckWidget.jsx # Interactive telemetry tester
-│   │   │   ├── Hero.jsx          # Hero section with CTA & metrics
-│   │   │   ├── ProtectedRoute.jsx # Reusable role-guard component with 403 fallback
-│   │   │   ├── RoleOverview.jsx  # Interactive 3-tier role cards & specs
-│   │   │   ├── TechStackBadge.jsx # Architecture breakdown
-│   │   │   └── Unauthorized403.jsx # Dedicated HTTP 403 Forbidden Access Denied page
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx   # Authentication context & JWT session manager
-│   │   ├── pages/
-│   │   │   ├── AdminSpace.jsx    # Admin Review Queue & User Directory
-│   │   │   ├── LoginPage.jsx     # Authentication & demo account switcher
-│   │   │   ├── SuperAdminSpace.jsx # Super Admin System Governance & Role Manager
-│   │   │   └── UserSpace.jsx     # Creator Activity Submissions & Notifications
-│   │   ├── services/
-│   │   │   └── api.js            # API client wrapper (fetchHealth, submissions, users, RBAC probe)
-│   │   ├── styles/
-│   │   │   ├── app.css           # Layouts, components, and dashboard styles
-│   │   │   └── index.css         # Design system tokens and glassmorphism
-│   │   ├── App.jsx               # Role-aware hash router & ProtectedRoute orchestrator
-│   │   └── main.jsx              # React DOM entrypoint
-│   ├── index.html                # HTML5 template with Google Fonts & SEO
-│   ├── vite.config.js            # Vite config with backend proxy (/api -> :5001)
-│   ├── .env                      # Local frontend environment (VITE_API_BASE_URL)
-│   ├── .env.example              # Example environment template
-│   ├── .gitignore                # Frontend gitignore
-│   └── package.json
-│
-├── .gitignore                    # Monorepo root gitignore
-├── package.json                  # Root scripts & workspaces orchestration
-└── README.md                     # Documentation
-```
+VeriSocial is an enterprise-grade full-stack platform engineered to verify creator campaign activities across major social media platforms (**Instagram**, **LinkedIn**, and **Facebook**) under a strict **3-Tier Role-Based Access Control (RBAC)** architecture: **Super Admin**, **Admin Moderator**, and **Normal User (Creator)**.
 
 ---
 
-## 🗄️ PostgreSQL Database Schema (Prisma)
+## 📑 Table of Contents
 
-### Enums
-- **`Role`**: `SUPER_ADMIN`, `ADMIN`, `USER`
-- **`UserStatus`**: `ACTIVE`, `INACTIVE`, `SUSPENDED`
-- **`Platform`**: `INSTAGRAM`, `LINKEDIN`, `FACEBOOK`
-- **`ActionType`**: `LIKE`, `COMMENT`, `STORY`
-- **`SubmissionStatus`**: `PENDING`, `APPROVED`, `REJECTED`
-- **`NotificationType`**: `SUBMISSION_UPDATE`, `REVIEW_FEEDBACK`, `ACCOUNT_ALERT`, `SYSTEM`
+- [Overview](#-overview)
+- [Tech Stack](#-tech-stack)
+- [Folder Structure](#-folder-structure)
+- [Environment Variables](#-environment-variables)
+- [PostgreSQL & Prisma Setup](#-postgresql--prisma-setup)
+- [Prisma Migration Commands](#-prisma-migration-commands)
+- [Backend Setup & Run](#-backend-setup--run)
+- [Frontend Setup & Run](#-frontend-setup--run)
+- [Development Commands](#-development-commands)
+- [Production Build Instructions](#-production-build-instructions)
+- [Default Roles, Accounts & Permissions](#-default-roles-accounts--permissions)
+- [Security Guardrails & IDOR Protection](#-security-guardrails--idor-protection)
+- [API Reference Matrix](#-api-reference-matrix)
+- [Automated Testing Suite](#-automated-testing-suite)
 
-### Models & Relational Architecture
+---
 
-#### 1. `User`
-- **Fields**: `id` (UUID, PK), `name`, `email` (Unique), `password` (bcrypt hash), `role` (`Role`), `status` (`UserStatus`), `createdAt`, `updatedAt`
-- **Relations**:
-  - `socialAccounts`: One-to-many with `SocialAccount`
-  - `submissions`: One-to-many with `Submission`
-  - `reviews`: One-to-many with `Review` (when user role is `ADMIN`)
-  - `notifications`: One-to-many with `Notification`
-- **Indexes**: `email`, `role`, `status`
+## 🌟 Overview
 
-#### 2. `SocialAccount`
-- **Fields**: `id` (UUID, PK), `userId` (FK -> User), `platform` (`Platform`), `handle`, `profileUrl`, `isVerified`, `createdAt`, `updatedAt`
-- **Relations**:
-  - `user`: Belongs to `User` (onDelete: Cascade)
-  - `submissions`: One-to-many with `Submission`
-- **Constraints & Indexes**: `@@unique([userId, platform, handle])`, `userId`, `platform`
-
-#### 3. `Submission`
-- **Fields**: `id` (UUID, PK), `userId` (FK -> User), `socialAccountId` (FK -> SocialAccount), `platform` (`Platform`), `actionType` (`ActionType`), `postUrl`, `screenshotUrl`, `description`, `status` (`SubmissionStatus`), `createdAt`, `updatedAt`
-- **Relations**:
-  - `user`: Belongs to `User` (onDelete: Cascade)
-  - `socialAccount`: Belongs to official `SocialAccount` (onDelete: Restrict)
-  - `reviews`: One-to-many with `Review`
-- **Indexes**: `userId`, `socialAccountId`, `[platform, actionType]`, `status`, `createdAt`
-
-#### 4. `Review`
-- **Fields**: `id` (UUID, PK), `submissionId` (FK -> Submission), `adminId` (FK -> User), `status` (`SubmissionStatus`), `feedback`, `createdAt`, `updatedAt`
-- **Relations**:
-  - `submission`: Belongs to `Submission` (onDelete: Cascade)
-  - `admin`: Belongs to `User` reviewer (onDelete: Restrict)
-- **Indexes**: `submissionId`, `adminId`, `status`, `createdAt`
-
-#### 5. `Notification`
-- **Fields**: `id` (UUID, PK), `userId` (FK -> User), `type` (`NotificationType`), `title`, `message`, `isRead`, `metadata` (JSONB), `createdAt`, `updatedAt`
-- **Relations**:
-  - `user`: Belongs to `User` (onDelete: Cascade)
-- **Indexes**: `userId`, `isRead`, `createdAt`
+The Social Media Verification Portal provides an audited pipeline for college and brand campaigns:
+1. **Creators (`USER`)**: Browse verified official college social media accounts, submit evidence proofs (post permalinks, activity types like Like, Comment, or Story, and screenshot evidence), track their submissions in real-time, receive instant notifications on moderation verdicts, and manage their profile and passwords.
+2. **Moderators (`ADMIN`)**: Access a dedicated moderation workspace with a filterable review queue, inspect evidence and auth-gated screenshot proofs, verify handle and timestamp consistency, and record approval or structured rejection feedback.
+3. **Super Administrators (`SUPER_ADMIN`)**: Retain full system governance. Manage official institutional accounts (Instagram, LinkedIn, Facebook with domain validation), administer all platform users and moderator appointments, inspect audit trails, adjust verification policies, and view platform-wide telemetry.
 
 ---
 
 ## ⚡ Tech Stack
 
-| Layer | Technology | Key Details |
+| Layer | Technology | Description |
 |---|---|---|
-| **Frontend** | React 19 + Vite 6 | Fast modern JSX with instant HMR |
-| **Styling** | Pure Vanilla CSS | Custom glassmorphism, HSL dark mode palette, zero Tailwind/Bootstrap |
-| **Backend** | Node.js + Express.js | Modular REST architecture, CORS, structured logging |
-| **Database** | PostgreSQL | Relational schema for users, accounts, submissions, reviews, notifications |
-| **ORM** | Prisma 6 | Declarative data modeling, migrations, and type-safe client |
-| **Auth Foundation** | JWT + bcryptjs | Token-based sessions with role claims & salted password hashes |
+| **Frontend** | React 19 + Vite 6 | Modern modular SPA with lightning-fast HMR and build optimization |
+| **Styling** | Pure Vanilla CSS | Bespoke glassmorphism design system, HSL dark mode palette, zero third-party CSS bloat |
+| **Backend** | Node.js + Express.js | Enterprise RESTful architecture, helmet security headers, and modular layering |
+| **Database** | PostgreSQL | Robust relational database hosting models for users, accounts, submissions, reviews, and notifications |
+| **ORM** | Prisma 6 | Declarative data modeling, automated SQL migrations, and type-safe client |
+| **Security & Auth** | JWT (`jsonwebtoken`) + `bcryptjs` | Stateless signed tokens, salt rounds of 12, IDOR protections, and server-side role gating |
+| **File Storage** | `multer` + Storage Service | Auth-gated screenshot storage with magic-byte MIME validation and path traversal defenses |
 
 ---
 
-## 👥 3-Tier Role Governance
+## 📂 Folder Structure
 
-1. **Super Admin (`SUPER_ADMIN`)**
-   - Full platform administration and global settings.
-   - User and administrator lifecycle management.
-   - Global verification policies, audit logs, and system metrics.
-
-2. **Admin (`ADMIN`)**
-   - Operational queue of submitted activities.
-   - Evidence validation (links, proofs, engagement metrics).
-   - Approval, rejection, and review feedback.
-
-3. **Normal User (`USER`)**
-   - Connect social identities (**Instagram**, **LinkedIn**, **Facebook**).
-   - Submit campaign activity proofs and verification requests.
-   - Live status tracking (`PENDING`, `APPROVED`, `REJECTED`).
+```
+Social Media Verification Portal/
+├── package.json                          # Monorepo workspaces orchestrator & root scripts
+├── package-lock.json
+├── .gitignore
+├── README.md                             # Comprehensive project manual
+│
+├── backend/
+│   ├── .env                              # Active backend environment configuration
+│   ├── .env.example                      # Reference template for backend variables
+│   ├── .gitignore
+│   ├── package.json                      # Backend dependencies and test scripts
+│   ├── prisma/
+│   │   ├── schema.prisma                 # Core Prisma relational schema
+│   │   ├── seed.js                       # Demo accounts seeding script
+│   │   └── migrations/
+│   │       └── 20260930185800_init_portal_schema/
+│   │           └── migration.sql         # Baseline PostgreSQL migration
+│   ├── uploads/
+│   │   └── screenshots/                  # Auth-gated storage directory for uploaded evidence
+│   └── src/
+│       ├── app.js                        # Express app configuration, Helmet, CORS, parser limits
+│       ├── server.js                     # HTTP server startup with automatic port fallback
+│       ├── config/
+│       │   ├── db.js                     # PrismaClient singleton with connection diagnostics
+│       │   └── env.js                    # Validated environment loader
+│       ├── controllers/
+│       │   ├── authController.js         # Register, login, me, logout handlers
+│       │   ├── dashboardController.js    # Scoped telemetry for user, admin, super-admin
+│       │   ├── healthController.js       # Health and database telemetry endpoints
+│       │   ├── notificationController.js # Read / read-all notification handlers
+│       │   ├── reviewController.js       # Admin review queue, approval, and rejection
+│       │   ├── socialAccountController.js# Official accounts registry and management
+│       │   ├── submissionController.js   # User activity submission & query handlers
+│       │   ├── superAdminController.js   # Super Admin user CRUD, stats & audit logs
+│       │   ├── uploadController.js       # Auth-gated screenshot stream handler
+│       │   └── userController.js         # Profile management & password updates
+│       ├── middlewares/
+│       │   ├── authMiddleware.js         # Bearer JWT validation & token extraction
+│       │   ├── errorHandler.js           # Centralized exception formatter
+│       │   ├── roleMiddleware.js         # Role gatekeeper & privilege escalation guard
+│       │   └── uploadMiddleware.js       # Multer memory storage & magic byte validator
+│       ├── repositories/
+│       │   ├── notificationRepository.js # Notification queries & mutations
+│       │   ├── socialAccountRepository.js# Official social account database ops
+│       │   ├── submissionRepository.js   # Submissions & moderation reviews store
+│       │   └── userRepository.js         # User store with password-hash sanitization
+│       ├── routes/
+│       │   ├── authRoutes.js             # /api/auth
+│       │   ├── dashboardRoutes.js        # /api/dashboard
+│       │   ├── healthRoutes.js           # /api/health, /api/database/status, /api/info
+│       │   ├── notificationRoutes.js     # /api/notifications
+│       │   ├── reviewRoutes.js           # /api/reviews
+│       │   ├── socialAccountRoutes.js    # /api/social-accounts
+│       │   ├── submissionRoutes.js       # /api/submissions
+│       │   ├── superAdminRoutes.js       # /api/superadmin
+│       │   ├── uploadRoutes.js           # /api/uploads
+│       │   ├── userRoutes.js             # /api/users
+│       │   └── index.js                  # Central router registration
+│       ├── tests/
+│       │   ├── notification.test.js      # Notifications workflow & isolation tests
+│       │   ├── official_social_accounts.test.js # Official account governance tests
+│       │   ├── profile_management.test.js# Profile & password security tests
+│       │   ├── rbac.test.js              # 42-point core role authorization suite
+│       │   ├── run_all_tests.js          # Master automated test runner
+│       │   ├── security_audit.test.js    # Headers, IDOR, and privilege escalation tests
+│       │   ├── superadmin_dashboard.test.js # Analytics & metrics integrity tests
+│       │   ├── superadmin_users.test.js  # User lifecycle CRUD & safeguards tests
+│       │   └── workflow.test.js          # End-to-end submission & review cycle tests
+│       └── utils/
+│           ├── hash.js                   # bcrypt helper functions
+│           ├── jwt.js                    # JWT signing and verification utility
+│           └── urlValidator.js           # Domain & URL structure validation
+│
+└── frontend/
+    ├── .env                              # Active frontend environment configuration
+    ├── .env.example                      # Reference template for frontend variables
+    ├── .gitignore
+    ├── index.html                        # Application entrypoint with SEO meta
+    ├── package.json                      # React 19, Vite, and scripts
+    ├── vite.config.js                    # Vite configuration & dev proxy
+    └── src/
+        ├── main.jsx                      # React 19 root bootstrap
+        ├── App.jsx                       # Top-level hash router & role orchestrator
+        ├── context/
+        │   └── AuthContext.jsx           # Global auth provider, session state & listeners
+        ├── services/
+        │   └── api.js                    # Universal API abstraction client
+        ├── styles/
+        │   ├── app.css                   # Component-level layout rules & badges
+        │   ├── index.css                 # Color tokens, typography, glassmorphism
+        │   └── layout.css                # Responsive sidebar, drawer, and grids
+        ├── pages/
+        │   ├── LoginPage.jsx             # Credentials authentication & quick demo selector
+        │   ├── UserSpace.jsx             # Standalone creator space (legacy support)
+        │   ├── AdminSpace.jsx            # Standalone admin moderator space (legacy support)
+        │   └── SuperAdminSpace.jsx       # Standalone superadmin space (legacy support)
+        └── components/
+            ├── Header.jsx                # Public navigation header & latency monitor
+            ├── Footer.jsx                # Public footer
+            ├── Hero.jsx                  # Hero section with primary CTAs
+            ├── MainLayout.jsx            # Authenticated application shell & sidebar
+            ├── ProtectedRoute.jsx        # Role clearance router guard
+            ├── RoleOverview.jsx          # Interactive 3-tier role cards
+            ├── ScreenshotImage.jsx       # Authenticated blob image loader for screenshots
+            ├── TechStackBadge.jsx        # Architecture details pill
+            ├── Unauthorized403.jsx       # Dedicated 403 Forbidden Access Denied page
+            ├── HealthCheckWidget.jsx     # Live backend connectivity tester
+            ├── DevDatabaseDashboard.jsx  # Interactive database telemetry console
+            └── views/
+                ├── DashboardView.jsx     # Role-specific dashboard (User, Admin, Super Admin)
+                ├── SubmitActivityView.jsx# Creator submission form with drag-and-drop
+                ├── MySubmissionsView.jsx # Creator submission history & status modal
+                ├── ReviewSubmissionsView.jsx # Moderator review queue & verdict modal
+                ├── SubmissionsView.jsx   # Global submissions directory
+                ├── UsersView.jsx         # Super Admin user CRUD & status control
+                ├── AdminsView.jsx        # Administrative staff directory & governance
+                ├── SocialAccountsView.jsx# Official accounts management & stats
+                ├── NotificationsView.jsx # User notifications & mark-all-read
+                ├── ProfileView.jsx       # Profile editor & password change
+                └── SettingsView.jsx      # System policies & anti-abuse thresholds
+```
 
 ---
 
-## 🚀 Getting Started
+## 🔑 Environment Variables
 
-### 1. Prerequisites
-- **Node.js** >= 18 (Tested on Node v24)
-- **npm** >= 9
-- **PostgreSQL** instance (optional for initial health check, required for running migrations)
+### Backend (`backend/.env`)
 
-### 2. Installation
-Install all dependencies across root, backend, and frontend with a single command:
+| Variable | Default Value | Description |
+|---|---|---|
+| `PORT` | `5001` | TCP port on which the Express API server listens |
+| `NODE_ENV` | `development` | Environment mode (`development` or `production`) |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/social_verification_portal?schema=public` | PostgreSQL connection string |
+| `JWT_SECRET` | `super_secret_jwt_key_verification_portal_2026` | Secret key used to sign and verify Bearer JWT tokens |
+| `JWT_EXPIRES_IN` | `7d` | Lifespan of issued JSON Web Tokens |
+| `CORS_ORIGIN` | `http://localhost:5173,http://localhost:5174` | Allowed origins for cross-origin browser requests |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Default Value | Description |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:5001/api` | Base URL of the backend REST API |
+
+---
+
+## 🗄️ PostgreSQL & Prisma Setup
+
+### 1. Ensure PostgreSQL Is Running
+Create a database named `social_verification_portal`:
 ```bash
-npm run install:all
+# Using psql:
+createdb social_verification_portal
 ```
 
-### 3. Environment Setup
-
-#### Backend (`backend/.env`):
+### 2. Configure `backend/.env`
+Verify that `DATABASE_URL` in `backend/.env` points to your PostgreSQL database instance:
 ```env
-PORT=5001
-NODE_ENV=development
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/social_verification_portal?schema=public
-JWT_SECRET=super_secret_jwt_key_verification_portal_2026
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=http://localhost:5173
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/social_verification_portal?schema=public"
 ```
 
-#### Frontend (`frontend/.env`):
-```env
-VITE_API_BASE_URL=http://localhost:5001/api
-```
+---
 
-### 4. Database Setup & Migrations (Prisma + PostgreSQL)
-Generate the Prisma Client:
+## 🔄 Prisma Migration Commands
+
+From the project root or the `backend` directory:
+
 ```bash
+# Generate the Prisma Client
 npm run prisma:generate
-```
 
-Apply database migrations:
-```bash
+# Apply pending database migrations to PostgreSQL
 npm run prisma:migrate
-```
 
-Open Prisma Studio:
-```bash
+# Seed demo accounts (Super Admin, Admin, Normal User)
+npm run db:seed --prefix backend
+
+# (Optional) Open Prisma Studio visual database browser:
 npx prisma studio --schema backend/prisma/schema.prisma
 ```
 
 ---
 
-## 🖥️ Running the Application
+## 🚀 Backend Setup & Run
 
-### Option A: Run Both Concurrently (Recommended)
-From the root directory:
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Generate client & seed database:
+   ```bash
+   npx prisma generate
+   node prisma/seed.js
+   ```
+4. Start the backend development server:
+   ```bash
+   npm run dev
+   ```
+   *The backend server will run on `http://localhost:5001`.*
+
+---
+
+## 💻 Frontend Setup & Run
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   *The frontend application will run on `http://localhost:5173`.*
+
+---
+
+## 🛠️ Development Commands
+
+From the repository root:
+
 ```bash
+# Run both Backend and Frontend concurrently
 npm run dev
-```
-- Frontend will be live at: [http://localhost:5173](http://localhost:5173)
-- Backend will be live at: [http://localhost:5001](http://localhost:5001)
 
-### Option B: Run Independently
-
-#### Run Backend:
-```bash
+# Run only Backend in development mode (nodemon)
 npm run dev:backend
-# or: cd backend && npm run dev
-```
 
-#### Run Frontend:
-```bash
+# Run only Frontend in development mode (vite)
 npm run dev:frontend
-# or: cd frontend && npm run dev
+
+# Execute all automated test suites (8 comprehensive test suites)
+npm test
+
+# Build Frontend production bundle
+npm run build:frontend
 ```
 
 ---
 
----
+## 📦 Production Build Instructions
 
-## 📡 API Endpoints & Role Authorization Matrix
-
-| Endpoint | Method | Allowed Roles | Description |
-|---|---|---|---|
-| `/api/auth/register` | `POST` | Public | Register new user (strictly assigned `USER` role) |
-| `/api/auth/login` | `POST` | Public | Authenticate credentials & return signed JWT |
-| `/api/auth/me` | `GET` | Authenticated | Retrieve authenticated user profile |
-| `/api/submissions` | `POST` | `USER`, `ADMIN`, `SUPER_ADMIN` | Create social activity proof (Instagram/LinkedIn/Facebook) |
-| `/api/submissions/my` | `GET` | `USER`, `ADMIN`, `SUPER_ADMIN` | View own submitted activities & review status |
-| `/api/submissions` | `GET` | `ADMIN`, `SUPER_ADMIN` | Moderation queue: view all submissions across platform |
-| `/api/submissions/:id/review` | `POST` | `ADMIN`, `SUPER_ADMIN` | Review submission with status (`APPROVED`/`REJECTED`) & feedback |
-| `/api/users` | `GET` | `ADMIN`, `SUPER_ADMIN` | View registered user directory |
-| `/api/users/:id/role` | `PATCH` | `SUPER_ADMIN` | Manage user roles (Admins cannot manage Super Admin privileges) |
-| `/api/notifications/my` | `GET` | `USER`, `ADMIN`, `SUPER_ADMIN` | View user-scoped notifications & activity alerts |
-| `/api/superadmin/audit-logs` | `GET` | `SUPER_ADMIN` | System security audit trail & event history |
-| `/api/superadmin/system-stats` | `GET` | `SUPER_ADMIN` | Comprehensive platform stats & role breakdowns |
-| `/api/health` | `GET` | Public | Health status, server uptime, and DB connection state |
-
----
-
-## 🧪 Automated RBAC Security Test Suite
-
-Run the automated 17-point RBAC validation suite:
+### 1. Build the Frontend
+Compile and minify the React application into optimized static assets in `frontend/dist/`:
 ```bash
-cd backend && npm run test:rbac
+npm run build:frontend
+# or from frontend directory: npm run build
 ```
-This tests:
-1. **`USER` role permissions**:
-   - Access to own submissions (`GET /api/submissions/my` -> `200`)
-   - Access to own notifications (`GET /api/notifications/my` -> `200`)
-   - Create activity proof (`POST /api/submissions` -> `201`)
-   - Blocked from admin queue (`GET /api/submissions` -> `403`)
-   - Blocked from reviewing submissions (`POST /api/submissions/:id/review` -> `403`)
-   - Blocked from user directory (`GET /api/users` -> `403`)
-   - Blocked from Super Admin audit logs (`GET /api/superadmin/audit-logs` -> `403`)
-2. **`ADMIN` role permissions**:
-   - Access to moderation queue (`GET /api/submissions` -> `200`)
-   - Review submission (`POST /api/submissions/:id/review` -> `200`)
-   - Access user directory (`GET /api/users` -> `200`)
-   - Blocked from Super Admin audit logs (`GET /api/superadmin/audit-logs` -> `403`)
-   - Blocked from managing Super Admin privileges (`PATCH /api/users/:id/role` -> `403`)
-3. **`SUPER_ADMIN` role permissions**:
-   - Access system audit logs (`GET /api/superadmin/audit-logs` -> `200`)
-   - Access system stats (`GET /api/superadmin/system-stats` -> `200`)
-   - Access user directory (`GET /api/users` -> `200`)
-   - Access all submissions (`GET /api/submissions` -> `200`)
-   - Update user roles & permissions (`PATCH /api/users/:id/role` -> `200`)
 
+### 2. Run the Production Backend
+Ensure environment variables are configured with production credentials:
+```bash
+NODE_ENV=production PORT=5001 npm run start --prefix backend
+```
+
+---
+
+## 👤 Default Roles, Accounts & Permissions
+
+The portal provides 3 pre-seeded demo accounts ready for testing:
+
+| Role | Demo Email | Password | Allowed Capabilities |
+|---|---|---|---|
+| **`SUPER_ADMIN`** | `superadmin@portal.com` | `SuperAdmin123!` | Full system governance, view telemetry, manage users/admins, create/toggle official social accounts, review all submissions, view audit logs |
+| **`ADMIN`** | `admin@portal.com` | `Admin123!` | Access moderator dashboard, inspect review queue, approve/reject submissions with feedback, view users directory (cannot manage roles) |
+| **`USER`** | `user@portal.com` | `User123!` | View creator dashboard, submit activity evidence, upload screenshot proof, view personal submission history, receive notifications, update profile |
+
+---
+
+## 🔒 Security Guardrails & IDOR Protection
+
+1. **Strict Server-Side RBAC**: Role information sent by clients in registration or profile updates is ignored. Public registrations are strictly assigned `USER`.
+2. **Privilege Escalation Defenses**: Only `SUPER_ADMIN` can modify user roles. Admins cannot promote users to Super Admin or alter other administrators.
+3. **IDOR (Insecure Direct Object Reference) Protection**:
+   - `GET /api/submissions/:id`: Creators can only access their own submissions. Attempting to view another user's submission returns `403 Forbidden` (`FORBIDDEN_OWNERSHIP`).
+   - `PATCH /api/notifications/:id/read`: Users can only mark their own notifications as read.
+4. **Auth-Gated Screenshot Delivery**:
+   - `/api/uploads/screenshots/:filename` strictly enforces that Normal Users can only stream screenshots associated with their own submissions. Unauthorized attempts return `404 Not Found` without disclosing file existence.
+5. **No Password Leakage**: Password hashes are strictly omitted (`select` exclusion) across all user listing, search, profile, and audit endpoints.
+6. **File Upload Security**: Screenshot uploads enforce memory buffer inspection with magic-byte signature validation (JPEG `ffd8ff`, PNG `89504e47`, WebP, GIF), 5MB size limits, and sanitization against path traversal.
+7. **Security Headers**: Helmet configured with `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, and disabled `X-Powered-By` header.
+
+---
+
+## 📡 API Reference Matrix
+
+| Route | Method | Clearance | Description |
+|---|---|---|---|
+| `/api/health` | `GET` | Public | System uptime & database connection status |
+| `/api/auth/register` | `POST` | Public | Register new creator account (enforced `USER` role) |
+| `/api/auth/login` | `POST` | Public | Authenticate credentials and receive Bearer JWT |
+| `/api/auth/me` | `GET` | Authenticated | Retrieve authenticated caller profile |
+| `/api/users/me` | `GET` | Authenticated | Retrieve profile details and role-tailored stats |
+| `/api/users/me` | `PUT` | Authenticated | Update user name (role/email/status protected) |
+| `/api/users/change-password` | `PUT` | Authenticated | Change authenticated user's password |
+| `/api/social-accounts/active` | `GET` | Authenticated | List official active accounts available for submission |
+| `/api/submissions` | `POST` | `USER` | Submit activity proof with screenshot evidence |
+| `/api/submissions/my` | `GET` | Authenticated | List submissions owned by the authenticated caller |
+| `/api/submissions/:id` | `GET` | Authenticated | View submission details (IDOR protected for creators) |
+| `/api/submissions` | `GET` | `ADMIN`, `SUPER_ADMIN` | View all platform submissions for moderation |
+| `/api/reviews/pending` | `GET` | `ADMIN`, `SUPER_ADMIN` | Filterable and paginated moderation review queue |
+| `/api/reviews/submission/:id` | `GET` | `ADMIN`, `SUPER_ADMIN` | Submission review dossier with audit details |
+| `/api/reviews/:id/approve` | `POST` | `ADMIN`, `SUPER_ADMIN` | Approve submission and generate creator notification |
+| `/api/reviews/:id/reject` | `POST` | `ADMIN`, `SUPER_ADMIN` | Reject submission with mandatory feedback |
+| `/api/notifications` | `GET` | Authenticated | Retrieve user notifications & unread badge count |
+| `/api/notifications/:id/read`| `PATCH`| Authenticated | Mark a notification as read (ownership protected) |
+| `/api/notifications/read-all`| `PATCH`| Authenticated | Mark all notifications as read for current user |
+| `/api/uploads/screenshots/:fn`| `GET` | Authenticated | Auth-gated screenshot stream (ownership validated) |
+| `/api/superadmin/users` | `GET` | `SUPER_ADMIN` | Paginated user directory with search and filter |
+| `/api/superadmin/users` | `POST`| `SUPER_ADMIN` | Create user or administrator account |
+| `/api/superadmin/users/:id` | `PATCH`| `SUPER_ADMIN` | Update user details or reset password |
+| `/api/superadmin/users/:id/status`| `PATCH`| `SUPER_ADMIN` | Toggle user status (Active / Inactive / Suspended) |
+| `/api/superadmin/social-accounts` | `GET` | `SUPER_ADMIN` | List and manage official social media accounts |
+| `/api/superadmin/social-accounts` | `POST`| `SUPER_ADMIN` | Register official social media account with URL validation |
+| `/api/superadmin/system-stats`| `GET` | `SUPER_ADMIN` | Platform analytics and distribution telemetry |
+| `/api/superadmin/audit-logs` | `GET` | `SUPER_ADMIN` | System event audit logs |
+
+---
+
+## 🧪 Automated Testing Suite
+
+The repository includes a comprehensive 8-suite test harness verifying every layer of the platform:
+
+```bash
+npm test
+```
+
+### Included Test Suites:
+1. **`rbac.test.js`**: 42 automated tests validating the role-based permission matrix across all endpoints.
+2. **`security_audit.test.js`**: Tests security headers, payload limits, JWT tamper resistance, IDOR protections, and file path traversal.
+3. **`workflow.test.js`**: Tests the complete submission lifecycle: creation, review, approval, rejection, state transitions, and creator notifications.
+4. **`notification.test.js`**: Validates notification delivery, unread count tracking, cross-user isolation, and bulk read operations.
+5. **`official_social_accounts.test.js`**: Validates official accounts CRUD, domain checks, handle formatting, and creator targeting.
+6. **`profile_management.test.js`**: Validates password changes, policy checks, name updates, and privilege escalation prevention.
+7. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
+8. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
