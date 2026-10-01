@@ -21,12 +21,12 @@ export default function AdminsView() {
 
   // Pagination state
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(12);
   const [pagination, setPagination] = useState({
     totalCount: 0,
     totalPages: 1,
     currentPage: 1,
-    limit: 10,
+    limit: 12,
     hasNext: false,
     hasPrev: false
   });
@@ -192,9 +192,9 @@ export default function AdminsView() {
 
       {/* Loading Skeletons */}
       {isLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
-          {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="glass-panel skeleton-card" style={{ height: '180px' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <div key={n} className="glass-panel skeleton-card" style={{ height: '220px', borderRadius: '16px' }} />
           ))}
         </div>
       ) : admins.length === 0 ? (
@@ -213,65 +213,185 @@ export default function AdminsView() {
           onAction={hasActiveFilters ? handleClearFilters : null}
         />
       ) : (
-        /* Admin Cards Grid */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
+        /* Admin Cards Grid - 9 or 12 boxes per page */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
           {admins.map((adm) => (
-            <div key={adm.id} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div
+              key={adm.id}
+              className="glass-panel"
+              style={{
+                padding: '1.35rem 1.4rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                background: 'linear-gradient(165deg, rgba(22, 27, 44, 0.8), rgba(13, 17, 28, 0.92))',
+                border: adm.role === 'SUPER_ADMIN'
+                  ? '1px solid rgba(234, 179, 8, 0.25)'
+                  : '1px solid rgba(99, 102, 241, 0.2)',
+                boxShadow: '0 10px 28px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                borderRadius: '16px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Header with Avatar, Name, Email, and Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0, flex: 1 }}>
                   <div style={{
                     width: '44px',
                     height: '44px',
-                    borderRadius: '50%',
-                    background: adm.role === 'SUPER_ADMIN' ? 'var(--role-superadmin-bg)' : 'var(--role-admin-bg)',
-                    border: `1px solid ${adm.role === 'SUPER_ADMIN' ? 'var(--role-superadmin-border)' : 'var(--role-admin-border)'}`,
-                    color: adm.role === 'SUPER_ADMIN' ? 'var(--role-superadmin)' : 'var(--role-admin)',
+                    borderRadius: '12px',
+                    background: adm.role === 'SUPER_ADMIN'
+                      ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(245, 158, 11, 0.1))'
+                      : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(14, 165, 233, 0.1))',
+                    border: `1px solid ${adm.role === 'SUPER_ADMIN' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(99, 102, 241, 0.4)'}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.2rem',
-                    fontWeight: 800
+                    fontSize: '1.25rem',
+                    flexShrink: 0,
+                    boxShadow: adm.role === 'SUPER_ADMIN'
+                      ? '0 4px 12px rgba(234, 179, 8, 0.15)'
+                      : '0 4px 12px rgba(99, 102, 241, 0.15)'
                   }}>
                     {adm.role === 'SUPER_ADMIN' ? '👑' : '🛡️'}
                   </div>
 
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-highlight)' }}>
+                  <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                    <div style={{
+                      fontWeight: 700,
+                      fontSize: '0.98rem',
+                      color: 'var(--text-highlight)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
                       {adm.name}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    <div style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--text-secondary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      marginTop: '2px'
+                    }}>
                       {adm.email}
                     </div>
                   </div>
                 </div>
 
-                <span className={`badge ${adm.role === 'SUPER_ADMIN' ? 'badge-superadmin' : 'badge-admin'}`}>
+                <span
+                  className={`badge ${adm.role === 'SUPER_ADMIN' ? 'badge-superadmin' : 'badge-admin'}`}
+                  style={{
+                    flexShrink: 0,
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '0.25rem 0.65rem',
+                    letterSpacing: '0.04em'
+                  }}
+                >
                   {adm.role}
                 </span>
               </div>
 
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.35rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
-                <div><strong>Clearance Level:</strong> {adm.role === 'SUPER_ADMIN' ? 'Tier 1 (Root Authority)' : 'Tier 2 (Queue Moderator)'}</div>
-                <div><strong>Access Granted:</strong> {new Date(adm.createdAt).toLocaleDateString()}</div>
-                <div><strong>Status:</strong> <span style={{ color: 'var(--status-success)' }}>Active &amp; Verified</span></div>
+              {/* Clearance & Details */}
+              <div style={{
+                fontSize: '0.82rem',
+                background: 'rgba(255, 255, 255, 0.025)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                borderRadius: '10px',
+                padding: '0.75rem 0.85rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    🛡️ Clearance
+                  </span>
+                  <span style={{ fontWeight: 600, color: adm.role === 'SUPER_ADMIN' ? '#facc15' : '#818cf8' }}>
+                    {adm.role === 'SUPER_ADMIN' ? 'Tier 1 (Root Authority)' : 'Tier 2 (Queue Moderator)'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    📅 Access Granted
+                  </span>
+                  <span style={{ color: 'var(--text-highlight)' }}>
+                    {new Date(adm.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    ⚡ Status
+                  </span>
+                  <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, fontSize: '0.78rem' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                    Active &amp; Verified
+                  </span>
+                </div>
               </div>
 
-              {adm.role !== 'SUPER_ADMIN' && (
+              {/* Footer action button */}
+              {adm.role !== 'SUPER_ADMIN' ? (
                 <button
                   type="button"
-                  className="btn-secondary"
                   onClick={() => handleDemoteAdmin(adm.id)}
-                  style={{ fontSize: '0.82rem', padding: '0.45rem', marginTop: 'auto', color: 'var(--status-error)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#f87171',
+                    borderRadius: '10px',
+                    padding: '0.55rem 0.85rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    marginTop: 'auto',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                  }}
                 >
-                  Revoke Admin Privileges
+                  <span>⚠️</span> Revoke Admin Privileges
                 </button>
+              ) : (
+                <div style={{
+                  padding: '0.45rem 0.75rem',
+                  background: 'rgba(234, 179, 8, 0.08)',
+                  border: '1px solid rgba(234, 179, 8, 0.2)',
+                  borderRadius: '10px',
+                  color: '#facc15',
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  marginTop: 'auto'
+                }}>
+                  <span>👑</span> Root Authority Protected
+                </div>
               )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls - Options configured for 9 or 12 boxes */}
       <Pagination
         page={page}
         totalPages={pagination.totalPages}
@@ -279,7 +399,7 @@ export default function AdminsView() {
         limit={limit}
         onPageChange={(p) => setPage(p)}
         onLimitChange={(l) => { setLimit(l); setPage(1); }}
-        limitOptions={[10, 25, 50]}
+        limitOptions={[9, 12, 18, 24]}
         isLoading={isLoading}
       />
     </div>

@@ -695,7 +695,8 @@ textarea:disabled {
 /* ==========================================================================
    Unified Modal System
    ========================================================================== */
-.portal-modal-backdrop {
+.portal-modal-backdrop,
+.modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.78);
@@ -709,7 +710,8 @@ textarea:disabled {
   animation: modal-fade-in 0.2s ease-out;
 }
 
-.portal-modal-card {
+.portal-modal-card,
+.modal-content {
   width: 100%;
   max-width: 580px;
   max-height: calc(100vh - 2.5rem);
@@ -869,4 +871,118 @@ textarea:disabled {
   line-height: 1.55;
   margin: 0;
 }
+
+/* ==========================================================================
+   Platform Themed Components & Social Accounts Directory
+   ========================================================================== */
+.stat-metric-card {
+  padding: 1.2rem 1.35rem;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+.stat-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.official-account-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: 1.5rem;
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.official-account-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5);
+}
+
+.platform-selector-btn {
+  padding: 0.85rem 0.65rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.platform-selector-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-highlight);
+  border-color: var(--border-strong);
+}
+
+.platform-selector-btn.selected {
+  border-width: 2px;
+  color: var(--text-highlight);
+  font-weight: 600;
+}
+
+.status-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.95rem 1.15rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-toggle-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+}
+
+.dossier-feed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  transition: background 0.2s ease;
+}
+
+.dossier-feed-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 

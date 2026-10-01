@@ -20,6 +20,7 @@ const PLATFORM_CONFIG = {
     name: 'Instagram',
     icon: '📸',
     color: '#E1306C',
+    gradient: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)',
     domain: 'instagram.com',
     placeholder: 'https://www.instagram.com/krmuniv/?hl=en',
     handlePrefix: '@'
@@ -28,6 +29,7 @@ const PLATFORM_CONFIG = {
     name: 'LinkedIn',
     icon: '💼',
     color: '#0A66C2',
+    gradient: 'linear-gradient(135deg, #0a66c2, #0077b5, #38bdf8)',
     domain: 'linkedin.com',
     placeholder: 'https://www.linkedin.com/school/krmuniv/posts/?feedView=all',
     handlePrefix: ''
@@ -36,6 +38,7 @@ const PLATFORM_CONFIG = {
     name: 'Facebook',
     icon: '👥',
     color: '#1877F2',
+    gradient: 'linear-gradient(135deg, #1877f2, #2563eb, #60a5fa)',
     domain: 'facebook.com',
     placeholder: 'https://www.facebook.com/krmuniv/',
     handlePrefix: ''
@@ -64,7 +67,7 @@ export default function SocialAccountsView() {
 
   // Pagination state
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(12);
   const [pagination, setPagination] = useState({
     totalCount: 0,
     totalPages: 1,
@@ -109,6 +112,24 @@ export default function SocialAccountsView() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const [togglingId, setTogglingId] = useState(null);
+  const [copiedUrl, setCopiedUrl] = useState(null);
+
+  const handleCopyUrl = (url, e) => {
+    if (e) e.stopPropagation();
+    if (!url) return;
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    setTimeout(() => setCopiedUrl(null), 2500);
+  };
+
+  const formatDisplayUrl = (url) => {
+    if (!url) return '';
+    try {
+      return url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    } catch {
+      return url;
+    }
+  };
 
   // Debounce search
   useEffect(() => {
@@ -407,93 +428,226 @@ export default function SocialAccountsView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
-      {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--role-superadmin)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>🏛️</span>
-              <h2 style={{ margin: 0, fontSize: '1.35rem', color: 'var(--text-highlight)' }}>
-                Official College Social Media Accounts
-              </h2>
-            </div>
-            <p style={{ margin: '0.4rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Central institutional directory of official university channels. Creators can only submit verification evidence against active official college accounts.
-            </p>
-          </div>
-
-          {isSuperAdmin && (
-            <button
-              type="button"
-              className="btn-primary"
-              id="btn-add-official-account"
-              onClick={handleOpenAdd}
+      {/* Institutional Directory Header Banner */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '1.25rem 1.5rem',
+          borderLeft: '4px solid var(--role-superadmin)',
+          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(13, 18, 31, 0.7) 100%)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div
               style={{
-                display: 'inline-flex',
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.65rem 1.25rem',
-                fontSize: '0.9rem',
-                fontWeight: 600
+                justifyContent: 'center',
+                fontSize: '1.35rem',
+                flexShrink: 0
               }}
             >
-              <span>➕</span>
-              <span>Add Official Account</span>
+              🏛️
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+                  Official College Channels
+                </h2>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '10px',
+                    background: 'rgba(99, 102, 241, 0.18)',
+                    color: '#a5b4fc',
+                    border: '1px solid rgba(99, 102, 241, 0.3)'
+                  }}
+                >
+                  INSTITUTIONAL DIRECTORY
+                </span>
+              </div>
+              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
+                Central directory of authorized university channels. Creators can only submit verification claims against active official accounts.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={loadAccounts}
+              title="Refresh account listings"
+              style={{ fontSize: '0.84rem', padding: '0.55rem 0.95rem' }}
+            >
+              🔄 Refresh
             </button>
-          )}
+
+            {isSuperAdmin && (
+              <button
+                type="button"
+                className="btn-primary"
+                id="btn-add-official-account"
+                onClick={handleOpenAdd}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.55rem 1.15rem',
+                  fontSize: '0.86rem',
+                  fontWeight: 600
+                }}
+              >
+                <span>➕</span>
+                <span>Connect Account</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Status & Error Alerts */}
       {statusMessage && (
-        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--status-success)', color: 'var(--status-success)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div
+          className="portal-alert portal-alert-success"
+          style={{ margin: 0 }}
+        >
           <span>✓</span>
           <span>{statusMessage}</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--status-rejected)', color: 'var(--status-rejected)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div
+          className="portal-alert portal-alert-error"
+          style={{ margin: 0 }}
+        >
           <span>⚠️</span>
           <span>{errorMessage}</span>
         </div>
       )}
 
       {/* Metrics Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '1.15rem' }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Accounts</div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--text-highlight)', marginTop: '0.25rem' }}>
-            {totalCount}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        {/* Metric 1: Total Channels */}
+        <div
+          className="stat-metric-card"
+          style={{
+            borderTop: '3px solid #6366f1',
+            background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
+          }}
+        >
+          <div
+            className="stat-metric-icon"
+            style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#818cf8' }}
+          >
+            🏛️
           </div>
-          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-            📸 {instagramCount} · 💼 {linkedinCount} · 👥 {facebookCount}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+              Total Channels
+            </span>
+            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.15, marginTop: '0.15rem' }}>
+              {totalCount}
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', gap: '0.35rem' }}>
+              <span>📸 {instagramCount}</span>
+              <span>·</span>
+              <span>💼 {linkedinCount}</span>
+              <span>·</span>
+              <span>👥 {facebookCount}</span>
+            </span>
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.15rem' }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Profiles</div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--status-success)', marginTop: '0.25rem' }}>
-            {activeCount}
+        {/* Metric 2: Active Channels */}
+        <div
+          className="stat-metric-card"
+          style={{
+            borderTop: '3px solid #10b981',
+            background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
+          }}
+        >
+          <div
+            className="stat-metric-icon"
+            style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399' }}
+          >
+            🟢
           </div>
-          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Available for user submissions</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+              Active Profiles
+            </span>
+            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: '#34d399', lineHeight: 1.15, marginTop: '0.15rem' }}>
+              {activeCount}
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Accepting creator claims
+            </span>
+          </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.15rem' }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inactive / Archived</div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: inactiveCount > 0 ? 'var(--status-pending)' : 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {inactiveCount}
+        {/* Metric 3: Paused / Inactive */}
+        <div
+          className="stat-metric-card"
+          style={{
+            borderTop: '3px solid #f59e0b',
+            background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
+          }}
+        >
+          <div
+            className="stat-metric-icon"
+            style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24' }}
+          >
+            ⏸️
           </div>
-          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Submissions temporarily paused</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+              Paused / Inactive
+            </span>
+            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: inactiveCount > 0 ? '#fbbf24' : 'var(--text-muted)', lineHeight: 1.15, marginTop: '0.15rem' }}>
+              {inactiveCount}
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Submissions paused
+            </span>
+          </div>
         </div>
 
+        {/* Metric 4: Total Linked Submissions */}
         {isSuperAdmin && (
-          <div className="glass-panel" style={{ padding: '1.15rem' }}>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Linked Submissions</div>
-            <div style={{ fontSize: '1.65rem', fontWeight: 700, color: 'var(--role-admin)', marginTop: '0.25rem' }}>
-              {totalSubmissions}
+          <div
+            className="stat-metric-card"
+            style={{
+              borderTop: '3px solid #06b6d4',
+              background: 'linear-gradient(180deg, rgba(6, 182, 212, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
+            }}
+          >
+            <div
+              className="stat-metric-icon"
+              style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', color: '#22d3ee' }}
+            >
+              📊
             </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Across all official channels</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                Linked Submissions
+              </span>
+              <span style={{ fontSize: '1.65rem', fontWeight: 800, color: '#22d3ee', lineHeight: 1.15, marginTop: '0.15rem' }}>
+                {totalSubmissions}
+              </span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Across all official channels
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -554,16 +708,20 @@ export default function SocialAccountsView() {
 
       {/* Non-SuperAdmin Notice */}
       {!isSuperAdmin && (
-        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--role-admin)', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          ℹ️ You are viewing the verified official college accounts directory. Only Super Administrators can add, edit, or remove official social accounts.
+        <div
+          className="portal-alert portal-alert-info"
+          style={{ margin: 0, fontSize: '0.85rem' }}
+        >
+          <span>ℹ️</span>
+          <span>You are viewing verified official college accounts. Only Super Administrators can add, edit, or configure official social accounts.</span>
         </div>
       )}
 
-      {/* Accounts List / Cards */}
+      {/* Accounts List / Cards Grid */}
       {isLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
-          {[1, 2, 3, 4].map(n => (
-            <div key={n} className="glass-panel skeleton-card" style={{ height: '220px' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3].map(n => (
+            <div key={n} className="glass-panel skeleton-card" style={{ height: '240px' }} />
           ))}
         </div>
       ) : accounts.length === 0 ? (
@@ -577,46 +735,44 @@ export default function SocialAccountsView() {
                   platformFilter !== 'ALL' && `Platform: ${platformFilter}`,
                   statusFilter !== 'ALL' && `Status: ${statusFilter}`
                 ].filter(Boolean).join(', ')}). Try resetting filters.`
-              : 'No official accounts have been registered yet.'
+              : 'No official university accounts registered yet.'
           }
           actionText={hasActiveFilters ? 'Clear All Filters' : isSuperAdmin ? 'Add First Official Account' : null}
           onAction={hasActiveFilters ? handleClearFilters : isSuperAdmin ? handleOpenAdd : null}
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
           {accounts.map(acc => {
             const cfg = PLATFORM_CONFIG[acc.platform] || PLATFORM_CONFIG.INSTAGRAM;
             const isToggling = togglingId === acc.id;
+            const isCopied = copiedUrl === (acc.accountUrl || acc.profileUrl);
 
             return (
               <div
                 key={acc.id}
-                className="glass-panel"
+                className="official-account-card"
                 style={{
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.15rem',
-                  position: 'relative',
                   borderTop: `3px solid ${cfg.color}`,
-                  opacity: acc.isActive ? 1 : 0.72,
-                  transition: 'opacity 0.2s ease, transform 0.2s ease'
+                  opacity: acc.isActive ? 1 : 0.75,
+                  background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(13, 18, 31, 0.6) 100%)'
                 }}
               >
-                {/* Header Row */}
+                {/* Header Row: Platform Icon + Title + Status Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div
                       style={{
-                        width: '44px',
-                        height: '44px',
+                        width: '46px',
+                        height: '46px',
                         borderRadius: '12px',
-                        background: `${cfg.color}22`,
+                        background: `${cfg.color}1e`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '1.4rem',
-                        border: `1px solid ${cfg.color}44`
+                        border: `1px solid ${cfg.color}44`,
+                        boxShadow: `0 4px 14px ${cfg.color}22`,
+                        flexShrink: 0
                       }}
                     >
                       {cfg.icon}
@@ -625,9 +781,9 @@ export default function SocialAccountsView() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <span
                           style={{
-                            fontSize: '0.72rem',
+                            fontSize: '0.7rem',
                             fontWeight: 700,
-                            letterSpacing: '0.04em',
+                            letterSpacing: '0.05em',
                             textTransform: 'uppercase',
                             color: cfg.color
                           }}
@@ -635,14 +791,14 @@ export default function SocialAccountsView() {
                           {cfg.name}
                         </span>
                         <span
-                          title="Verified College Account"
                           style={{
-                            fontSize: '0.72rem',
-                            color: 'var(--status-success)',
+                            fontSize: '0.68rem',
+                            color: '#34d399',
                             fontWeight: 600,
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            padding: '0.1rem 0.4rem',
-                            borderRadius: '10px'
+                            background: 'rgba(16, 185, 129, 0.14)',
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(16, 185, 129, 0.25)'
                           }}
                         >
                           ✓ Official
@@ -652,8 +808,9 @@ export default function SocialAccountsView() {
                         style={{
                           margin: '0.2rem 0 0 0',
                           fontSize: '1.05rem',
-                          fontWeight: 600,
-                          color: 'var(--text-highlight)'
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          lineHeight: 1.35
                         }}
                       >
                         {acc.name || acc.handle}
@@ -666,38 +823,58 @@ export default function SocialAccountsView() {
                     className={`badge ${acc.isActive ? 'badge-success' : 'badge-warning'}`}
                     style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}
                   >
-                    {acc.isActive ? '● ACTIVE' : '○ INACTIVE'}
+                    {acc.isActive ? '● ACTIVE' : '○ PAUSED'}
                   </span>
                 </div>
 
                 {/* Handle & Profile URL Link */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(0, 0, 0, 0.25)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Handle:</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
-                      {acc.handle}
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace', background: 'rgba(255, 255, 255, 0.05)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                      {acc.handle ? (acc.handle.startsWith('@') ? acc.handle : `@${acc.handle}`) : '—'}
                     </span>
                   </div>
 
                   {acc.accountUrl && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>URL:</span>
-                      <a
-                        href={acc.accountUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: cfg.color,
-                          textDecoration: 'none',
-                          wordBreak: 'break-all',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem'
-                        }}
-                      >
-                        <span>{acc.accountUrl}</span>
-                        <span style={{ fontSize: '0.72rem' }}>↗</span>
-                      </a>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>Target URL:</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden' }}>
+                        <a
+                          href={acc.accountUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={acc.accountUrl}
+                          style={{
+                            color: cfg.color,
+                            textDecoration: 'none',
+                            fontWeight: 500,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '190px'
+                          }}
+                        >
+                          {formatDisplayUrl(acc.accountUrl)} ↗
+                        </a>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyUrl(acc.accountUrl, e)}
+                          title="Copy destination URL"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: isCopied ? 'var(--status-success)' : 'var(--text-muted)',
+                            fontSize: '0.8rem',
+                            padding: '0.1rem 0.25rem',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {isCopied ? '✓' : '📋'}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -707,20 +884,21 @@ export default function SocialAccountsView() {
                   <p
                     style={{
                       margin: 0,
-                      fontSize: '0.83rem',
+                      fontSize: '0.82rem',
                       color: 'var(--text-secondary)',
                       lineHeight: 1.45,
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      fontStyle: 'italic'
                     }}
                   >
-                    {acc.description}
+                    "{acc.description}"
                   </p>
                 )}
 
-                {/* Footer Info & Submissions Count */}
+                {/* Submissions Count Badge */}
                 <div
                   style={{
                     display: 'flex',
@@ -728,21 +906,27 @@ export default function SocialAccountsView() {
                     alignItems: 'center',
                     borderTop: '1px solid var(--border-subtle)',
                     paddingTop: '0.75rem',
-                    fontSize: '0.78rem',
+                    fontSize: '0.76rem',
                     color: 'var(--text-muted)'
                   }}
                 >
-                  <div>
-                    {acc.submissionsCount !== undefined ? (
-                      <span>📊 <strong>{acc.submissionsCount}</strong> submissions linked</span>
-                    ) : (
-                      <span>Created {new Date(acc.createdAt || Date.now()).toLocaleDateString()}</span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>📊</span>
+                    <span>
+                      <strong style={{ color: 'var(--text-highlight)' }}>
+                        {acc.submissionsCount ?? 0}
+                      </strong>{' '}
+                      submissions verified
+                    </span>
                   </div>
 
-                  {!acc.isActive && (
-                    <span style={{ color: 'var(--status-rejected)', fontSize: '0.74rem' }}>
-                      Submissions paused
+                  {!acc.isActive ? (
+                    <span style={{ color: 'var(--status-pending)', fontSize: '0.72rem' }}>
+                      Paused from claims
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--status-success)', fontSize: '0.72rem' }}>
+                      Active for verification
                     </span>
                   )}
                 </div>
@@ -755,16 +939,23 @@ export default function SocialAccountsView() {
                     justifyContent: 'space-between',
                     gap: '0.5rem',
                     flexWrap: 'wrap',
-                    paddingTop: '0.25rem'
+                    paddingTop: '0.2rem'
                   }}
                 >
                   <button
                     type="button"
                     className="btn-secondary"
                     onClick={() => handleOpenView(acc)}
-                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    style={{
+                      fontSize: '0.8rem',
+                      padding: '0.4rem 0.85rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
                   >
-                    👁️ Dossier
+                    <span>👁️</span>
+                    <span>Dossier</span>
                   </button>
 
                   {isSuperAdmin && (
@@ -773,9 +964,16 @@ export default function SocialAccountsView() {
                         type="button"
                         className="btn-secondary"
                         onClick={() => handleOpenEdit(acc)}
-                        style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '0.4rem 0.8rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem'
+                        }}
                       >
-                        ✏️ Edit
+                        <span>✏️</span>
+                        <span>Edit</span>
                       </button>
 
                       <button
@@ -785,12 +983,13 @@ export default function SocialAccountsView() {
                         disabled={isToggling}
                         style={{
                           fontSize: '0.8rem',
-                          padding: '0.35rem 0.75rem',
-                          color: acc.isActive ? 'var(--status-rejected)' : 'var(--status-success)',
-                          borderColor: acc.isActive ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'
+                          padding: '0.4rem 0.75rem',
+                          color: acc.isActive ? '#fca5a5' : '#86efac',
+                          borderColor: acc.isActive ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)',
+                          background: acc.isActive ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)'
                         }}
                       >
-                        {isToggling ? '⏳...' : acc.isActive ? 'Deactivate' : 'Activate'}
+                        {isToggling ? '⏳...' : acc.isActive ? 'Pause' : 'Activate'}
                       </button>
 
                       <button
@@ -798,13 +997,14 @@ export default function SocialAccountsView() {
                         onClick={() => handleOpenDelete(acc)}
                         title="Delete official account"
                         style={{
-                          background: 'none',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          background: 'rgba(239, 68, 68, 0.08)',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
                           borderRadius: '6px',
-                          color: 'var(--status-rejected)',
+                          color: '#f87171',
                           cursor: 'pointer',
-                          padding: '0.35rem 0.6rem',
-                          fontSize: '0.8rem'
+                          padding: '0.4rem 0.65rem',
+                          fontSize: '0.82rem',
+                          transition: 'all 0.2s ease'
                         }}
                       >
                         🗑️
@@ -826,7 +1026,7 @@ export default function SocialAccountsView() {
         limit={limit}
         onPageChange={(p) => setPage(p)}
         onLimitChange={(l) => { setLimit(l); setPage(1); }}
-        limitOptions={[10, 25, 50]}
+        limitOptions={[9, 12, 18, 24]}
         isLoading={isLoading}
       />
 
@@ -847,11 +1047,30 @@ export default function SocialAccountsView() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="portal-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.3rem' }}>➕</span>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  Add Official College Social Account
-                </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.2))',
+                    border: '1px solid rgba(99, 102, 241, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.25rem'
+                  }}
+                >
+                  ➕
+                </div>
+                <div className="portal-modal-title-group">
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
+                    Register Official Channel
+                  </h3>
+                  <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    Add an authorized university social account for creator verifications.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -864,135 +1083,166 @@ export default function SocialAccountsView() {
               </button>
             </div>
 
-            {addError && (
-              <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', borderLeft: '3px solid var(--status-rejected)', color: 'var(--status-rejected)', fontSize: '0.85rem', marginBottom: '1.25rem', borderRadius: '4px' }}>
-                ⚠️ {addError}
-              </div>
-            )}
+            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+              <div className="portal-modal-body">
+                {addError && (
+                  <div className="portal-alert portal-alert-error" style={{ margin: 0 }}>
+                    <span>⚠️</span>
+                    <span>{addError}</span>
+                  </div>
+                )}
 
-            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-              {/* Platform Selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Platform <span style={{ color: 'var(--status-rejected)' }}>*</span>
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                  {['INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map(pKey => {
-                    const cfg = PLATFORM_CONFIG[pKey];
-                    const isSelected = addForm.platform === pKey;
-                    return (
-                      <button
-                        key={pKey}
-                        type="button"
-                        onClick={() => setAddForm(prev => ({ ...prev, platform: pKey }))}
-                        style={{
-                          padding: '0.65rem 0.5rem',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          cursor: 'pointer',
-                          border: isSelected ? `2px solid ${cfg.color}` : '1px solid var(--border-subtle)',
-                          background: isSelected ? `${cfg.color}1e` : 'rgba(255, 255, 255, 0.03)',
-                          color: isSelected ? 'var(--text-highlight)' : 'var(--text-secondary)'
-                        }}
-                      >
-                        <span style={{ fontSize: '1.25rem' }}>{cfg.icon}</span>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{cfg.name}</span>
-                      </button>
-                    );
-                  })}
+                {/* Platform Selector Cards */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem' }}>
+                    Social Platform Network <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
+                    {['INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map(pKey => {
+                      const cfg = PLATFORM_CONFIG[pKey];
+                      const isSelected = addForm.platform === pKey;
+                      return (
+                        <button
+                          key={pKey}
+                          type="button"
+                          className={`platform-selector-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setAddForm(prev => ({ ...prev, platform: pKey }))}
+                          style={{
+                            borderColor: isSelected ? cfg.color : 'var(--border-subtle)',
+                            background: isSelected ? `${cfg.color}18` : 'rgba(255, 255, 255, 0.03)',
+                            boxShadow: isSelected ? `0 0 16px ${cfg.color}33` : 'none'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.45rem' }}>{cfg.icon}</span>
+                          <span style={{ fontSize: '0.85rem', color: isSelected ? '#ffffff' : 'var(--text-secondary)' }}>
+                            {cfg.name}
+                          </span>
+                          {isSelected && (
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: '6px',
+                                right: '6px',
+                                fontSize: '0.65rem',
+                                color: '#10b981',
+                                background: 'rgba(16, 185, 129, 0.2)',
+                                borderRadius: '50%',
+                                width: '16px',
+                                height: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Account Name */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    🏷️ Account Display Name <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. K.R. Mangalam University Official Instagram"
+                    value={addForm.name}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    Descriptive title recognized by student creators and institutional reviewers.
+                  </div>
+                </div>
+
+                {/* Account URL */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    🔗 Profile / Page URL <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder={PLATFORM_CONFIG[addForm.platform].placeholder}
+                    value={addForm.accountUrl}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, accountUrl: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                  <div style={{ fontSize: '0.74rem', color: '#93c5fd', marginTop: '0.35rem', background: 'rgba(59, 130, 246, 0.08)', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    🔒 {getDomainHint(addForm.platform)}
+                  </div>
+                </div>
+
+                {/* Handle */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    @ Social Handle (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. @krmuniv or krmuniv"
+                    value={addForm.handle}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, handle: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    Leave blank to automatically extract handle from the destination URL.
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    📝 Description / Purpose (Optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Official scope or purpose of this college social media channel..."
+                    value={addForm.description}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.88rem', resize: 'vertical', minHeight: '75px' }}
+                  />
+                </div>
+
+                {/* Active Toggle Card */}
+                <div
+                  className="status-toggle-card"
+                  onClick={() => setAddForm(prev => ({ ...prev, isActive: !prev.isActive }))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ fontSize: '1.25rem' }}>{addForm.isActive ? '🟢' : '⏸️'}</div>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                        Accept Student Verification Claims
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                        {addForm.isActive
+                          ? 'Active channel: Creators can submit proofs against this account.'
+                          : 'Paused: Channel remains visible but hidden from new submissions.'}
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={addForm.isActive}
+                    onChange={() => {}}
+                    style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
+                  />
                 </div>
               </div>
 
-              {/* Account Name */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Official Account Name <span style={{ color: 'var(--status-rejected)' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. K.R. Mangalam University Official Instagram"
-                  value={addForm.name}
-                  onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Descriptive title recognized by students, faculty, and alumni.
-                </div>
-              </div>
-
-              {/* Account URL */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Account Profile / School URL <span style={{ color: 'var(--status-rejected)' }}>*</span>
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder={PLATFORM_CONFIG[addForm.platform].placeholder}
-                  value={addForm.accountUrl}
-                  onChange={(e) => setAddForm(prev => ({ ...prev, accountUrl: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                  🔒 {getDomainHint(addForm.platform)}
-                </div>
-              </div>
-
-              {/* Handle */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Account Handle (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. @krmuniv or krmuniv"
-                  value={addForm.handle}
-                  onChange={(e) => setAddForm(prev => ({ ...prev, handle: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Leave blank to automatically extract handle from the URL.
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Description (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Official purpose or campus scope of this social media channel..."
-                  value={addForm.description}
-                  onChange={(e) => setAddForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              {/* Active Toggle */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0' }}>
-                <input
-                  type="checkbox"
-                  id="add-is-active"
-                  checked={addForm.isActive}
-                  onChange={(e) => setAddForm(prev => ({ ...prev, isActive: e.target.checked }))}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--role-superadmin)', cursor: 'pointer' }}
-                />
-                <label htmlFor="add-is-active" style={{ fontSize: '0.88rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                  <strong>Activate immediately</strong> (enables creator verification submissions)
-                </label>
-              </div>
-
-              {/* Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem' }}>
+              {/* Modal Footer */}
+              <div className="portal-modal-footer">
                 <button
                   type="button"
                   className="btn-secondary"
@@ -1008,7 +1258,7 @@ export default function SocialAccountsView() {
                   disabled={addSubmitting}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  {addSubmitting ? '⏳ Creating...' : '✓ Register Official Account'}
+                  {addSubmitting ? '⏳ Registering...' : '✓ Register Official Account'}
                 </button>
               </div>
             </form>
@@ -1029,15 +1279,34 @@ export default function SocialAccountsView() {
         >
           <div
             className="portal-modal-card"
-            style={{ width: '100%', maxWidth: '540px' }}
+            style={{ maxWidth: '560px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="portal-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.3rem' }}>✏️</span>
-                <h3 id="edit-account-title" style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  Edit Official Account
-                </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.2))',
+                    border: '1px solid rgba(99, 102, 241, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.25rem'
+                  }}
+                >
+                  ✏️
+                </div>
+                <div className="portal-modal-title-group">
+                  <h3 id="edit-account-title" style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
+                    Edit Official Channel
+                  </h3>
+                  <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    Update verified college handle, destination URL, and verification status.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -1050,125 +1319,156 @@ export default function SocialAccountsView() {
               </button>
             </div>
 
-            {editError && (
-              <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', borderLeft: '3px solid var(--status-rejected)', color: 'var(--status-rejected)', fontSize: '0.85rem', marginBottom: '1.25rem', borderRadius: '4px' }}>
-                ⚠️ {editError}
-              </div>
-            )}
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+              <div className="portal-modal-body">
+                {editError && (
+                  <div className="portal-alert portal-alert-error" style={{ margin: 0 }}>
+                    <span>⚠️</span>
+                    <span>{editError}</span>
+                  </div>
+                )}
 
-            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-              {/* Platform Selector */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Platform
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                  {['INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map(pKey => {
-                    const cfg = PLATFORM_CONFIG[pKey];
-                    const isSelected = editForm.platform === pKey;
-                    return (
-                      <button
-                        key={pKey}
-                        type="button"
-                        onClick={() => setEditForm(prev => ({ ...prev, platform: pKey }))}
-                        style={{
-                          padding: '0.65rem 0.5rem',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          cursor: 'pointer',
-                          border: isSelected ? `2px solid ${cfg.color}` : '1px solid var(--border-subtle)',
-                          background: isSelected ? `${cfg.color}1e` : 'rgba(255, 255, 255, 0.03)',
-                          color: isSelected ? 'var(--text-highlight)' : 'var(--text-secondary)'
-                        }}
-                      >
-                        <span style={{ fontSize: '1.25rem' }}>{cfg.icon}</span>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{cfg.name}</span>
-                      </button>
-                    );
-                  })}
+                {/* Platform Selector Cards */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem' }}>
+                    Social Platform Network
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
+                    {['INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map(pKey => {
+                      const cfg = PLATFORM_CONFIG[pKey];
+                      const isSelected = editForm.platform === pKey;
+                      return (
+                        <button
+                          key={pKey}
+                          type="button"
+                          className={`platform-selector-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setEditForm(prev => ({ ...prev, platform: pKey }))}
+                          style={{
+                            borderColor: isSelected ? cfg.color : 'var(--border-subtle)',
+                            background: isSelected ? `${cfg.color}18` : 'rgba(255, 255, 255, 0.03)',
+                            boxShadow: isSelected ? `0 0 16px ${cfg.color}33` : 'none'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.45rem' }}>{cfg.icon}</span>
+                          <span style={{ fontSize: '0.85rem', color: isSelected ? '#ffffff' : 'var(--text-secondary)' }}>
+                            {cfg.name}
+                          </span>
+                          {isSelected && (
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: '6px',
+                                right: '6px',
+                                fontSize: '0.65rem',
+                                color: '#10b981',
+                                background: 'rgba(16, 185, 129, 0.2)',
+                                borderRadius: '50%',
+                                width: '16px',
+                                height: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Account Name */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    🏷️ Account Display Name <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                {/* Account URL */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    🔗 Profile / Page URL <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={editForm.accountUrl}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, accountUrl: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                  <div style={{ fontSize: '0.74rem', color: '#93c5fd', marginTop: '0.35rem', background: 'rgba(59, 130, 246, 0.08)', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    🔒 {getDomainHint(editForm.platform)}
+                  </div>
+                </div>
+
+                {/* Handle */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    @ Social Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.handle}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, handle: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    📝 Description / Scope
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="input-field"
+                    style={{ width: '100%', padding: '0.7rem 0.85rem', fontSize: '0.88rem', resize: 'vertical', minHeight: '75px' }}
+                  />
+                </div>
+
+                {/* Active Toggle Card */}
+                <div
+                  className="status-toggle-card"
+                  onClick={() => setEditForm(prev => ({ ...prev, isActive: !prev.isActive }))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ fontSize: '1.25rem' }}>{editForm.isActive ? '🟢' : '⏸️'}</div>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                        Channel is Active
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                        {editForm.isActive
+                          ? 'Accepting creator activity submissions.'
+                          : 'Temporarily paused from new submissions.'}
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editForm.isActive}
+                    onChange={() => {}}
+                    style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
+                  />
                 </div>
               </div>
 
-              {/* Account Name */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Account Name <span style={{ color: 'var(--status-rejected)' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editForm.name}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              {/* Account URL */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Account URL <span style={{ color: 'var(--status-rejected)' }}>*</span>
-                </label>
-                <input
-                  type="url"
-                  required
-                  value={editForm.accountUrl}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, accountUrl: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                  🔒 {getDomainHint(editForm.platform)}
-                </div>
-              </div>
-
-              {/* Handle */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Account Handle
-                </label>
-                <input
-                  type="text"
-                  value={editForm.handle}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, handle: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={editForm.description}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="input-field"
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              {/* Active Status */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0' }}>
-                <input
-                  type="checkbox"
-                  id="edit-is-active"
-                  checked={editForm.isActive}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, isActive: e.target.checked }))}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--role-superadmin)', cursor: 'pointer' }}
-                />
-                <label htmlFor="edit-is-active" style={{ fontSize: '0.88rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                  <strong>Account is Active</strong> (accepts student activity submissions)
-                </label>
-              </div>
-
-              {/* Action buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem' }}>
+              {/* Modal Footer */}
+              <div className="portal-modal-footer">
                 <button
                   type="button"
                   className="btn-secondary"
@@ -1204,20 +1504,35 @@ export default function SocialAccountsView() {
         >
           <div
             className="portal-modal-card"
-            style={{ width: '100%', maxWidth: '580px' }}
+            style={{ maxWidth: '600px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="portal-modal-header" style={{ alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '2rem' }}>
+            {/* Dossier Header */}
+            <div className="portal-modal-header" style={{ alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '14px',
+                    background: `${PLATFORM_CONFIG[selectedAccount.platform]?.color || '#6366f1'}22`,
+                    border: `1px solid ${PLATFORM_CONFIG[selectedAccount.platform]?.color || '#6366f1'}44`,
+                    boxShadow: `0 4px 16px ${PLATFORM_CONFIG[selectedAccount.platform]?.color || '#6366f1'}33`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.6rem',
+                    flexShrink: 0
+                  }}
+                >
                   {PLATFORM_CONFIG[selectedAccount.platform]?.icon || '🌐'}
-                </span>
+                </div>
                 <div>
-                  <h3 id="view-account-title" style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
+                  <h3 id="view-account-title" style={{ margin: 0, fontSize: '1.25rem', color: '#ffffff', fontWeight: 700 }}>
                     {selectedAccount.name || selectedAccount.handle}
                   </h3>
-                  <div style={{ fontSize: '0.8rem', color: PLATFORM_CONFIG[selectedAccount.platform]?.color || 'var(--text-secondary)', fontWeight: 600 }}>
-                    Official {PLATFORM_CONFIG[selectedAccount.platform]?.name || selectedAccount.platform} Channel
+                  <div style={{ fontSize: '0.8rem', color: PLATFORM_CONFIG[selectedAccount.platform]?.color || 'var(--text-secondary)', fontWeight: 600, marginTop: '0.15rem' }}>
+                    Official {PLATFORM_CONFIG[selectedAccount.platform]?.name || selectedAccount.platform} Channel · Verified Institutional Account
                   </div>
                 </div>
               </div>
@@ -1231,44 +1546,83 @@ export default function SocialAccountsView() {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-              {/* Status & Verification Pill */}
-              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span className={`badge ${selectedAccount.isActive ? 'badge-success' : 'badge-warning'}`}>
+            {/* Dossier Body */}
+            <div className="portal-modal-body">
+              {/* Status & Verification Badges */}
+              <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span
+                  className={`badge ${selectedAccount.isActive ? 'badge-success' : 'badge-warning'}`}
+                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.76rem' }}
+                >
                   {selectedAccount.isActive ? '● Active Channel' : '○ Paused / Inactive'}
                 </span>
-                <span className="badge badge-info">
-                  ✓ Verified Official College Channel
+                <span
+                  className="badge badge-info"
+                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.76rem', background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.3)' }}
+                >
+                  🛡️ Verified Official College Channel
                 </span>
               </div>
 
-              {/* Data Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              {/* 2x2 Overview Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '0.85rem',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  padding: '1.15rem',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Handle</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-                    {selectedAccount.handle}
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Social Handle
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                    {selectedAccount.handle ? (selectedAccount.handle.startsWith('@') ? selectedAccount.handle : `@${selectedAccount.handle}`) : '—'}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Linked Submissions</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--role-admin)', marginTop: '0.2rem' }}>
-                    {selectedAccount.submissionsCount || selectedAccount.submissions?.length || 0} activities
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Linked Submissions
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#38bdf8', marginTop: '0.25rem' }}>
+                    {selectedAccount.submissionsCount || selectedAccount.submissions?.length || 0} activities audited
                   </div>
                 </div>
 
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Official URL</div>
-                  <div style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
+                    Official Channel URL
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
                     <a
                       href={selectedAccount.accountUrl || selectedAccount.profileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: PLATFORM_CONFIG[selectedAccount.platform]?.color || 'var(--text-highlight)', textDecoration: 'none', wordBreak: 'break-all' }}
+                      style={{
+                        color: PLATFORM_CONFIG[selectedAccount.platform]?.color || 'var(--text-highlight)',
+                        textDecoration: 'none',
+                        wordBreak: 'break-all',
+                        fontSize: '0.84rem',
+                        fontWeight: 500
+                      }}
                     >
                       {selectedAccount.accountUrl || selectedAccount.profileUrl} ↗
                     </a>
+                    <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyUrl(selectedAccount.accountUrl || selectedAccount.profileUrl, e)}
+                        className="btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem' }}
+                      >
+                        {copiedUrl === (selectedAccount.accountUrl || selectedAccount.profileUrl) ? '✓ Copied' : '📋 Copy'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1276,77 +1630,102 @@ export default function SocialAccountsView() {
               {/* Description */}
               {selectedAccount.description && (
                 <div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.35rem' }}>Description</div>
-                  <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '6px' }}>
-                    {selectedAccount.description}
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                    Channel Description / Scope
+                  </div>
+                  <div style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.55, background: 'rgba(255, 255, 255, 0.02)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontStyle: 'italic' }}>
+                    "{selectedAccount.description}"
                   </div>
                 </div>
               )}
 
-              {/* Recent Activity Submissions if any */}
-              {selectedAccount.submissions && selectedAccount.submissions.length > 0 && (
-                <div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+              {/* Recent Activity Submissions */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Recent Submissions Target
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Latest activity checks
+                  </span>
+                </div>
+
+                {selectedAccount.submissions && selectedAccount.submissions.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {selectedAccount.submissions.map(sub => (
-                      <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', fontSize: '0.8rem' }}>
-                        <div>
-                          <strong>{sub.actionType}</strong> · <span style={{ color: 'var(--text-muted)' }}>{new Date(sub.createdAt).toLocaleDateString()}</span>
+                      <div key={sub.id} className="dossier-feed-item">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <span style={{ fontSize: '1rem' }}>
+                            {sub.actionType === 'LIKE' ? '❤️' : sub.actionType === 'COMMENT' ? '💬' : '📸'}
+                          </span>
+                          <div>
+                            <strong style={{ fontSize: '0.84rem', color: '#ffffff' }}>{sub.actionType}</strong>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                              📅 {new Date(sub.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
                         </div>
-                        <span className={`badge ${sub.status === 'APPROVED' ? 'badge-success' : sub.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
-                          {sub.status}
+                        <span
+                          className={`badge ${sub.status === 'APPROVED' ? 'badge-success' : sub.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}
+                          style={{ fontSize: '0.72rem' }}
+                        >
+                          {sub.status === 'APPROVED' ? '✓ APPROVED' : sub.status === 'REJECTED' ? '✕ REJECTED' : '⏳ PENDING'}
                         </span>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                    No creator verification submissions recorded yet for this channel.
+                  </div>
+                )}
+              </div>
+            </div>
 
-              {/* Footer controls */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                  ID: {selectedAccount.id}
-                </div>
+            {/* Dossier Footer */}
+            <div className="portal-modal-footer">
+              <div style={{ marginRight: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                ID: {selectedAccount.id}
+              </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {isSuperAdmin && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => {
-                          setIsViewModalOpen(false);
-                          handleOpenEdit(selectedAccount);
-                        }}
-                        style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => handleToggleStatus(selectedAccount)}
-                        style={{
-                          fontSize: '0.82rem',
-                          padding: '0.4rem 0.85rem',
-                          color: selectedAccount.isActive ? 'var(--status-rejected)' : 'var(--status-success)'
-                        }}
-                      >
-                        {selectedAccount.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setIsViewModalOpen(false)}
-                    style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
-                  >
-                    Close
-                  </button>
-                </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {isSuperAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        setIsViewModalOpen(false);
+                        handleOpenEdit(selectedAccount);
+                      }}
+                      style={{ fontSize: '0.82rem', padding: '0.45rem 0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <span>✏️</span>
+                      <span>Edit Channel</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => handleToggleStatus(selectedAccount)}
+                      style={{
+                        fontSize: '0.82rem',
+                        padding: '0.45rem 0.9rem',
+                        color: selectedAccount.isActive ? '#fca5a5' : '#86efac',
+                        borderColor: selectedAccount.isActive ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'
+                      }}
+                    >
+                      {selectedAccount.isActive ? 'Pause Channel' : 'Activate Channel'}
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setIsViewModalOpen(false)}
+                  style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
@@ -1366,15 +1745,20 @@ export default function SocialAccountsView() {
         >
           <div
             className="portal-modal-card"
-            style={{ width: '100%', maxWidth: '480px', borderTop: '4px solid var(--status-rejected)' }}
+            style={{ maxWidth: '480px', borderTop: '4px solid var(--status-rejected)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="portal-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.75rem' }}>🗑️</span>
-                <h3 id="delete-account-title" style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  Delete Official Social Account?
-                </h3>
+                <span style={{ fontSize: '1.6rem' }}>🗑️</span>
+                <div className="portal-modal-title-group">
+                  <h3 id="delete-account-title" style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                    Delete Official Channel?
+                  </h3>
+                  <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    Permanent removal from institutional directory
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -1387,19 +1771,25 @@ export default function SocialAccountsView() {
               </button>
             </div>
 
-            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Are you sure you want to permanently delete the official account{' '}
-              <strong style={{ color: 'var(--text-highlight)' }}>
-                "{accountToDelete.name || accountToDelete.handle}"
-              </strong>{' '}
-              ({accountToDelete.platform})?
-            </p>
+            <div className="portal-modal-body">
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Are you sure you want to permanently delete the official account{' '}
+                <strong style={{ color: '#ffffff' }}>
+                  "{accountToDelete.name || accountToDelete.handle}"
+                </strong>{' '}
+                ({accountToDelete.platform})?
+              </p>
 
-            <div style={{ background: 'rgba(239, 68, 68, 0.12)', borderLeft: '3px solid var(--status-rejected)', padding: '0.75rem 1rem', borderRadius: '4px', fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: '1.5rem' }}>
-              ⚠️ Creators will no longer be able to submit verification evidence targeting this account. Existing historical submissions will be preserved with their review decisions.
+              <div
+                className="portal-alert portal-alert-error"
+                style={{ margin: 0, fontSize: '0.82rem' }}
+              >
+                <span>⚠️</span>
+                <span>Creators will no longer be able to submit verification claims targeting this account. Existing historical submissions will be preserved with their review decisions.</span>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div className="portal-modal-footer">
               <button
                 type="button"
                 className="btn-secondary"
@@ -1417,7 +1807,9 @@ export default function SocialAccountsView() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.4rem'
+                  gap: '0.4rem',
+                  padding: '0.65rem 1.25rem',
+                  fontSize: '0.86rem'
                 }}
               >
                 {deleteSubmitting ? 'Deleting...' : '🗑️ Delete Account'}
