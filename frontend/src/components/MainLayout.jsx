@@ -473,6 +473,45 @@ export default function MainLayout({
 
   const avatarInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
+  // Personalization settings synced from localStorage & custom events
+  const [personalization, setPersonalization] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user_portal_personalization');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+
+  useEffect(() => {
+    const handlePersonalizationUpdate = () => {
+      try {
+        const saved = localStorage.getItem('user_portal_personalization');
+        if (saved) setPersonalization(JSON.parse(saved));
+      } catch (err) {}
+    };
+    window.addEventListener('portal-personalization-updated', handlePersonalizationUpdate);
+    window.addEventListener('storage', handlePersonalizationUpdate);
+    return () => {
+      window.removeEventListener('portal-personalization-updated', handlePersonalizationUpdate);
+      window.removeEventListener('storage', handlePersonalizationUpdate);
+    };
+  }, []);
+
+  const AVATAR_GRADIENTS_MAP = {
+    indigo: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+    sunset: 'linear-gradient(135deg, #f43f5e, #fb923c)',
+    emerald: 'linear-gradient(135deg, #10b981, #06b6d4)',
+    amethyst: 'linear-gradient(135deg, #a855f7, #6366f1)',
+    gold: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    obsidian: 'linear-gradient(135deg, #334155, #0f172a)'
+  };
+
+  const activeAvatarGradient = (personalization?.avatarGradient && AVATAR_GRADIENTS_MAP[personalization.avatarGradient])
+    ? AVATAR_GRADIENTS_MAP[personalization.avatarGradient]
+    : (currentRole === 'SUPER_ADMIN' ? 'var(--role-superadmin)' : currentRole === 'ADMIN' ? 'var(--role-admin)' : 'var(--role-user)');
+  const activeAvatarEmblem = personalization?.avatarIcon || null;
+
+
   return (
     <div className="app-layout-shell">
       {/* ====================================================================
@@ -593,14 +632,44 @@ export default function MainLayout({
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          <div className="sidebar-user-card">
+          <div
+            className="sidebar-user-card"
+            onClick={() => handleNavChange('profile')}
+            title="Open Profile & Personalization"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange('profile'); }}
+          >
             <div
               className="sidebar-user-avatar"
               style={{
-                background: currentRole === 'SUPER_ADMIN' ? 'var(--role-superadmin)' : currentRole === 'ADMIN' ? 'var(--role-admin)' : 'var(--role-user)'
+                background: activeAvatarGradient,
+                boxShadow: personalization?.accentColorGlow ? `0 0 10px ${personalization.accentColorGlow}` : undefined,
+                position: 'relative'
               }}
             >
-              {avatarInitial}
+              {personalization?.avatarPhoto ? (
+                <img
+                  src={personalization.avatarPhoto}
+                  alt={user?.name || 'User'}
+                />
+              ) : (
+                avatarInitial
+              )}
+              {activeAvatarEmblem && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: '-2px',
+                    right: '-4px',
+                    fontSize: '0.72rem',
+                    lineHeight: 1,
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                  }}
+                >
+                  {activeAvatarEmblem}
+                </span>
+              )}
             </div>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name" title={user?.name}>{user?.name}</span>
@@ -732,14 +801,44 @@ export default function MainLayout({
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-user-card">
+          <div
+            className="sidebar-user-card"
+            onClick={() => { handleNavChange('profile'); setIsMobileMenuOpen(false); }}
+            title="Open Profile & Personalization"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleNavChange('profile'); setIsMobileMenuOpen(false); } }}
+          >
             <div
               className="sidebar-user-avatar"
               style={{
-                background: currentRole === 'SUPER_ADMIN' ? 'var(--role-superadmin)' : currentRole === 'ADMIN' ? 'var(--role-admin)' : 'var(--role-user)'
+                background: activeAvatarGradient,
+                boxShadow: personalization?.accentColorGlow ? `0 0 10px ${personalization.accentColorGlow}` : undefined,
+                position: 'relative'
               }}
             >
-              {avatarInitial}
+              {personalization?.avatarPhoto ? (
+                <img
+                  src={personalization.avatarPhoto}
+                  alt={user?.name || 'User'}
+                />
+              ) : (
+                avatarInitial
+              )}
+              {activeAvatarEmblem && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: '-2px',
+                    right: '-4px',
+                    fontSize: '0.72rem',
+                    lineHeight: 1,
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                  }}
+                >
+                  {activeAvatarEmblem}
+                </span>
+              )}
             </div>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user?.name}</span>
@@ -1006,10 +1105,33 @@ export default function MainLayout({
                 <div
                   className="navbar-avatar"
                   style={{
-                    background: currentRole === 'SUPER_ADMIN' ? 'var(--role-superadmin)' : currentRole === 'ADMIN' ? 'var(--role-admin)' : 'var(--role-user)'
+                    background: activeAvatarGradient,
+                    boxShadow: personalization?.accentColorGlow ? `0 0 10px ${personalization.accentColorGlow}` : undefined,
+                    position: 'relative'
                   }}
                 >
-                  {avatarInitial}
+                  {personalization?.avatarPhoto ? (
+                    <img
+                      src={personalization.avatarPhoto}
+                      alt={user?.name || 'User'}
+                    />
+                  ) : (
+                    avatarInitial
+                  )}
+                  {activeAvatarEmblem && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: '-2px',
+                        right: '-4px',
+                        fontSize: '0.65rem',
+                        lineHeight: 1,
+                        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                      }}
+                    >
+                      {activeAvatarEmblem}
+                    </span>
+                  )}
                 </div>
                 <span className="navbar-user-name">{user?.name ? user.name.split(' ')[0] : 'User'}</span>
                 <span className="navbar-chevron">▾</span>
@@ -1020,16 +1142,46 @@ export default function MainLayout({
                 <div className="profile-dropdown-menu" role="menu">
                   {/* Dropdown Header */}
                   <div className="profile-dropdown-header">
-                    <div className="profile-dropdown-user">
+                    <div
+                      className="profile-dropdown-user"
+                      onClick={() => { handleNavChange('profile'); setIsProfileMenuOpen(false); }}
+                      style={{ cursor: 'pointer' }}
+                      title="Open Profile & Settings"
+                      role="button"
+                      tabIndex={0}
+                    >
                       <div
                         className="navbar-avatar"
                         style={{
                           width: '38px',
                           height: '38px',
-                          background: currentRole === 'SUPER_ADMIN' ? 'var(--role-superadmin)' : currentRole === 'ADMIN' ? 'var(--role-admin)' : 'var(--role-user)'
+                          background: activeAvatarGradient,
+                          boxShadow: personalization?.accentColorGlow ? `0 0 12px ${personalization.accentColorGlow}` : undefined,
+                          position: 'relative'
                         }}
                       >
-                        {avatarInitial}
+                        {personalization?.avatarPhoto ? (
+                          <img
+                            src={personalization.avatarPhoto}
+                            alt={user?.name || 'User'}
+                          />
+                        ) : (
+                          avatarInitial
+                        )}
+                        {activeAvatarEmblem && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: '-2px',
+                              right: '-4px',
+                              fontSize: '0.72rem',
+                              lineHeight: 1,
+                              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                            }}
+                          >
+                            {activeAvatarEmblem}
+                          </span>
+                        )}
                       </div>
                       <div className="dropdown-user-details">
                         <span className="dropdown-user-name">{user?.name}</span>

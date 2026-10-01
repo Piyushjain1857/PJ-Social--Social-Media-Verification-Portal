@@ -75,6 +75,28 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState(getInitialView);
   const [selectedRole, setSelectedRole] = useState('SUPER_ADMIN');
+
+  // Initialize personalized theme accent from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('user_portal_personalization');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.accentColorPrimary) {
+          document.documentElement.style.setProperty('--primary', parsed.accentColorPrimary);
+          if (parsed.accentColorLight) document.documentElement.style.setProperty('--primary-light', parsed.accentColorLight);
+          if (parsed.accentColorDark) document.documentElement.style.setProperty('--primary-dark', parsed.accentColorDark);
+          if (parsed.accentColorGlow) {
+            document.documentElement.style.setProperty('--primary-glow', parsed.accentColorGlow);
+            document.documentElement.style.setProperty('--primary-glow-strong', parsed.accentColorGlow);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load theme personalization:', e);
+    }
+  }, []);
+
   const [apiStatus, setApiStatus] = useState({
     healthy: false,
     loading: true,
