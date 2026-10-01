@@ -102,6 +102,10 @@ export default function MainLayout({
   // Helper to determine initial nav for MainLayout on load / reload
   const getInitialNav = () => {
     const hash = window.location.hash.replace('#', '');
+    if (hash === 'gamification') {
+      window.location.hash = 'dashboard';
+      return 'dashboard';
+    }
     const role = user?.role || 'USER';
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
 
@@ -113,7 +117,7 @@ export default function MainLayout({
     // 2. Otherwise check localStorage for previously active navigation
     try {
       const savedNav = localStorage.getItem('active_portal_nav');
-      if (savedNav && roleItems.some(item => item.id === savedNav)) {
+      if (savedNav && savedNav !== 'gamification' && roleItems.some(item => item.id === savedNav)) {
         return savedNav;
       }
     } catch (e) {}
@@ -164,6 +168,10 @@ export default function MainLayout({
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
+      if (hash === 'gamification') {
+        window.location.hash = 'dashboard';
+        return;
+      }
       const role = user?.role || 'USER';
       const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
       if (hash && roleItems.some(item => item.id === hash)) {
@@ -674,7 +682,7 @@ export default function MainLayout({
               <button
                 type="button"
                 className="navbar-points-pill"
-                title="Your Total Verified Points — Click to view Dashboard"
+                title="Your Total Verified Points — View Points on Dashboard"
                 onClick={() => handleNavChange('dashboard')}
                 style={{
                   display: 'inline-flex',

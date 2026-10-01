@@ -1,0 +1,622 @@
+/* ==========================================================================
+   Gamification System Styles: Points, Levels, Leaderboard, & History
+   ========================================================================== */
+
+/* Tier Colors & Variables */
+:root {
+  --tier-beginner: #94a3b8;
+  --tier-beginner-bg: rgba(148, 163, 184, 0.12);
+  --tier-beginner-border: rgba(148, 163, 184, 0.3);
+
+  --tier-active: #38bdf8;
+  --tier-active-bg: rgba(56, 189, 248, 0.12);
+  --tier-active-border: rgba(56, 189, 248, 0.35);
+
+  --tier-contributor: #a855f7;
+  --tier-contributor-bg: rgba(168, 85, 247, 0.14);
+  --tier-contributor-border: rgba(168, 85, 247, 0.38);
+
+  --tier-elite: #ec4899;
+  --tier-elite-bg: rgba(236, 72, 153, 0.14);
+  --tier-elite-border: rgba(236, 72, 153, 0.4);
+
+  --tier-champion: #facc15;
+  --tier-champion-bg: rgba(250, 204, 21, 0.16);
+  --tier-champion-border: rgba(250, 204, 21, 0.45);
+}
+
+/* ─── Level Badge Component ────────────────────────────────────────────── */
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  line-height: 1;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.level-badge:hover {
+  transform: translateY(-1px);
+}
+
+.level-badge-sm {
+  font-size: 0.72rem;
+  padding: 0.22rem 0.55rem;
+}
+
+.level-badge-md {
+  font-size: 0.82rem;
+  padding: 0.32rem 0.75rem;
+}
+
+.level-badge-lg {
+  font-size: 0.98rem;
+  padding: 0.45rem 1rem;
+}
+
+.level-badge.tier-beginner {
+  background: var(--tier-beginner-bg);
+  border: 1px solid var(--tier-beginner-border);
+  color: #cbd5e1;
+}
+
+.level-badge.tier-active {
+  background: var(--tier-active-bg);
+  border: 1px solid var(--tier-active-border);
+  color: #7dd3fc;
+  box-shadow: 0 0 14px -4px rgba(56, 189, 248, 0.3);
+}
+
+.level-badge.tier-contributor {
+  background: var(--tier-contributor-bg);
+  border: 1px solid var(--tier-contributor-border);
+  color: #d8b4fe;
+  box-shadow: 0 0 16px -4px rgba(168, 85, 247, 0.35);
+}
+
+.level-badge.tier-elite {
+  background: var(--tier-elite-bg);
+  border: 1px solid var(--tier-elite-border);
+  color: #f472b6;
+  box-shadow: 0 0 20px -4px rgba(236, 72, 153, 0.4);
+}
+
+.level-badge.tier-champion {
+  background: var(--tier-champion-bg);
+  border: 1px solid var(--tier-champion-border);
+  color: #fef08a;
+  box-shadow: 0 0 24px -3px rgba(250, 204, 21, 0.45);
+}
+
+/* ─── Level Progress Bar Component ──────────────────────────────────────── */
+.level-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.level-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.level-progress-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-highlight);
+}
+
+.level-progress-points {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.level-progress-points strong {
+  color: var(--text-highlight);
+}
+
+.level-progress-track {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.level-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+}
+
+.level-progress-fill.champion {
+  background: linear-gradient(90deg, #f59e0b 0%, #facc15 50%, #fef08a 100%);
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.6);
+}
+
+.level-progress-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.level-progress-remaining {
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
+/* ─── Points Card Component ────────────────────────────────────────────── */
+.points-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.points-card-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.points-stat-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.points-stat-box:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.points-stat-box-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.points-stat-box-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-highlight);
+  font-family: var(--font-mono);
+  line-height: 1.1;
+}
+
+.points-breakdown-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.points-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.points-action-pill strong {
+  color: var(--text-highlight);
+  font-family: var(--font-mono);
+}
+
+/* ─── Rank Card Component ──────────────────────────────────────────────── */
+.rank-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  background: linear-gradient(145deg, rgba(20, 28, 48, 0.65) 0%, rgba(13, 17, 26, 0.8) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.rank-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rank-card-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.rank-badge-display {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.rank-number {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--text-highlight);
+  font-family: var(--font-mono);
+  line-height: 1;
+  background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rank-number.top-1 {
+  background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rank-number.top-2 {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rank-number.top-3 {
+  background: linear-gradient(135deg, #fed7aa 0%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rank-comparison-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.rank-comparison-text strong {
+  color: #38bdf8;
+}
+
+/* ─── Leaderboard Component ────────────────────────────────────────────── */
+.leaderboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.leaderboard-timeframe-tabs {
+  display: flex;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  width: fit-content;
+}
+
+.leaderboard-timeframe-tab {
+  padding: 0.38rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: calc(var(--radius-sm) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-timeframe-tab.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+/* Podium Layout (Top 3) */
+.leaderboard-podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  align-items: flex-end;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.podium-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 0.85rem;
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.podium-card:hover {
+  transform: translateY(-3px);
+}
+
+.podium-card.first {
+  order: 2;
+  background: linear-gradient(180deg, rgba(234, 179, 8, 0.16) 0%, rgba(20, 24, 38, 0.9) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  box-shadow: 0 10px 30px -10px rgba(234, 179, 8, 0.3);
+  padding-top: 1.75rem;
+}
+
+.podium-card.second {
+  order: 1;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.12) 0%, rgba(18, 22, 34, 0.85) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 8px 24px -10px rgba(148, 163, 184, 0.2);
+}
+
+.podium-card.third {
+  order: 3;
+  background: linear-gradient(180deg, rgba(234, 88, 12, 0.12) 0%, rgba(18, 22, 34, 0.85) 100%);
+  border: 1px solid rgba(234, 88, 12, 0.35);
+  box-shadow: 0 8px 24px -10px rgba(234, 88, 12, 0.2);
+}
+
+.podium-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-highlight);
+  margin-bottom: 0.5rem;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.podium-card.first .podium-avatar {
+  border: 2px solid #facc15;
+  width: 60px;
+  height: 60px;
+  font-size: 1.6rem;
+}
+
+.podium-medal {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  font-size: 1.3rem;
+}
+
+.podium-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-highlight);
+  margin-bottom: 0.25rem;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-points {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #facc15;
+  margin-bottom: 0.4rem;
+}
+
+.podium-card.second .podium-points {
+  color: #cbd5e1;
+}
+
+.podium-card.third .podium-points {
+  color: #fdba74;
+}
+
+/* Leaderboard Table */
+.leaderboard-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.leaderboard-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.leaderboard-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.86rem;
+  vertical-align: middle;
+}
+
+.leaderboard-table tr:last-child td {
+  border-bottom: none;
+}
+
+.leaderboard-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.leaderboard-table tr.current-user-row td {
+  background: rgba(99, 102, 241, 0.09);
+  border-left: 3px solid var(--primary);
+}
+
+.leaderboard-rank-col {
+  width: 60px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.leaderboard-rank-col.rank-1 { color: #facc15; }
+.leaderboard-rank-col.rank-2 { color: #cbd5e1; }
+.leaderboard-rank-col.rank-3 { color: #fb923c; }
+
+/* ─── Point History Component ──────────────────────────────────────────── */
+.history-filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.history-search-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.45rem 0.85rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-highlight);
+  font-size: 0.84rem;
+  outline: none;
+}
+
+.history-search-input:focus {
+  border-color: var(--border-focus);
+}
+
+.history-select {
+  padding: 0.45rem 0.85rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-highlight);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.history-tx-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.history-tx-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.history-tx-points {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.history-tx-points.positive {
+  color: #34d399;
+}
+
+.history-tx-points.negative {
+  color: #f43f5e;
+}
+
+/* ─── Super Admin Manual Points Adjustment Modal ───────────────────────── */
+.points-adjust-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.points-adjust-modal {
+  background: #0f1523;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 520px;
+  padding: 1.5rem;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ─── Responsive Adjustments ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .leaderboard-podium {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .podium-card.first { order: 1; }
+  .podium-card.second { order: 2; }
+  .podium-card.third { order: 3; }
+
+  .points-card-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .history-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -724,5 +724,55 @@ export const adjustUserPoints = async ({ userId, points, reason }) => {
   });
 };
 
+/**
+ * Fetch portal-wide leaderboard with timeframe filters and pagination.
+ * @param {Object} [params] - { timeframe: 'all_time' | 'this_month' | 'this_week', page, limit }
+ */
+export const fetchLeaderboard = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const queryString = query.toString();
+  return await apiFetch(`/leaderboard${queryString ? `?${queryString}` : ''}`);
+};
 
+/**
+ * Fetch authenticated user's current ranking and difference to next rank.
+ * @param {string} [timeframe='all_time']
+ */
+export const fetchMyRank = async (timeframe = 'all_time') => {
+  return await apiFetch(`/points/me/rank?timeframe=${encodeURIComponent(timeframe)}`);
+};
 
+/**
+ * Super Admin: Fetch global point transactions audit log.
+ * @param {Object} [params] - { page, limit, search, actionType, startDate, endDate, sortBy, sortOrder }
+ */
+export const fetchAllPointTransactions = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const queryString = query.toString();
+  return await apiFetch(`/points/all${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Admin & Super Admin: Fetch creators gamification overview list.
+ * @param {Object} [params] - { page, limit, search }
+ */
+export const fetchAdminGamificationOverview = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const queryString = query.toString();
+  return await apiFetch(`/points/admin/overview${queryString ? `?${queryString}` : ''}`);
+};

@@ -2,7 +2,11 @@ const {
   findTransactionBySubmissionId,
   createPointTransaction,
   getUserPointsSummary,
-  getUserTransactionsHistory
+  getUserTransactionsHistory,
+  getAllPointTransactions,
+  getLeaderboardData,
+  getUserRankData,
+  getAdminGamificationOverviewData
 } = require('../repositories/pointTransactionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 
@@ -16,6 +20,63 @@ const POINT_VALUES = {
   LIKE: 1,
   COMMENT: 2,
   STORY: 2
+};
+
+/**
+ * Configurable Level System Definition:
+ * 0–99:    Beginner    (Level 1)
+ * 100–249:  Active      (Level 2)
+ * 250–499:  Contributor (Level 3)
+ * 500–999:  Elite       (Level 4)
+ * 1000+:    Champion    (Level 5)
+ */
+const LEVEL_TIERS = [
+  { level: 1, name: 'Beginner', badge: '🌱', minPoints: 0, maxPoints: 99, color: '#94a3b8' },
+  { level: 2, name: 'Active', badge: '⚡', minPoints: 100, maxPoints: 249, color: '#38bdf8' },
+  { level: 3, name: 'Contributor', badge: '🚀', minPoints: 250, maxPoints: 499, color: '#a855f7' },
+  { level: 4, name: 'Elite', badge: '💎', minPoints: 500, maxPoints: 999, color: '#ec4899' },
+  { level: 5, name: 'Champion', badge: '👑', minPoints: 1000, maxPoints: Infinity, color: '#facc15' }
+];
+
+/**
+ * Calculate user level, current points, points required for next level, and progress percentage.
+ * @param {number} totalPoints
+ * @returns {Object} Level computation object
+ */
+const calculateUserLevel = (totalPoints = 0) => {
+  const points = Math.max(0, parseInt(totalPoints, 10) || 0);
+
+  const currentTier = LEVEL_TIERS.find(t => points >= t.minPoints && points <= t.maxPoints)
+    || LEVEL_TIERS[LEVEL_TIERS.length - 1];
+
+  const nextTierIndex = LEVEL_TIERS.findIndex(t => t.level === currentTier.level) + 1;
+  const nextTier = nextTierIndex < LEVEL_TIERS.length ? LEVEL_TIERS[nextTierIndex] : null;
+
+  let progressPercentage = 100;
+  let pointsToNextLevel = 0;
+
+  if (nextTier) {
+    const tierRange = nextTier.minPoints - currentTier.minPoints;
+    const progressInTier = points - currentTier.minPoints;
+    progressPercentage = Math.min(100, Math.max(0, Math.round((progressInTier / tierRange) * 100)));
+    pointsToNextLevel = Math.max(0, nextTier.minPoints - points);
+  }
+
+  return {
+    level: currentTier.level,
+    name: currentTier.name,
+    badge: currentTier.badge,
+    color: currentTier.color,
+    currentPoints: points,
+    nextLevel: nextTier ? nextTier.level : null,
+    nextLevelName: nextTier ? nextTier.name : null,
+    nextLevelBadge: nextTier ? nextTier.badge : null,
+    nextLevelMinPoints: nextTier ? nextTier.minPoints : null,
+    pointsToNextLevel,
+    progressPercentage,
+    description: `Level ${currentTier.level} — ${currentTier.name}`,
+    isMaxLevel: !nextTier
+  };
 };
 
 /**
@@ -48,6 +109,7 @@ const preventDuplicateAward = async (submissionId) => {
  * - Proper point calculation per actionType
  * - Atomic balance increment
  * - Audit trail logging
+ * - Level-up detection & notification
  * 
  * @param {Object} params
  * @param {string} params.userId - Creator recipient
@@ -70,19 +132,23 @@ const awardPoints = async ({
     throw new Error('User ID is required to award gamification points.');
   }
 
+  // Fetch current summary before award to evaluate level progression
+  const initialSummary = await getUserPointsSummary(userId);
+  const previousLevel = calculateUserLevel(initialSummary.totalPoints);
+
   // 1. Prevent duplicate point awards if approval endpoint is called multiple times
   if (submissionId) {
     const isAlreadyAwarded = await preventDuplicateAward(submissionId);
     if (isAlreadyAwarded) {
       const existingTx = await findTransactionBySubmissionId(submissionId);
-      const userSummary = await getUserPointsSummary(userId);
       return {
         awarded: false,
         alreadyAwarded: true,
         points: 0,
         message: 'Points have already been awarded for this approved submission.',
         transaction: existingTx,
-        totalPoints: userSummary.totalPoints
+        totalPoints: initialSummary.totalPoints,
+        level: previousLevel
       };
     }
   }
@@ -95,7 +161,8 @@ const awardPoints = async ({
       alreadyAwarded: false,
       points: 0,
       message: `No points configured for action type "${actionType}".`,
-      transaction: null
+      transaction: null,
+      level: previousLevel
     };
   }
 
@@ -117,24 +184,53 @@ const awardPoints = async ({
     metadata
   });
 
+  const newLevel = calculateUserLevel(result.totalPoints);
+
+  // Check if user reached a new level
+  if (newLevel.level > previousLevel.level) {
+    try {
+      await createNotification({
+        userId,
+        type: 'ACCOUNT_ALERT',
+        title: 'Level Up!',
+        message: `🏆 Congratulations! You've reached the ${newLevel.name} level (${newLevel.badge}) with ${result.totalPoints} verified points.`,
+        metadata: {
+          newLevel: newLevel.level,
+          levelName: newLevel.name,
+          totalPoints: result.totalPoints
+        }
+      });
+    } catch (lvlErr) {
+      console.warn('[PointsService] Could not send level-up notification:', lvlErr.message);
+    }
+  }
+
   return {
     awarded: true,
     alreadyAwarded: false,
     points,
     transaction: result.transaction,
-    totalPoints: result.totalPoints
+    totalPoints: result.totalPoints,
+    level: newLevel,
+    leveledUp: newLevel.level > previousLevel.level
   };
 };
 
 /**
- * Retrieve user points summary, balance, and breakdown.
+ * Retrieve user points summary, balance, weekly/monthly points, and level breakdown.
  * @param {string} userId
  */
 const getUserPoints = async (userId) => {
   if (!userId) {
     throw new Error('User ID is required to fetch points summary.');
   }
-  return getUserPointsSummary(userId);
+  const summary = await getUserPointsSummary(userId);
+  const level = calculateUserLevel(summary.totalPoints);
+
+  return {
+    ...summary,
+    level
+  };
 };
 
 /**
@@ -145,6 +241,64 @@ const getUserPointsHistory = async (userId, options = {}) => {
     throw new Error('User ID is required to fetch points history.');
   }
   return getUserTransactionsHistory(userId, options);
+};
+
+/**
+ * Super Admin: Retrieve all point transactions across all users.
+ */
+const getAllTransactions = async (options = {}) => {
+  return getAllPointTransactions(options);
+};
+
+/**
+ * Retrieve portal-wide leaderboard data with timeframe filters.
+ */
+const getLeaderboard = async ({ timeframe = 'all_time', page = 1, limit = 20 }) => {
+  const result = await getLeaderboardData({ timeframe, page, limit });
+
+  // Enrich rows with level data
+  const enrichedLeaderboard = result.leaderboard.map(row => ({
+    ...row,
+    level: calculateUserLevel(row.totalPoints)
+  }));
+
+  return {
+    ...result,
+    leaderboard: enrichedLeaderboard
+  };
+};
+
+/**
+ * Retrieve authenticated user's ranking and difference to next rank.
+ */
+const getUserRank = async (userId, timeframe = 'all_time') => {
+  if (!userId) {
+    throw new Error('User ID is required to fetch user ranking.');
+  }
+  const rankData = await getUserRankData(userId, timeframe);
+  const level = calculateUserLevel(rankData.totalPoints);
+
+  return {
+    ...rankData,
+    level
+  };
+};
+
+/**
+ * Admin: Retrieve gamification overview of creators.
+ */
+const getAdminOverview = async (options = {}) => {
+  const result = await getAdminGamificationOverviewData(options);
+
+  const enrichedUsers = result.users.map(u => ({
+    ...u,
+    level: calculateUserLevel(u.totalPoints)
+  }));
+
+  return {
+    ...result,
+    users: enrichedUsers
+  };
 };
 
 /**
@@ -178,6 +332,9 @@ const adjustPoints = async ({
     throw err;
   }
 
+  const initialSummary = await getUserPointsSummary(userId);
+  const previousLevel = calculateUserLevel(initialSummary.totalPoints);
+
   const cleanReason = reason.trim();
   const desc = `Manual Adjustment: ${deltaPoints > 0 ? '+' : ''}${deltaPoints} pts (${cleanReason})`;
 
@@ -197,16 +354,24 @@ const adjustPoints = async ({
     metadata
   });
 
+  const newLevel = calculateUserLevel(result.totalPoints);
+
   // Generate an auditable notification for the user
   try {
+    let notifMessage = `Your points balance was adjusted by ${deltaPoints > 0 ? '+' : ''}${deltaPoints} point(s) by ${adminName || 'Super Administrator'}. Reason: "${cleanReason}". New total: ${result.totalPoints} points.`;
+    if (newLevel.level > previousLevel.level) {
+      notifMessage += ` 🏆 You've also reached the ${newLevel.name} level!`;
+    }
+
     await createNotification({
       userId,
       type: 'ACCOUNT_ALERT',
       title: 'Points Balance Adjusted',
-      message: `Your gamification points balance was adjusted by ${deltaPoints > 0 ? '+' : ''}${deltaPoints} point(s) by ${adminName || 'Super Administrator'}. Reason: "${cleanReason}". New total: ${result.totalPoints} points.`,
+      message: notifMessage,
       metadata: {
         pointsAdjusted: deltaPoints,
         newTotal: result.totalPoints,
+        newLevel: newLevel.level,
         adjustedBy: adminName
       }
     });
@@ -218,6 +383,7 @@ const adjustPoints = async ({
     success: true,
     pointsAdjusted: deltaPoints,
     newTotalPoints: result.totalPoints,
+    level: newLevel,
     transaction: result.transaction,
     reason: cleanReason
   };
@@ -225,10 +391,16 @@ const adjustPoints = async ({
 
 module.exports = {
   POINT_VALUES,
+  LEVEL_TIERS,
+  calculateUserLevel,
   getPointsForAction,
   preventDuplicateAward,
   awardPoints,
   getUserPoints,
   getUserPointsHistory,
+  getAllTransactions,
+  getLeaderboard,
+  getUserRank,
+  getAdminOverview,
   adjustPoints
 };

@@ -438,21 +438,43 @@ VeriSocial features a unified, auditable gamification engine that rewards creato
 - **Story (`STORY`)**: **+2 Points** for sharing campaign collateral to an active 24-hr story.
 - **Bonus / Adjustment (`BONUS` / `ADJUSTMENT`)**: Variable points awarded for special campus campaigns or authorized administrative adjustments.
 
+### Configurable Level System:
+Levels are calculated on the backend via `calculateUserLevel`:
+- **Level 1 — Beginner** (`0–99 pts`): Initial onboarding tier with sprout badge 🌱
+- **Level 2 — Active** (`100–249 pts`): Consistent engagement tier with electric badge ⚡
+- **Level 3 — Contributor** (`250–499 pts`): High-value contributor tier with rocket badge 🚀
+- **Level 4 — Elite** (`500–999 pts`): Campus ambassador tier with diamond badge 💎
+- **Level 5 — Champion** (`1000+ pts`): Top-tier institutional champion with crown badge 👑
+
 ### Lifecycle & Guardrails:
 1. **Approval Gating**: Points are awarded **ONLY** when a submission receives an `APPROVED` verdict from an authenticated Admin or Super Admin.
 2. **Zero Points for Pending / Rejected**: Submissions in `PENDING` or `REJECTED` status award zero points.
 3. **Strict Duplicate Prevention**: The points service enforces submission idempotency: once points are awarded for a submission, subsequent approval calls or duplicates are strictly blocked.
 4. **Auditable Transaction Ledger**: Points are never stored solely as a mutable scalar. Every point change creates an immutable `PointTransaction` record linked to the user, submission, and reviewer.
 5. **Super Admin Adjustments**: Only Super Admins can execute manual adjustments via `POST /api/points/adjust`, requiring a mandatory target user, point delta, and audit justification reason.
-6. **Frontend Integration**:
-   - `PointsSummary.jsx` ([PointsSummary.jsx](file:///Users/piyush/Documents/Social%20Media%20Verification%20Portal/frontend/src/components/common/PointsSummary.jsx)): Displays verified point totals, point rules, action breakdown, recent earned point transactions, and loading/empty/error states.
-   - Live Points Pill in Header: Real-time badge displayed in the navigation bar for creator personas.
+6. **Automated Notifications**: Users receive instant notifications when points are awarded and whenever their balance pushes them into a new level tier.
+7. **Privacy-Preserving Leaderboard**: Public leaderboard rankings expose only display names, levels, and point metrics. Private emails, phone numbers, and security credentials remain protected.
+
+### Reusable Gamification Components:
+Located in `frontend/src/components/gamification/`:
+- **`LevelBadge.jsx`**: Renders tier icons, level titles, and glowing borders (`sm`, `md`, `lg`).
+- **`LevelProgress.jsx`**: Animated progress bar displaying current level, next level threshold, progress percentage, and remaining points needed.
+- **`PointsCard.jsx`**: Metric cards for total points (⭐), points earned this week (📈), points earned this month (📊), and activity breakdown pills (❤️ Likes, 💬 Comments, 📱 Stories).
+- **`RankCard.jsx`**: Displays caller's rank (`#14`), points, and exact point difference to overtake the next higher rank (`#13`).
+- **`PointHistory.jsx`**: Paginated transaction history table with search, action type filter, date range pickers, and status tags.
+- **`Leaderboard.jsx`**: Portal-wide leaderboard with timeframe tabs (`All Time`, `This Month`, `This Week`), top 3 podium layout, and current-user row highlighting.
+- **`GamificationSummary.jsx`**: Comprehensive multi-tab gamification portal uniting overview metrics, leaderboard, transaction history, admin overview, and Super Admin audit ledger.
 
 ### Gamification Endpoints:
 | Method | Route | Access | Description |
 |---|---|---|---|
-| `GET` | `/api/points/me` | Authenticated | Fetch caller's total points, recent transactions, and breakdown |
-| `GET` | `/api/points/me/history` | Authenticated | Paginated point transactions with filter and sort controls |
-| `GET` | `/api/points/user/:id` | `ADMIN`, `SUPER_ADMIN` | Inspect another user's verified points ledger |
-| `POST` | `/api/points/adjust` | `SUPER_ADMIN` | Execute manual balance adjustments with required audit reason |
+| `GET` | `/api/points/me` | Authenticated | Fetch caller's points summary, level, weekly/monthly earnings, and breakdown |
+| `GET` | `/api/points/me/rank` | Authenticated | Fetch caller's leaderboard rank and distance to next higher rank |
+| `GET` | `/api/points/me/history` | Authenticated | Paginated point transactions with search, filter, and sort controls |
+| `GET` | `/api/leaderboard` | Authenticated | Portal-wide leaderboard sorted by points with `all_time`, `this_month`, `this_week` timeframes |
+| `GET` | `/api/points/admin/overview` | `ADMIN`, `SUPER_ADMIN` | Creator directory overview with levels, total points, and approved submissions count |
+| `GET` | `/api/points/user/:id` | `ADMIN`, `SUPER_ADMIN` | Inspect another user's verified points and level details |
+| `GET` | `/api/points/all` | `SUPER_ADMIN` | Global platform-wide point transaction audit ledger |
+| `POST` | `/api/points/adjust` | `SUPER_ADMIN` | Execute manual balance adjustments with mandatory justification reason |
+
 

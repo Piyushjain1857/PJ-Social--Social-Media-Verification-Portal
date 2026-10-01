@@ -1,13 +1,17 @@
 const {
   getUserPoints,
   getUserPointsHistory,
+  getAllTransactions,
+  getLeaderboard,
+  getUserRank,
+  getAdminOverview,
   adjustPoints
 } = require('../services/pointsService');
 const { findUserById } = require('../repositories/userRepository');
 
 /**
  * GET /api/points/me
- * Retrieves current user's total points, recent transactions, and activity breakdown.
+ * Retrieves current user's total points, level progression, weekly/monthly stats, and activity breakdown.
  */
 const getMyPoints = async (req, res, next) => {
   try {
@@ -25,16 +29,17 @@ const getMyPoints = async (req, res, next) => {
 
 /**
  * GET /api/points/me/history
- * Returns paginated point transactions for the authenticated caller.
+ * Returns paginated point transactions for the authenticated caller with search & filters.
  */
 const getMyHistory = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { page, limit, actionType, startDate, endDate, sortBy, sortOrder } = req.query;
+    const { page, limit, search, actionType, startDate, endDate, sortBy, sortOrder } = req.query;
 
     const result = await getUserPointsHistory(userId, {
       page,
       limit,
+      search,
       actionType,
       startDate,
       endDate,
@@ -61,14 +66,62 @@ const getMyHistory = async (req, res, next) => {
 };
 
 /**
+ * GET /api/points/me/rank or GET /api/leaderboard/me
+ * Returns authenticated user's current leaderboard rank and points required for next rank.
+ */
+const getMyRank = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { timeframe = 'all_time' } = req.query;
+
+    const rankData = await getUserRank(userId, timeframe);
+
+    return res.status(200).json({
+      success: true,
+      data: rankData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/leaderboard or GET /api/points/leaderboard
+ * Returns portal-wide leaderboard ranked by total points, with timeframe filters (all_time, this_month, this_week).
+ */
+const getLeaderboardList = async (req, res, next) => {
+  try {
+    const { timeframe = 'all_time', page = 1, limit = 20 } = req.query;
+
+    const result = await getLeaderboard({
+      timeframe,
+      page: parseInt(page, 10) || 1,
+      limit: parseInt(limit, 10) || 20
+    });
+
+    return res.status(200).json({
+      success: true,
+      timeframe: result.timeframe,
+      data: {
+        leaderboard: result.leaderboard,
+        pagination: result.pagination,
+        timeframe: result.timeframe
+      },
+      pagination: result.pagination
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/points/user/:id
- * Admin/Super Admin only: Inspect points summary and breakdown for any creator user.
+ * Admin/Super Admin only: Inspect points summary, level, and breakdown for any creator user.
  */
 const getUserPointsById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Check target user exists
     const targetUser = await findUserById(id);
     if (!targetUser) {
       return res.status(404).json({
@@ -86,6 +139,74 @@ const getUserPointsById = async (req, res, next) => {
         ...summary,
         userRole: targetUser.role,
         userStatus: targetUser.status
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/points/admin/overview
+ * Admin & Super Admin: Overview list of creator users with gamification metrics, level, and approved submissions.
+ */
+const getAdminOverviewView = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 15, search = '' } = req.query;
+
+    const result = await getAdminOverview({
+      page: parseInt(page, 10) || 1,
+      limit: parseInt(limit, 10) || 15,
+      search: search.trim()
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result.users,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/points/all
+ * Super Admin only: Global audit log of all point transactions across the platform.
+ */
+const getAllTransactionsAdmin = async (req, res, next) => {
+  try {
+    const { page, limit, search, actionType, startDate, endDate, sortBy, sortOrder } = req.query;
+
+    const result = await getAllTransactions({
+      page,
+      limit,
+      search,
+      actionType,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: result.records.length,
+      data: result.records,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
       }
     });
   } catch (error) {
@@ -164,6 +285,10 @@ const adjustUserPoints = async (req, res, next) => {
 module.exports = {
   getMyPoints,
   getMyHistory,
+  getMyRank,
+  getLeaderboardList,
   getUserPointsById,
+  getAdminOverviewView,
+  getAllTransactionsAdmin,
   adjustUserPoints
 };

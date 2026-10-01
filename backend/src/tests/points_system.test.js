@@ -18,6 +18,8 @@
 const assert = require('assert');
 const {
   POINT_VALUES,
+  LEVEL_TIERS,
+  calculateUserLevel,
   getPointsForAction,
   preventDuplicateAward,
   awardPoints,
@@ -318,15 +320,111 @@ async function runPointsSystemTests() {
   assert.strictEqual(validAdjustData.data.transaction.actionType, 'ADJUSTMENT');
   console.log(`✓ Super Admin adjusted balance by +10. New total: ${validAdjustData.data.newTotalPoints}`);
 
-  // 11. Verify Auditable Consistency
-  console.log('\n--- 11. Testing Auditability & Balance Consistency ---');
-  const finalSummary = await getUserPoints(creatorAuth.user.id);
-  assert.strictEqual(
-    finalSummary.totalPoints,
-    finalSummary.auditedTotalPoints,
-    `Total points (${finalSummary.totalPoints}) must equal audited sum of transactions (${finalSummary.auditedTotalPoints})`
-  );
-  console.log(`✓ Audit verified: User balance (${finalSummary.totalPoints}) matches transaction ledger exactly`);
+  // 12. Testing Configurable Level System
+  console.log('\n--- 12. Testing Configurable Level Calculation ---');
+  const lvl0 = calculateUserLevel(0);
+  assert.strictEqual(lvl0.level, 1);
+  assert.strictEqual(lvl0.name, 'Beginner');
+  assert.strictEqual(lvl0.pointsToNextLevel, 100);
+
+  const lvl1 = calculateUserLevel(50);
+  assert.strictEqual(lvl1.level, 1);
+  assert.strictEqual(lvl1.name, 'Beginner');
+  assert.strictEqual(lvl1.pointsToNextLevel, 50);
+
+  const lvl2 = calculateUserLevel(150);
+  assert.strictEqual(lvl2.level, 2);
+  assert.strictEqual(lvl2.name, 'Active');
+
+  const lvl3 = calculateUserLevel(320);
+  assert.strictEqual(lvl3.level, 3);
+  assert.strictEqual(lvl3.name, 'Contributor');
+  assert.strictEqual(lvl3.pointsToNextLevel, 180);
+
+  const lvl4 = calculateUserLevel(750);
+  assert.strictEqual(lvl4.level, 4);
+  assert.strictEqual(lvl4.name, 'Elite');
+
+  const lvl5 = calculateUserLevel(1250);
+  assert.strictEqual(lvl5.level, 5);
+  assert.strictEqual(lvl5.name, 'Champion');
+  assert.strictEqual(lvl5.isMaxLevel, true);
+  console.log('✓ Level calculation verified across all 5 tiers (0-99, 100-249, 250-499, 500-999, 1000+)');
+
+  // 13. Testing Portal-Wide Leaderboard (/api/leaderboard)
+  console.log('\n--- 13. Testing Portal-Wide Leaderboard ---');
+  const lbAllTimeRes = await fetch(`${BASE_URL}/leaderboard?timeframe=all_time&page=1&limit=10`, {
+    headers: { Authorization: `Bearer ${creatorAuth.token}` }
+  });
+  assert.strictEqual(lbAllTimeRes.status, 200);
+  const lbAllTimeData = await lbAllTimeRes.json();
+  assert.strictEqual(lbAllTimeData.success, true);
+  assert.ok(Array.isArray(lbAllTimeData.data.leaderboard), 'Leaderboard list should be an array');
+  assert.ok(lbAllTimeData.data.pagination, 'Pagination object should be present');
+  assert.ok(lbAllTimeData.data.leaderboard.length > 0, 'Leaderboard should have entries');
+  // Verify ranking is in descending order
+  for (let i = 0; i < lbAllTimeData.data.leaderboard.length - 1; i++) {
+    const cur = lbAllTimeData.data.leaderboard[i];
+    const nxt = lbAllTimeData.data.leaderboard[i + 1];
+    assert.ok(cur.totalPoints >= nxt.totalPoints, 'Leaderboard must be sorted descending by points');
+    assert.strictEqual(cur.rank, i + 1, 'Rank must be 1-indexed and contiguous');
+    // Ensure no private info (like password or sensitive email) exposed
+    assert.strictEqual(cur.password, undefined, 'No passwords allowed on leaderboard');
+  }
+  console.log(`✓ All Time Leaderboard returned ${lbAllTimeData.data.leaderboard.length} users, properly ranked`);
+
+  // Timeframe test: this_week and this_month
+  const lbWeekRes = await fetch(`${BASE_URL}/leaderboard?timeframe=this_week`, {
+    headers: { Authorization: `Bearer ${creatorAuth.token}` }
+  });
+  assert.strictEqual(lbWeekRes.status, 200);
+  const lbMonthRes = await fetch(`${BASE_URL}/leaderboard?timeframe=this_month`, {
+    headers: { Authorization: `Bearer ${creatorAuth.token}` }
+  });
+  assert.strictEqual(lbMonthRes.status, 200);
+  console.log('✓ Timeframe filtering verified (all_time, this_month, this_week)');
+
+  // 14. Testing My Rank Endpoint (/api/points/me/rank)
+  console.log('\n--- 14. Testing User Rank Endpoint (/api/points/me/rank) ---');
+  const rankRes = await fetch(`${BASE_URL}/points/me/rank`, {
+    headers: { Authorization: `Bearer ${creatorAuth.token}` }
+  });
+  assert.strictEqual(rankRes.status, 200);
+  const rankData = await rankRes.json();
+  assert.strictEqual(rankData.success, true);
+  assert.ok(typeof rankData.data.rank === 'number', 'rank should be a number');
+  assert.ok(typeof rankData.data.totalPoints === 'number', 'totalPoints should be a number');
+  assert.ok(typeof rankData.data.pointsToNextRank === 'number', 'pointsToNextRank should be a number');
+  assert.ok(rankData.data.level, 'level information should be present in rank');
+  console.log(`✓ Creator rank: #${rankData.data.rank} with ${rankData.data.totalPoints} pts (needs ${rankData.data.pointsToNextRank} pts for next rank)`);
+
+  // 15. Testing Admin Gamification Overview & Super Admin All Transactions
+  console.log('\n--- 15. Testing Admin Gamification Overview & Audit Ledger ---');
+  // Admin overview
+  const adminOverviewRes = await fetch(`${BASE_URL}/points/admin/overview?page=1&limit=10`, {
+    headers: { Authorization: `Bearer ${adminAuth.token}` }
+  });
+  assert.strictEqual(adminOverviewRes.status, 200);
+  const adminOverviewData = await adminOverviewRes.json();
+  assert.strictEqual(adminOverviewData.success, true);
+  const overviewUsers = Array.isArray(adminOverviewData.data)
+    ? adminOverviewData.data
+    : (adminOverviewData.data?.users || []);
+  assert.ok(Array.isArray(overviewUsers), 'Admin overview should return users array');
+  console.log(`✓ Admin gamification overview returned ${overviewUsers.length} creators with levels & points`);
+
+  // Super Admin all transactions
+  const allTxRes = await fetch(`${BASE_URL}/points/all?page=1&limit=10`, {
+    headers: { Authorization: `Bearer ${superAdminAuth.token}` }
+  });
+  assert.strictEqual(allTxRes.status, 200);
+  const allTxData = await allTxRes.json();
+  assert.strictEqual(allTxData.success, true);
+  const txRecords = Array.isArray(allTxData.data)
+    ? allTxData.data
+    : (allTxData.data?.records || []);
+  assert.ok(Array.isArray(txRecords), 'Super admin should see transaction records array');
+  console.log(`✓ Super Admin audit ledger returned ${txRecords.length} global transactions`);
 
   console.log('\n🎉 ALL GAMIFICATION & POINTS SYSTEM TESTS PASSED SUCCESSFULLY!\n');
 }

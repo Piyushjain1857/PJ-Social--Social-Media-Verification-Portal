@@ -25,6 +25,11 @@ router.use('/reviews', reviewRoutes);
 // Gamification Points & Transactions routes (/api/points)
 router.use('/points', pointsRoutes);
 
+// Direct /api/leaderboard endpoint alias
+const { getLeaderboardList } = require('../controllers/pointsController');
+const { authenticate } = require('../middlewares/authMiddleware');
+router.get('/leaderboard', authenticate, getLeaderboardList);
+
 // User Directory & Role Management routes (/api/users)
 router.use('/users', userRoutes);
 
