@@ -340,8 +340,44 @@ export const fetchPendingReviews = async (filters = {}) => {
   return await apiFetch(query ? `/reviews/pending?${query}` : '/reviews/pending');
 };
 
-export const fetchReviewSubmissionDetails = async (id) => {
-  return await apiFetch(`/reviews/submission/${id}`);
+export const fetchReviewSubmissionDetails = async (id, filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+  if (filters.platform && filters.platform !== 'ALL') params.append('platform', filters.platform);
+  if (filters.actionType && filters.actionType !== 'ALL') params.append('actionType', filters.actionType);
+  if (filters.search) params.append('search', filters.search);
+
+  const qs = params.toString();
+  return await apiFetch(qs ? `/reviews/submission/${id}?${qs}` : `/reviews/submission/${id}`);
+};
+
+export const addReviewInternalNote = async (id, note) => {
+  return await apiFetch(`/reviews/${id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+};
+
+export const requestReviewClarification = async (id, message) => {
+  return await apiFetch(`/reviews/${id}/clarification`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  });
+};
+
+export const fetchReviewQueueNavigation = async (id, filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+  if (filters.platform && filters.platform !== 'ALL') params.append('platform', filters.platform);
+  if (filters.actionType && filters.actionType !== 'ALL') params.append('actionType', filters.actionType);
+  if (filters.search) params.append('search', filters.search);
+
+  const qs = params.toString();
+  return await apiFetch(qs ? `/reviews/${id}/navigation?${qs}` : `/reviews/${id}/navigation`);
+};
+
+export const fetchReviewHistory = async (id) => {
+  return await apiFetch(`/reviews/${id}/history`);
 };
 
 /**

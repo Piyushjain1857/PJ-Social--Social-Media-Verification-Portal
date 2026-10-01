@@ -2,17 +2,23 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   fetchPendingReviews,
   fetchReviewSubmissionDetails,
-  reviewSubmission,
+  approveSubmission,
+  rejectSubmission,
+  addReviewInternalNote,
+  requestReviewClarification,
 } from '../../services/api';
 import ScreenshotImage from '../ScreenshotImage';
 
-const PLATFORM_ICONS = {
-  INSTAGRAM: '📸',
-  LINKEDIN:  '💼',
-  FACEBOOK:  '👥',
-  TWITTER:   '🐦',
-  TIKTOK:    '🎵',
-  YOUTUBE:   '▶️',
+const PLATFORM_CONFIG = {
+  INSTAGRAM: { icon: '📸', name: 'Instagram', color: '#E1306C' },
+  LINKEDIN:  { icon: '💼', name: 'LinkedIn',  color: '#0A66C2' },
+  FACEBOOK:  { icon: '👥', name: 'Facebook',  color: '#1877F2' },
+};
+
+const ACTION_DESCRIPTIONS = {
+  LIKE: 'Liked post or reacted to official creator update',
+  COMMENT: 'Posted relevant feedback on official discussion thread',
+  STORY: 'Shared campaign content to active 24-hr story',
 };
 
 const STATUS_CONFIG = {
@@ -20,6 +26,20 @@ const STATUS_CONFIG = {
   APPROVED: { label: 'APPROVED', color: 'var(--status-success)', badgeClass: 'badge-success', icon: '✓' },
   REJECTED: { label: 'REJECTED', color: 'var(--status-error)',   badgeClass: 'badge-error',   icon: '✕' },
 };
+
+const REJECTION_PRESETS = [
+  'Visible handle in screenshot does not match registered creator account.',
+  'Screenshot timestamp is outside the active campaign window.',
+  'Evidence is cropped and does not clearly show required engagement.',
+  'Post URL is private or inaccessible for manual verification.',
+  'Activity shown in proof does not match selected action type.',
+];
+
+const CLARIFICATION_PRESETS = [
+  'Please provide an uncropped screenshot showing your profile handle clearly.',
+  'Your post link appears private. Please adjust privacy settings or submit public proof.',
+  'Please upload high-resolution evidence showing the engagement count and timestamp.',
+];
 
 function timeAgo(dateStr) {
   if (!dateStr) return '—';
@@ -45,50 +65,60 @@ function formatDate(dateStr) {
 }
 
 export default function ReviewSubmissionsView() {
-  // ── Filters & Query State ──
+  // ── Queue & Filter State ──
+  const [submissions, setSubmissions] = useState([]);
+  const [selectedSubId, setSelectedSubId] = useState(null);
+  const [dossier, setDossier] = useState(null);
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [platform, setPlatform] = useState('ALL');
   const [actionType, setActionType] = useState('ALL');
-  const [status, setStatus] = useState('PENDING');
-  const [dateRange, setDateRange] = useState('ALL'); // ALL, TODAY, 7DAYS, 30DAYS
+  const [status, setStatus] = useState('PENDING'); // PENDING | APPROVED | REJECTED | ALL
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(15);
+  const [pagination, setPagination] = useState({ page: 1, limit: 15, totalCount: 0, totalPages: 1 });
 
-  // ── Data & Async State ──
-  const [submissions, setSubmissions] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, totalCount: 0, totalPages: 1 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-
-  // ── Detailed Submission Dossier Modal State ──
-  const [selectedSubId, setSelectedSubId] = useState(null);
-  const [dossier, setDossier] = useState(null);
+  // ── Async Loading & Feedback State ──
+  const [isQueueLoading, setIsQueueLoading] = useState(true);
   const [isDossierLoading, setIsDossierLoading] = useState(false);
+  const [queueError, setQueueError] = useState(null);
   const [dossierError, setDossierError] = useState(null);
-  const [dossierFeedback, setDossierFeedback] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
-  // ── Confirmation Modal State ──
+  // ── Inline Note State ──
+  const [newNoteText, setNewNoteText] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  // ── Modals State ──
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
-    action: 'APPROVE', // 'APPROVE' or 'REJECT'
+    action: 'APPROVE', // 'APPROVE' | 'REJECT'
     feedback: '',
     error: null,
     isSubmitting: false,
   });
 
-  // Checklist verification states (for human verification tracking)
-  const [checklistState, setChecklistState] = useState({
-    handleMatches: false,
-    timestampValid: false,
-    actionConsistent: false,
-    evidenceAuthentic: false,
+  const [clarificationModal, setClarificationModal] = useState({
+    isOpen: false,
+    message: '',
+    error: null,
+    isSubmitting: false,
   });
+
+  const [noteModal, setNoteModal] = useState({
+    isOpen: false,
+    note: '',
+    error: null,
+    isSubmitting: false,
+  });
+
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   const searchTimerRef = useRef(null);
 
-  // Debounce search input by 300ms
+  // ── Debounce search input ──
   const handleSearchChange = (e) => {
     const val = e.target.value;
     setSearch(val);
@@ -96,7 +126,7 @@ export default function ReviewSubmissionsView() {
     searchTimerRef.current = setTimeout(() => {
       setDebouncedSearch(val);
       setPage(1);
-    }, 350);
+    }, 300);
   };
 
   const handleClearSearch = () => {
@@ -105,35 +135,12 @@ export default function ReviewSubmissionsView() {
     setPage(1);
   };
 
-  // Convert dateRange preset to ISO date string for API
-  const getDateRangeFilter = () => {
-    if (dateRange === 'TODAY') {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      return { startDate: d.toISOString() };
-    }
-    if (dateRange === '7DAYS') {
-      const d = new Date();
-      d.setDate(d.getDate() - 7);
-      d.setHours(0, 0, 0, 0);
-      return { startDate: d.toISOString() };
-    }
-    if (dateRange === '30DAYS') {
-      const d = new Date();
-      d.setDate(d.getDate() - 30);
-      d.setHours(0, 0, 0, 0);
-      return { startDate: d.toISOString() };
-    }
-    return {};
-  };
-
-  // Fetch pending review items
-  const loadReviews = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
+  // ── Load Queue Submissions ──
+  const loadQueue = useCallback(async () => {
+    setIsQueueLoading(true);
+    setQueueError(null);
 
     try {
-      const dateFilters = getDateRangeFilter();
       const res = await fetchPendingReviews({
         page,
         limit,
@@ -141,73 +148,158 @@ export default function ReviewSubmissionsView() {
         platform: platform !== 'ALL' ? platform : undefined,
         actionType: actionType !== 'ALL' ? actionType : undefined,
         status: status !== 'ALL' ? status : undefined,
-        ...dateFilters,
       });
 
       if (res.success) {
-        setSubmissions(res.data || []);
+        const items = res.data || [];
+        setSubmissions(items);
         if (res.pagination) {
           setPagination(res.pagination);
         }
+
+        // Auto-select first item if current selection is invalid or null
+        if (items.length > 0) {
+          if (!selectedSubId || !items.some(i => i.id === selectedSubId)) {
+            setSelectedSubId(items[0].id);
+          }
+        } else {
+          setSelectedSubId(null);
+          setDossier(null);
+        }
       } else {
-        setErrorMessage(res.message || 'Failed to load review queue.');
+        setQueueError(res.message || 'Failed to load review queue.');
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Error communicating with review API.');
+      setQueueError(err.message || 'Error communicating with review API.');
     } finally {
-      setIsLoading(false);
+      setIsQueueLoading(false);
     }
-  }, [page, limit, debouncedSearch, platform, actionType, status, dateRange]);
+  }, [page, limit, debouncedSearch, platform, actionType, status, selectedSubId]);
 
   useEffect(() => {
-    loadReviews();
-  }, [loadReviews]);
+    loadQueue();
+  }, [loadQueue]);
 
-  // Load detailed dossier when modal opens
-  const openDetailsModal = async (subId) => {
-    setSelectedSubId(subId);
-    setDossier(null);
-    setDossierError(null);
-    setDossierFeedback(null);
-    setConfirmModal({
-      isOpen: false,
-      action: 'APPROVE',
-      feedback: '',
-      error: null,
-      isSubmitting: false,
-    });
-    setChecklistState({
-      handleMatches: false,
-      timestampValid: false,
-      actionConsistent: false,
-      evidenceAuthentic: false,
-    });
+  // ── Load Selected Submission Dossier ──
+  const loadDossier = useCallback(async (subId) => {
+    if (!subId) {
+      setDossier(null);
+      return;
+    }
+
     setIsDossierLoading(true);
+    setDossierError(null);
 
     try {
-      const res = await fetchReviewSubmissionDetails(subId);
+      const res = await fetchReviewSubmissionDetails(subId, {
+        status: status !== 'ALL' ? status : undefined,
+        platform: platform !== 'ALL' ? platform : undefined,
+        actionType: actionType !== 'ALL' ? actionType : undefined,
+        search: debouncedSearch.trim() || undefined,
+      });
+
       if (res.success && res.data) {
         setDossier(res.data);
       } else {
-        setDossierError(res.message || 'Could not load detailed verification dossier.');
+        setDossierError(res.message || 'Could not load submission dossier.');
       }
     } catch (err) {
-      setDossierError(err.message || 'Failed to fetch submission verification details.');
+      setDossierError(err.message || 'Failed to load submission verification dossier.');
     } finally {
       setIsDossierLoading(false);
     }
-  };
+  }, [status, platform, actionType, debouncedSearch]);
 
-  const closeDetailsModal = () => {
-    if (confirmModal.isSubmitting) return;
-    setSelectedSubId(null);
-    setDossier(null);
-    setDossierFeedback(null);
-    closeConfirmModal();
-  };
+  useEffect(() => {
+    if (selectedSubId) {
+      loadDossier(selectedSubId);
+    }
+  }, [selectedSubId, loadDossier]);
 
-  // Open confirmation modal for Approve or Reject
+  // ── Queue Navigation Helpers ──
+  const currentIndex = submissions.findIndex(s => s.id === selectedSubId);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < submissions.length - 1;
+
+  const handleSelectPrevious = useCallback(() => {
+    if (hasPrevious) {
+      const prevSub = submissions[currentIndex - 1];
+      setSelectedSubId(prevSub.id);
+    }
+  }, [hasPrevious, currentIndex, submissions]);
+
+  const handleSelectNext = useCallback(() => {
+    if (hasNext) {
+      const nextSub = submissions[currentIndex + 1];
+      setSelectedSubId(nextSub.id);
+    }
+  }, [hasNext, currentIndex, submissions]);
+
+  // ── Keyboard Shortcuts (A, R, N, P, Escape) ──
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // If user is focused on an editable input/textarea, ignore shortcuts
+      const activeTag = document.activeElement?.tagName?.toUpperCase();
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
+
+      // Handle Escape for modals
+      if (e.key === 'Escape') {
+        if (confirmModal.isOpen) setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        if (clarificationModal.isOpen) setClarificationModal(prev => ({ ...prev, isOpen: false }));
+        if (noteModal.isOpen) setNoteModal(prev => ({ ...prev, isOpen: false }));
+        return;
+      }
+
+      // If any modal is open, don't trigger other hotkeys
+      if (confirmModal.isOpen || clarificationModal.isOpen || noteModal.isOpen) return;
+
+      // Hotkey: P -> Previous
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        handleSelectPrevious();
+        return;
+      }
+
+      // Hotkey: N -> Next
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        handleSelectNext();
+        return;
+      }
+
+      // Hotkey: A -> Approve
+      if (e.key === 'a' || e.key === 'A') {
+        if (dossier?.submission && dossier.submission.status === 'PENDING') {
+          e.preventDefault();
+          openConfirmModal('APPROVE');
+        }
+        return;
+      }
+
+      // Hotkey: R -> Reject
+      if (e.key === 'r' || e.key === 'R') {
+        if (dossier?.submission && dossier.submission.status === 'PENDING') {
+          e.preventDefault();
+          openConfirmModal('REJECT');
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    confirmModal.isOpen,
+    clarificationModal.isOpen,
+    noteModal.isOpen,
+    dossier?.submission,
+    handleSelectPrevious,
+    handleSelectNext,
+  ]);
+
+  // ── Open Modals ──
   const openConfirmModal = (action) => {
+    setActionError(null);
     setConfirmModal({
       isOpen: true,
       action,
@@ -219,1164 +311,1073 @@ export default function ReviewSubmissionsView() {
 
   const closeConfirmModal = () => {
     if (confirmModal.isSubmitting) return;
-    setConfirmModal({
-      isOpen: false,
-      action: 'APPROVE',
-      feedback: '',
+    setConfirmModal(prev => ({ ...prev, isOpen: false, error: null }));
+  };
+
+  const openClarificationModal = () => {
+    setActionError(null);
+    setClarificationModal({
+      isOpen: true,
+      message: '',
       error: null,
       isSubmitting: false,
     });
   };
 
-  // Close modals on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        if (confirmModal.isOpen) {
-          if (!confirmModal.isSubmitting) closeConfirmModal();
-        } else if (selectedSubId) {
-          closeDetailsModal();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmModal.isOpen, confirmModal.isSubmitting, selectedSubId]);
+  const closeClarificationModal = () => {
+    if (clarificationModal.isSubmitting) return;
+    setClarificationModal(prev => ({ ...prev, isOpen: false, error: null }));
+  };
 
-  // Execute approval or rejection decision
-  const handleExecuteDecision = async () => {
-    if (!selectedSubId || !confirmModal.isOpen) return;
+  const openNoteModal = () => {
+    setActionError(null);
+    setNoteModal({
+      isOpen: true,
+      note: '',
+      error: null,
+      isSubmitting: false,
+    });
+  };
 
-    const action = confirmModal.action;
-    const cleanFeedback = confirmModal.feedback.trim();
+  const closeNoteModal = () => {
+    if (noteModal.isSubmitting) return;
+    setNoteModal(prev => ({ ...prev, isOpen: false, error: null }));
+  };
 
-    // Mandatory rejection reason validation
-    if (action === 'REJECT' && !cleanFeedback) {
-      setConfirmModal((prev) => ({
+  // ── Submit Verdict (Approve / Reject) ──
+  const handleExecuteVerdict = async () => {
+    const { action, feedback } = confirmModal;
+
+    if (action === 'REJECT' && (!feedback || !feedback.trim())) {
+      setConfirmModal(prev => ({
         ...prev,
-        error: 'Please enter a rejection reason so the creator understands what was missing or invalid.',
+        error: 'A rejection reason is mandatory so the creator knows what was missing or invalid.',
       }));
       return;
     }
 
-    setConfirmModal((prev) => ({ ...prev, isSubmitting: true, error: null }));
+    setConfirmModal(prev => ({ ...prev, isSubmitting: true, error: null }));
 
     try {
-      const res = await reviewSubmission(selectedSubId, action, cleanFeedback);
+      const fn = action === 'APPROVE' ? approveSubmission : rejectSubmission;
+      const res = await fn(selectedSubId, feedback);
+
       if (res.success) {
-        const successMsg = `Submission #${selectedSubId.substring(0, 8)} successfully marked as ${action}. Creator has been notified.`;
-        setSuccessMessage(successMsg);
-        setTimeout(() => setSuccessMessage(null), 5000);
-
-        setDossierFeedback({
-          type: action,
-          message: `Submission marked as ${action}! Notification dispatched to creator.`,
-        });
-
-        // Update local dossier state
-        if (dossier && dossier.submission) {
-          const newReviewEntry = res.data?.review || {
-            id: `rev-${Date.now().toString(36)}`,
-            submissionId: selectedSubId,
-            status: action,
-            feedback: cleanFeedback,
-            createdAt: new Date().toISOString(),
-          };
-          setDossier({
-            ...dossier,
-            submission: {
-              ...dossier.submission,
-              status: action,
-              reviews: [newReviewEntry, ...(dossier.submission.reviews || [])],
-            },
-          });
-        }
-
-        // Update main queue table row immediately
-        setSubmissions((prevList) =>
-          prevList.map((item) =>
-            item.id === selectedSubId ? { ...item, status: action } : item
-          )
-        );
-
+        setActionSuccess(`Submission marked as ${action} successfully!`);
+        setTimeout(() => setActionSuccess(null), 4000);
         closeConfirmModal();
 
-        // Refresh full queue from server in background
-        loadReviews();
+        // Refresh dossier and queue
+        await Promise.all([loadDossier(selectedSubId), loadQueue()]);
       } else {
-        setConfirmModal((prev) => ({
+        setConfirmModal(prev => ({
           ...prev,
           error: res.message || `Failed to ${action.toLowerCase()} submission.`,
-          isSubmitting: false,
         }));
       }
     } catch (err) {
-      setConfirmModal((prev) => ({
+      setConfirmModal(prev => ({
         ...prev,
-        error: err.message || `Network error processing review decision.`,
-        isSubmitting: false,
+        error: err.message || `Error submitting ${action.toLowerCase()} verdict.`,
       }));
+    } finally {
+      setConfirmModal(prev => ({ ...prev, isSubmitting: false }));
     }
   };
 
-  // Reset all filters
-  const handleResetFilters = () => {
-    setSearch('');
-    setDebouncedSearch('');
-    setPlatform('ALL');
-    setActionType('ALL');
-    setStatus('PENDING');
-    setDateRange('ALL');
-    setPage(1);
+  // ── Submit Clarification Request ──
+  const handleSendClarification = async () => {
+    const { message } = clarificationModal;
+    if (!message || !message.trim()) {
+      setClarificationModal(prev => ({ ...prev, error: 'Please enter a clarification message for the creator.' }));
+      return;
+    }
+
+    setClarificationModal(prev => ({ ...prev, isSubmitting: true, error: null }));
+
+    try {
+      const res = await requestReviewClarification(selectedSubId, message.trim());
+      if (res.success) {
+        setActionSuccess('Clarification request recorded and creator notified.');
+        setTimeout(() => setActionSuccess(null), 4000);
+        closeClarificationModal();
+        await loadDossier(selectedSubId);
+      } else {
+        setClarificationModal(prev => ({ ...prev, error: res.message || 'Failed to request clarification.' }));
+      }
+    } catch (err) {
+      setClarificationModal(prev => ({ ...prev, error: err.message || 'Error sending clarification request.' }));
+    } finally {
+      setClarificationModal(prev => ({ ...prev, isSubmitting: false }));
+    }
   };
 
-  const activeFilterCount =
-    (search ? 1 : 0) +
-    (platform !== 'ALL' ? 1 : 0) +
-    (actionType !== 'ALL' ? 1 : 0) +
-    (status !== 'PENDING' ? 1 : 0) +
-    (dateRange !== 'ALL' ? 1 : 0);
+  // ── Add Internal Review Note ──
+  const handleAddInternalNote = async (noteText, fromModal = false) => {
+    if (!noteText || !noteText.trim()) return;
+
+    if (fromModal) setNoteModal(prev => ({ ...prev, isSubmitting: true, error: null }));
+    else setIsSavingNote(true);
+
+    try {
+      const res = await addReviewInternalNote(selectedSubId, noteText.trim());
+      if (res.success) {
+        setActionSuccess('Internal review note attached.');
+        setTimeout(() => setActionSuccess(null), 3500);
+        setNewNoteText('');
+        if (fromModal) closeNoteModal();
+        await loadDossier(selectedSubId);
+      } else {
+        const msg = res.message || 'Failed to attach internal review note.';
+        if (fromModal) setNoteModal(prev => ({ ...prev, error: msg }));
+        else setActionError(msg);
+      }
+    } catch (err) {
+      const msg = err.message || 'Error attaching internal note.';
+      if (fromModal) setNoteModal(prev => ({ ...prev, error: msg }));
+      else setActionError(msg);
+    } finally {
+      if (fromModal) setNoteModal(prev => ({ ...prev, isSubmitting: false }));
+      else setIsSavingNote(false);
+    }
+  };
+
+  const handleCopyUrl = (url) => {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedUrl(true);
+      setTimeout(() => setCopiedUrl(false), 2000);
+    });
+  };
+
+  const activeSub = dossier?.submission;
+  const creator = dossier?.creator;
+  const officialAcc = dossier?.officialAccount;
+  const platformMeta = PLATFORM_CONFIG[activeSub?.platform] || { icon: '🌐', name: activeSub?.platform || 'Social', color: 'var(--primary)' };
+  const statusMeta = STATUS_CONFIG[activeSub?.status] || STATUS_CONFIG.PENDING;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-
-      {/* ── Page Header & Telemetry ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="review-workspace-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+      {/* ── Top Workspace Bar ── */}
+      <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid var(--role-admin)' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-            <span className="badge badge-admin" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>
-              ⚖️ MODERATION QUEUE
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              • {pagination.totalCount} submission{pagination.totalCount === 1 ? '' : 's'} total
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <span style={{ fontSize: '1.35rem' }}>⚖️</span>
+            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-highlight)', letterSpacing: '-0.02em' }}>
+              Verification Review Workspace
+            </h2>
+            <span className="badge badge-admin" style={{ fontSize: '0.72rem' }}>EVIDENCE AUDIT</span>
           </div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
-            Verification Review Queue
-          </h2>
-          <p style={{ margin: '0.3rem 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Inspect creator proof evidence, evaluate platform rules compliance, and record human verification verdicts.
+          <p style={{ margin: '0.3rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+            Dual-pane human review terminal with split evidence inspection, creator audit trail, and instant verdict execution.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={loadReviews}
-          disabled={isLoading}
-          style={{ fontSize: '0.85rem', padding: '0.55rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-          title="Refresh review queue"
-        >
-          <span>↺</span> {isLoading ? 'Refreshing…' : 'Refresh Queue'}
-        </button>
-      </div>
-
-      {/* ── Human Verification Notice Banner ── */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '1rem 1.25rem',
-          borderLeft: '4px solid var(--role-admin)',
-          background: 'rgba(99, 102, 241, 0.08)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '0.75rem',
-          fontSize: '0.85rem',
-          lineHeight: 1.5,
-          color: 'var(--text-secondary)',
-        }}
-      >
-        <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🛡️</span>
-        <div>
-          <strong style={{ color: 'var(--text-highlight)' }}>Human Verification Standard:</strong>{' '}
-          Admin review is an authentic human moderation process. The portal does not automate scraping or claim that social media actions are genuine without manual confirmation. Examine creator handles, screenshot timestamps, and external URL legitimacy before recording approvals.
+        {/* Keyboard Shortcuts Hint Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '0.2rem' }}>Shortcuts:</span>
+          <span className="kbd-badge" title="Press A to approve selected submission"><kbd>A</kbd> Approve</span>
+          <span className="kbd-badge" title="Press R to reject selected submission"><kbd>R</kbd> Reject</span>
+          <span className="kbd-badge" title="Press N to navigate to next submission"><kbd>N</kbd> Next</span>
+          <span className="kbd-badge" title="Press P to navigate to previous submission"><kbd>P</kbd> Prev</span>
         </div>
       </div>
 
-      {/* ── Success / Error Banners ── */}
-      {successMessage && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: '0.85rem 1.25rem',
-            borderLeft: '4px solid var(--status-success)',
-            color: 'var(--status-success)',
-            fontSize: '0.9rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <span>✓ {successMessage}</span>
-          <button type="button" onClick={() => setSuccessMessage(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>✕</button>
+      {/* Global Alerts */}
+      {actionSuccess && (
+        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--status-success)', color: 'var(--status-success)', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem' }}>
+          <span>✓</span>
+          <span>{actionSuccess}</span>
         </div>
       )}
 
-      {errorMessage && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: '0.85rem 1.25rem',
-            borderLeft: '4px solid var(--status-error)',
-            color: 'var(--status-error)',
-            fontSize: '0.9rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <span>⚠️ {errorMessage}</span>
-          <button type="button" onClick={loadReviews} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.25rem 0.6rem' }}>Retry</button>
+      {actionError && (
+        <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', borderLeft: '4px solid var(--status-error)', color: 'var(--status-error)', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem' }}>
+          <span>⚠️</span>
+          <span>{actionError}</span>
         </div>
       )}
 
-      {/* ── Search & Multi-Filter Control Toolbar ── */}
-      <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+      {/* ── Main Two-Column Split Workspace ── */}
+      <div className="review-split-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 380px) 1fr', gap: '1.25rem', alignItems: 'start' }}>
+        {/* ==================================================================
+            LEFT COLUMN: Submission Queue & Filters
+            ================================================================== */}
+        <div className="glass-panel queue-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
+          {/* Queue Header & Counter */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-highlight)' }}>Queue</span>
+              <span className="badge badge-outline" style={{ fontSize: '0.72rem' }}>
+                {pagination.totalCount} items
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={loadQueue}
+              disabled={isQueueLoading}
+              title="Refresh queue"
+              style={{ padding: '0.3rem 0.65rem', fontSize: '0.78rem' }}
+            >
+              {isQueueLoading ? '⏳ Refreshing' : '🔄 Refresh'}
+            </button>
+          </div>
+
           {/* Search Box */}
-          <div style={{ position: 'relative', flex: '1 1 280px', minWidth: '240px' }}>
-            <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.6 }}>🔍</span>
+          <div style={{ position: 'relative' }}>
             <input
-              type="text"
+              type="search"
+              placeholder="Search creator, URL, note..."
               className="input-field"
               value={search}
               onChange={handleSearchChange}
-              placeholder="Search creator name, email, URL, or notes..."
-              style={{ width: '100%', paddingLeft: '2.4rem', paddingRight: search ? '2.2rem' : '1rem', fontSize: '0.88rem' }}
+              style={{ width: '100%', paddingLeft: '2rem', fontSize: '0.84rem', minHeight: '38px' }}
             />
+            <span style={{ position: 'absolute', left: '0.7rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.85rem' }}>🔍</span>
             {search && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                style={{
-                  position: 'absolute',
-                  right: '0.65rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
-                title="Clear search"
+                style={{ position: 'absolute', right: '0.65rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
                 ✕
               </button>
             )}
           </div>
 
-          {/* Quick Active Filter Pill */}
-          {activeFilterCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary-light)', fontSize: '0.78rem' }}>
-                {activeFilterCount} active filter{activeFilterCount > 1 ? 's' : ''}
+          {/* Status Filter Tabs */}
+          <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+            {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((s) => {
+              const isActive = status === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => { setStatus(s); setPage(1); }}
+                  style={{
+                    flex: 1,
+                    padding: '0.35rem 0.25rem',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    background: isActive ? (s === 'PENDING' ? 'var(--status-warning)' : s === 'APPROVED' ? 'var(--status-success)' : s === 'REJECTED' ? 'var(--status-error)' : 'var(--primary)') : 'transparent',
+                    color: isActive ? '#0d1117' : 'var(--text-secondary)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Platform Filters */}
+          <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+            {['ALL', 'INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map((p) => {
+              const isSelected = platform === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => { setPlatform(p); setPage(1); }}
+                  className={`badge ${isSelected ? 'badge-primary' : 'badge-outline'}`}
+                  style={{ cursor: 'pointer', fontSize: '0.72rem', padding: '0.25rem 0.55rem', border: isSelected ? 'none' : '1px solid var(--border-subtle)' }}
+                >
+                  {p === 'ALL' ? 'All Networks' : p}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Queue Items List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            {isQueueLoading && submissions.length === 0 ? (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                <div className="status-dot checking" style={{ width: '12px', height: '12px', margin: '0 auto 0.75rem auto' }} />
+                Loading queue submissions...
+              </div>
+            ) : queueError ? (
+              <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--status-error)', fontSize: '0.85rem' }}>
+                ⚠️ {queueError}
+              </div>
+            ) : submissions.length === 0 ? (
+              <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem', opacity: 0.5 }}>📭</span>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>No Submissions Found</div>
+                <div style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>Try clearing filters or changing review status.</div>
+              </div>
+            ) : (
+              submissions.map((sub) => {
+                const isSelected = sub.id === selectedSubId;
+                const pMeta = PLATFORM_CONFIG[sub.platform] || { icon: '🌐', name: sub.platform, color: 'var(--primary)' };
+                const sMeta = STATUS_CONFIG[sub.status] || STATUS_CONFIG.PENDING;
+
+                return (
+                  <div
+                    key={sub.id}
+                    onClick={() => setSelectedSubId(sub.id)}
+                    style={{
+                      padding: '0.85rem 0.95rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                      border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                      boxShadow: isSelected ? '0 0 16px rgba(59, 130, 246, 0.2)' : 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.45rem',
+                      transition: 'all 0.15s ease',
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Header Row: Creator name & status */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: isSelected ? 'var(--text-highlight)' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {sub.userName || sub.user?.name || 'Creator'}
+                      </span>
+                      <span className={`badge ${sMeta.badgeClass}`} style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem' }}>
+                        {sMeta.icon} {sub.status}
+                      </span>
+                    </div>
+
+                    {/* Metadata Row: Platform + Action Type + Time */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>{pMeta.icon}</span>
+                        <strong style={{ color: pMeta.color }}>{pMeta.name}</strong>
+                        <span>•</span>
+                        <span>{sub.actionType}</span>
+                      </span>
+                      <span>{timeAgo(sub.createdAt)}</span>
+                    </div>
+
+                    {/* URL Snippet */}
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.85 }}>
+                      🔗 {sub.postUrl}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Queue Pagination */}
+          {pagination.totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                style={{ padding: '0.3rem 0.65rem', fontSize: '0.75rem' }}
+              >
+                ◀ Prev
+              </button>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Page {pagination.page} of {pagination.totalPages}
               </span>
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={handleResetFilters}
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.7rem' }}
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage(p => p + 1)}
+                style={{ padding: '0.3rem 0.65rem', fontSize: '0.75rem' }}
               >
-                Reset All
+                Next ▶
               </button>
             </div>
           )}
         </div>
 
-        {/* Filter Dropdowns Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
-          {/* Platform Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-              Platform
-            </label>
-            <select
-              className="input-field"
-              value={platform}
-              onChange={(e) => { setPlatform(e.target.value); setPage(1); }}
-              style={{ width: '100%', fontSize: '0.85rem', padding: '0.45rem 0.65rem' }}
-            >
-              <option value="ALL">🌐 All Platforms</option>
-              <option value="INSTAGRAM">📸 Instagram</option>
-              <option value="LINKEDIN">💼 LinkedIn</option>
-              <option value="FACEBOOK">👥 Facebook</option>
-            </select>
-          </div>
+        {/* ==================================================================
+            RIGHT COLUMN: Selected Submission Details & Human Verification Stage
+            ================================================================== */}
+        <div className="review-stage-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {!selectedSubId ? (
+            <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '3rem', opacity: 0.4 }}>👈</span>
+              <h3 style={{ margin: 0, color: 'var(--text-highlight)' }}>Select a Submission to Review</h3>
+              <p style={{ margin: 0, color: 'var(--text-secondary)', maxWidth: '40ch', fontSize: '0.9rem' }}>
+                Pick an activity submission from the queue on the left to inspect evidence, check creator history, and record your verification verdict.
+              </p>
+            </div>
+          ) : isDossierLoading && !activeSub ? (
+            <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+              <div className="status-dot checking" style={{ width: '16px', height: '16px', margin: '0 auto 1rem auto' }} />
+              <h4 style={{ margin: 0, color: 'var(--text-highlight)' }}>Loading Verification Dossier…</h4>
+              <p style={{ margin: '0.4rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Retrieving screenshot proof, audit timeline, and creator track record</p>
+            </div>
+          ) : dossierError ? (
+            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', borderLeft: '4px solid var(--status-error)' }}>
+              <h4 style={{ margin: 0, color: 'var(--status-error)' }}>⚠️ Unable to load submission details</h4>
+              <p style={{ margin: '0.5rem 0 1rem 0', color: 'var(--text-secondary)' }}>{dossierError}</p>
+              <button type="button" className="btn-secondary" onClick={() => loadDossier(selectedSubId)}>Try Again</button>
+            </div>
+          ) : activeSub ? (
+            <>
+              {/* ── Stage Action Bar ── */}
+              <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderTop: '3px solid var(--primary)' }}>
+                {/* Prev / Next Queue Nav */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleSelectPrevious}
+                    disabled={!hasPrevious}
+                    title="Previous Submission in queue (Hotkey: P)"
+                    style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    <span>◀</span>
+                    <span>Prev</span>
+                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>P</kbd>
+                  </button>
 
-          {/* Action Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-              Action Type
-            </label>
-            <select
-              className="input-field"
-              value={actionType}
-              onChange={(e) => { setActionType(e.target.value); setPage(1); }}
-              style={{ width: '100%', fontSize: '0.85rem', padding: '0.45rem 0.65rem' }}
-            >
-              <option value="ALL">All Actions</option>
-              <option value="LIKE">❤️ Like / Upvote</option>
-              <option value="COMMENT">💬 Comment</option>
-              <option value="STORY">📱 24-hr Story</option>
-            </select>
-          </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0 0.25rem' }}>
+                    {currentIndex >= 0 ? `${currentIndex + 1} of ${submissions.length}` : ''}
+                  </span>
 
-          {/* Status Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-              Status
-            </label>
-            <select
-              className="input-field"
-              value={status}
-              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-              style={{ width: '100%', fontSize: '0.85rem', padding: '0.45rem 0.65rem' }}
-            >
-              <option value="PENDING">⏳ Pending Review</option>
-              <option value="APPROVED">✓ Approved</option>
-              <option value="REJECTED">✕ Rejected</option>
-              <option value="ALL">All Statuses</option>
-            </select>
-          </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleSelectNext}
+                    disabled={!hasNext}
+                    title="Next Submission in queue (Hotkey: N)"
+                    style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    <span>Next</span>
+                    <span>▶</span>
+                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>N</kbd>
+                  </button>
 
-          {/* Date Range Filter */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-              Submitted Time
-            </label>
-            <select
-              className="input-field"
-              value={dateRange}
-              onChange={(e) => { setDateRange(e.target.value); setPage(1); }}
-              style={{ width: '100%', fontSize: '0.85rem', padding: '0.45rem 0.65rem' }}
-            >
-              <option value="ALL">All Time</option>
-              <option value="TODAY">📅 Today Only</option>
-              <option value="7DAYS">Past 7 Days</option>
-              <option value="30DAYS">Past 30 Days</option>
-            </select>
-          </div>
-        </div>
-      </div>
+                  {/* Current Status Pill */}
+                  <span className={`badge ${statusMeta.badgeClass}`} style={{ marginLeft: '0.5rem', fontSize: '0.78rem', padding: '0.3rem 0.65rem' }}>
+                    {statusMeta.icon} {activeSub.status}
+                  </span>
+                </div>
 
-      {/* ── Submissions Review Queue Table / Cards ── */}
-      <div className="glass-panel" style={{ padding: '1.25rem', overflow: 'hidden' }}>
-        {isLoading ? (
-          <div style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="skeleton" style={{ height: '70px', borderRadius: 'var(--radius-sm)' }} />
-            ))}
-          </div>
-        ) : submissions.length === 0 ? (
-          <div style={{ padding: '3.5rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' }}>
-            <span style={{ fontSize: '3rem', opacity: 0.6 }}>🎉</span>
-            <h3 style={{ margin: 0, color: 'var(--text-highlight)' }}>No Submissions Found</h3>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '42ch' }}>
-              {activeFilterCount > 0
-                ? 'No submissions match your active filter criteria. Try adjusting or clearing your filters.'
-                : 'All submissions have been verified and processed! The moderation queue is clear.'}
-            </p>
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleResetFilters}
-                style={{ marginTop: '0.5rem', padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
-              >
-                Clear All Filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="table-responsive-wrapper" style={{ margin: 0, border: 'none', background: 'transparent' }}>
-            <table className="portal-table" style={{ minWidth: '820px' }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: '0.85rem 1rem' }}>Platform &amp; Action</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Creator</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Target Post</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>Screenshot Proof</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Submitted</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Status</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((sub) => {
-                  const cfg = STATUS_CONFIG[sub.status] || STATUS_CONFIG.PENDING;
-                  const creatorName = sub.userName || sub.user?.name || 'Creator';
-                  const creatorEmail = sub.userEmail || sub.user?.email || '';
+                {/* Primary Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {/* Request Clarification */}
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={openClarificationModal}
+                    title="Request clarification or additional proof from creator"
+                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <span>💬</span>
+                    <span>Request Clarification</span>
+                  </button>
 
-                  return (
-                    <tr
-                      key={sub.id}
-                      style={{
-                        borderBottom: '1px solid var(--border-subtle)',
-                        transition: 'background 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      {/* Platform & Action */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                          <span style={{ fontSize: '1.4rem' }}>{PLATFORM_ICONS[sub.platform] || '🌐'}</span>
+                  {/* Add Note */}
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={openNoteModal}
+                    title="Add an internal moderation note (private to staff)"
+                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <span>📝</span>
+                    <span>Add Note</span>
+                  </button>
+
+                  {/* Reject Button (Destructive Confirmation) */}
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => openConfirmModal('REJECT')}
+                    disabled={activeSub.status === 'REJECTED' || activeSub.status === 'APPROVED'}
+                    title={activeSub.status !== 'PENDING' ? 'Submission already verified' : 'Reject submission (Hotkey: R)'}
+                    style={{
+                      padding: '0.45rem 1rem',
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      opacity: activeSub.status !== 'PENDING' ? 0.5 : 1,
+                      cursor: activeSub.status !== 'PENDING' ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <span>✕</span>
+                    <span>Reject</span>
+                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(0,0,0,0.2)', borderRadius: 3 }}>R</kbd>
+                  </button>
+
+                  {/* Approve Button */}
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => openConfirmModal('APPROVE')}
+                    disabled={activeSub.status === 'APPROVED' || activeSub.status === 'REJECTED'}
+                    title={activeSub.status !== 'PENDING' ? 'Submission already verified' : 'Approve submission (Hotkey: A)'}
+                    style={{
+                      padding: '0.45rem 1.15rem',
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      borderColor: '#10b981',
+                      opacity: activeSub.status !== 'PENDING' ? 0.5 : 1,
+                      cursor: activeSub.status !== 'PENDING' ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <span>✓</span>
+                    <span>Approve</span>
+                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(0,0,0,0.2)', borderRadius: 3 }}>A</kbd>
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Human Verification Notice ── */}
+              <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                <span style={{ fontSize: '1.1rem' }}>🛡️</span>
+                <span>
+                  <strong>Human Evidence Verification:</strong> Administrator decisions reflect manual verification of submitted proof. The portal does not claim automated platform scraping. Verify evidence screenshot authenticity manually.
+                </span>
+              </div>
+
+              {/* ── Main Details Grid (Evidence vs Intelligence) ── */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) minmax(300px, 0.8fr)', gap: '1.25rem' }}>
+                {/* ─── Evidence & Submission Column ─── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Submission Evidence Card */}
+                  <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-highlight)' }}>
+                        Activity Evidence &amp; Proof
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        ID: <code style={{ color: 'var(--text-secondary)' }}>{activeSub.id}</code>
+                      </span>
+                    </div>
+
+                    {/* Target Platform & Official Account */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform &amp; Action</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                          <span style={{ fontSize: '1.25rem' }}>{platformMeta.icon}</span>
                           <div>
-                            <div style={{ fontWeight: 700, color: 'var(--text-highlight)' }}>{sub.platform}</div>
-                            <span
-                              className="badge"
-                              style={{
-                                fontSize: '0.68rem',
-                                padding: '0.1rem 0.4rem',
-                                background: 'rgba(99, 102, 241, 0.15)',
-                                color: '#a5b4fc',
-                              }}
-                            >
-                              {sub.actionType}
+                            <strong style={{ color: platformMeta.color, fontSize: '0.95rem' }}>{platformMeta.name}</strong>
+                            <span className="badge badge-outline" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>
+                              {activeSub.actionType}
                             </span>
                           </div>
                         </div>
-                      </td>
-
-                      {/* Creator Details */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--text-highlight)' }}>{creatorName}</div>
-                        {creatorEmail && (
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{creatorEmail}</div>
-                        )}
-                      </td>
-
-                      {/* Post URL & Description */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle', maxWidth: '240px' }}>
-                        <a
-                          href={sub.postUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: 'var(--primary-light)',
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '220px',
-                            fontWeight: 500,
-                          }}
-                          title={`Open ${sub.postUrl} in new tab`}
-                        >
-                          <span>🔗</span> {sub.postUrl}
-                        </a>
-                        {sub.description && (
-                          <div
-                            style={{
-                              fontSize: '0.76rem',
-                              color: 'var(--text-secondary)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              marginTop: '0.2rem',
-                            }}
-                            title={sub.description}
-                          >
-                            {sub.description}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Screenshot Thumbnail */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle', textAlign: 'center' }}>
-                        {sub.screenshotUrl ? (
-                          <div
-                            style={{
-                              width: '46px',
-                              height: '46px',
-                              borderRadius: '6px',
-                              overflow: 'hidden',
-                              display: 'inline-block',
-                              border: '1px solid var(--border-subtle)',
-                              cursor: 'pointer',
-                            }}
-                            title="Click to zoom screenshot evidence"
-                          >
-                            <ScreenshotImage
-                              screenshotUrl={sub.screenshotUrl}
-                              thumbnailStyle={{ width: '46px', height: '46px', objectFit: 'cover' }}
-                            />
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No proof</span>
-                        )}
-                      </td>
-
-                      {/* Submitted Date */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <div style={{ fontWeight: 500, color: 'var(--text-highlight)' }}>{timeAgo(sub.createdAt)}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          {new Date(sub.createdAt).toLocaleDateString()}
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                          {ACTION_DESCRIPTIONS[activeSub.actionType]}
                         </div>
-                      </td>
-
-                      {/* Status */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <span className={`badge ${cfg.badgeClass}`} style={{ fontSize: '0.7rem', fontWeight: 700 }}>
-                          {cfg.icon} {cfg.label}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle', textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          onClick={() => openDetailsModal(sub.id)}
-                          style={{
-                            padding: '0.45rem 0.9rem',
-                            fontSize: '0.82rem',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          🔍 View Details
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* ── Pagination Controls ── */}
-        {!isLoading && submissions.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem',
-              paddingTop: '1.25rem',
-              marginTop: '1rem',
-              borderTop: '1px solid var(--border-subtle)',
-            }}
-          >
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of{' '}
-              <strong>{pagination.totalCount}</strong> submissions
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                disabled={pagination.page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
-              >
-                ← Previous
-              </button>
-
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', padding: '0 0.5rem' }}>
-                Page {pagination.page} of {pagination.totalPages || 1}
-              </span>
-
-              <button
-                type="button"
-                className="btn-secondary"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
-              >
-                Next →
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ====================================================================
-          DETAILED SUBMISSION VERIFICATION MODAL ("View Details")
-          ==================================================================== */}
-      {selectedSubId && (
-        <div
-          className="portal-modal-backdrop"
-          onClick={closeDetailsModal}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Verification Dossier"
-        >
-          <div
-            className="portal-modal-card"
-            style={{
-              maxWidth: '850px',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="portal-modal-header">
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '1.3rem' }}>{dossier ? PLATFORM_ICONS[dossier.submission.platform] : '🔍'}</span>
-                  <h3 style={{ margin: 0, color: 'var(--text-highlight)', fontSize: '1.25rem' }}>
-                    Verification Dossier
-                  </h3>
-                  {dossier && (
-                    <span className={`badge ${STATUS_CONFIG[dossier.submission.status]?.badgeClass || 'badge-warning'}`}>
-                      {dossier.submission.status}
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Submission ID: {selectedSubId}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="portal-modal-close-btn"
-                onClick={closeDetailsModal}
-                title="Close (Esc)"
-                aria-label="Close dossier"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            {isDossierLoading ? (
-              <div style={{ padding: '3rem 1rem', textAlign: 'center' }}>
-                <div className="status-dot checking" style={{ width: '16px', height: '16px', margin: '0 auto 1rem auto' }} />
-                <div>Loading complete submission dossier…</div>
-              </div>
-            ) : dossierError ? (
-              <div style={{ padding: '2rem 1rem', color: 'var(--status-error)', textAlign: 'center' }}>
-                ⚠️ {dossierError}
-              </div>
-            ) : dossier ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-                {/* 2-Column Details Layout */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-
-                  {/* Left Column: Proof & Submission Info */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {/* Evidence Screenshot */}
-                    <div className="glass-panel" style={{ padding: '1rem', background: 'rgba(0,0,0,0.3)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-highlight)' }}>
-                          📸 Uploaded Screenshot Evidence:
-                        </strong>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Click to zoom</span>
                       </div>
 
-                      {dossier.submission.screenshotUrl ? (
-                        <ScreenshotImage
-                          screenshotUrl={dossier.submission.screenshotUrl}
-                          alt="Submission Evidence Proof"
-                          thumbnailStyle={{
-                            maxHeight: '340px',
-                            width: '100%',
-                            objectFit: 'contain',
-                            borderRadius: 'var(--radius-sm)',
-                            background: '#07090e',
-                          }}
-                        />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target Official Account</div>
+                        <div style={{ marginTop: '0.3rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-highlight)' }}>
+                          {officialAcc?.name || officialAcc?.handle || 'Official Brand Account'}
+                        </div>
+                        {officialAcc?.handle && (
+                          <div style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>
+                            {officialAcc.handle.startsWith('@') ? officialAcc.handle : `@${officialAcc.handle}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Submitted Post URL */}
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
+                        Submitted URL / Permaproof
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.25)', padding: '0.5rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                        <span style={{ fontSize: '0.85rem' }}>🔗</span>
+                        <a
+                          href={activeSub.postUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ flex: 1, fontSize: '0.84rem', color: 'var(--primary)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        >
+                          {activeSub.postUrl}
+                        </a>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => handleCopyUrl(activeSub.postUrl)}
+                          style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }}
+                        >
+                          {copiedUrl ? '✓ Copied' : 'Copy'}
+                        </button>
+                        <a
+                          href={activeSub.postUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-primary"
+                          style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', textDecoration: 'none' }}
+                        >
+                          Open ↗
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Creator's Description / Notes */}
+                    {activeSub.description && (
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
+                          Creator Notes
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontSize: '0.85rem', color: 'var(--text-primary)', fontStyle: 'italic' }}>
+                          "{activeSub.description}"
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Screenshot Evidence Viewer */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Evidence Screenshot Proof (Click image to expand lightbox)
+                        </span>
+                        {activeSub.screenshotUrl && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
+                            🔍 Fullscreen Lightbox
+                          </span>
+                        )}
+                      </div>
+
+                      {activeSub.screenshotUrl ? (
+                        <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.3)', maxHeight: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ScreenshotImage
+                            screenshotUrl={activeSub.screenshotUrl}
+                            alt={`Evidence for ${activeSub.platform} submission`}
+                            showLightbox={true}
+                            thumbnailStyle={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }}
+                          />
+                        </div>
                       ) : (
-                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--status-error)', fontSize: '0.85rem' }}>
-                          ⚠️ No screenshot evidence provided.
+                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--status-error)', background: 'rgba(239,68,68,0.05)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(239,68,68,0.3)' }}>
+                          ⚠️ No screenshot image attached to this submission.
                         </div>
                       )}
                     </div>
 
-                    {/* Target Post URL */}
-                    <div className="glass-panel" style={{ padding: '1rem' }}>
-                      <strong style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
-                        Target Social Media Link
-                      </strong>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--primary-light)', wordBreak: 'break-all' }}>
-                          {dossier.submission.postUrl}
-                        </span>
-                        <a
-                          href={dossier.submission.postUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-secondary"
-                          style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', whiteSpace: 'nowrap' }}
-                        >
-                          Visit ↗
-                        </a>
+                    {/* Timestamps */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem' }}>
+                      <span>Submitted: {formatDate(activeSub.createdAt)}</span>
+                      <span>Last Activity: {formatDate(activeSub.updatedAt)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Intelligence, Checklist & Audit Trail Column ─── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Creator Profile & Trust Intelligence Card */}
+                  <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Creator Trust &amp; Metrics
+                      </span>
+                      <span className="badge badge-user" style={{ fontSize: '0.68rem' }}>
+                        {creator?.status || 'ACTIVE'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent-cyan) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>
+                        {(creator?.name || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-highlight)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {creator?.name || 'Creator'}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {creator?.email || ''}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Creator Description Notes */}
-                    {dossier.submission.description && (
-                      <div className="glass-panel" style={{ padding: '1rem' }}>
-                        <strong style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
-                          Creator Description Note
-                        </strong>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                          "{dossier.submission.description}"
-                        </div>
+                    {/* Historical Trust Metric Pills */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.65rem 0.5rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Total</div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-highlight)' }}>{creator?.stats?.total ?? 0}</div>
                       </div>
-                    )}
+                      <div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--status-success)' }}>Approved</div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--status-success)' }}>{creator?.stats?.approved ?? 0}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--status-error)' }}>Rejected</div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--status-error)' }}>{creator?.stats?.rejected ?? 0}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)' }}>Trust</div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-cyan)' }}>{creator?.stats?.trustScore ?? 100}%</div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Right Column: Creator Dossier & Checklist & Verdict Form */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-                    {/* Creator Profile & Trust Score */}
-                    <div className="glass-panel" style={{ padding: '1rem' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                        Creator Verification History
+                  {/* Verification Checklist */}
+                  <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-highlight)', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
+                      Moderation Verification Checklist
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <span>👤</span>
+                        <div><strong>Creator Identity:</strong> Confirm visible profile matches creator credentials.</div>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-highlight)' }}>
-                            {dossier.creator.name}
-                          </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            {dossier.creator.email}
-                          </div>
-                        </div>
-                        <span className="badge badge-user" style={{ fontSize: '0.72rem' }}>
-                          {dossier.creator.status}
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <span>⏱️</span>
+                        <div><strong>Active Window:</strong> Check that post date falls within verification campaign dates.</div>
                       </div>
-
-                      {/* Creator Metrics */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total</div>
-                          <div style={{ fontWeight: 700, color: 'var(--text-highlight)' }}>{dossier.creator.stats.total}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--status-success)' }}>Approved</div>
-                          <div style={{ fontWeight: 700, color: 'var(--status-success)' }}>{dossier.creator.stats.approved}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--primary-light)' }}>Trust Score</div>
-                          <div style={{ fontWeight: 700, color: 'var(--primary-light)' }}>{dossier.creator.stats.trustScore}%</div>
-                        </div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <span>🎯</span>
+                        <div><strong>Action Consistency:</strong> Check for visible {activeSub.actionType} engagement.</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <span>🔍</span>
+                        <div><strong>Authenticity:</strong> Check screenshot for uncropped UI and absence of edits.</div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Human Verification Checklist */}
-                    <div className="glass-panel" style={{ padding: '1rem', borderLeft: '3px solid var(--role-admin)' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                        Human Verification Checklist
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={checklistState.handleMatches}
-                            onChange={(e) => setChecklistState(s => ({ ...s, handleMatches: e.target.checked }))}
-                            style={{ marginTop: '0.15rem' }}
-                          />
-                          <span>Handle / profile name in screenshot matches registered creator.</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={checklistState.timestampValid}
-                            onChange={(e) => setChecklistState(s => ({ ...s, timestampValid: e.target.checked }))}
-                            style={{ marginTop: '0.15rem' }}
-                          />
-                          <span>Timestamp in screenshot is within active campaign window.</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={checklistState.actionConsistent}
-                            onChange={(e) => setChecklistState(s => ({ ...s, actionConsistent: e.target.checked }))}
-                            style={{ marginTop: '0.15rem' }}
-                          />
-                          <span>Evidence explicitly demonstrates [{dossier.submission.actionType}] action.</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={checklistState.evidenceAuthentic}
-                            onChange={(e) => setChecklistState(s => ({ ...s, evidenceAuthentic: e.target.checked }))}
-                            style={{ marginTop: '0.15rem' }}
-                          />
-                          <span>Evidence appears genuine and uncropped; no tampering signs.</span>
-                        </label>
-                      </div>
+                  {/* Previous Reviews & Decision History */}
+                  <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Review Decision History
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {(dossier?.reviewHistory || []).length} recorded
+                      </span>
                     </div>
 
-                    {/* In-dossier Feedback Alert */}
-                    {dossierFeedback && (
-                      <div
-                        style={{
-                          padding: '0.85rem 1rem',
-                          borderRadius: 'var(--radius-sm)',
-                          borderLeft: `4px solid ${dossierFeedback.type === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`,
-                          background: dossierFeedback.type === 'APPROVE' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                          color: dossierFeedback.type === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)',
-                          fontSize: '0.88rem',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '0.5rem',
-                        }}
-                      >
-                        <span>{dossierFeedback.type === 'APPROVE' ? '✓' : '✕'} {dossierFeedback.message}</span>
-                        <button
-                          type="button"
-                          onClick={() => setDossierFeedback(null)}
-                          style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem' }}
-                        >
-                          ✕
-                        </button>
+                    {(!dossier?.reviewHistory || dossier.reviewHistory.length === 0) ? (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                        No moderation decisions recorded yet. Status is PENDING.
                       </div>
-                    )}
-
-                    {/* Verification Decision Action Area */}
-                    <div className="glass-panel" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.02)' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                        Moderator Verification Decision
-                      </div>
-
-                      {dossier.submission.status !== 'PENDING' ? (
-                        <div
-                          style={{
-                            padding: '1rem',
-                            borderRadius: 'var(--radius-sm)',
-                            background: dossier.submission.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                            border: `1px solid ${dossier.submission.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.4rem',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: dossier.submission.status === 'APPROVED' ? 'var(--status-success)' : 'var(--status-error)', fontSize: '0.95rem' }}>
-                            <span>{dossier.submission.status === 'APPROVED' ? '✓' : '✕'}</span>
-                            <span>Submission is {dossier.submission.status}</span>
-                          </div>
-                          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                            This submission has already been finalized by a moderator. Re-verifications or invalid state transitions are locked to preserve audit integrity.
-                          </p>
-                        </div>
-                      ) : (
-                        <div>
-                          <p style={{ margin: '0 0 1rem 0', fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                            Verify evidence against campaign requirements. Selecting an action will open a confirmation prompt to record your decision and dispatch creator notifications.
-                          </p>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-                            {/* Approve Button */}
-                            <button
-                              type="button"
-                              id="btn-approve-action"
-                              onClick={() => openConfirmModal('APPROVE')}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.45rem',
-                                padding: '0.75rem 1rem',
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: 'var(--radius-md)',
-                                fontWeight: 700,
-                                fontSize: '0.88rem',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
-                                transition: 'all 0.2s ease',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                            >
-                              <span>✓</span> Approve Submission
-                            </button>
-
-                            {/* Reject Button */}
-                            <button
-                              type="button"
-                              id="btn-reject-action"
-                              onClick={() => openConfirmModal('REJECT')}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.45rem',
-                                padding: '0.75rem 1rem',
-                                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: 'var(--radius-md)',
-                                fontWeight: 700,
-                                fontSize: '0.88rem',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.35)',
-                                transition: 'all 0.2s ease',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                            >
-                              <span>✕</span> Reject Submission
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Past Review History if already reviewed */}
-                    {dossier.submission.reviews && dossier.submission.reviews.length > 0 && (
-                      <div className="glass-panel" style={{ padding: '1rem' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                          Prior Review History
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {dossier.submission.reviews.map((r) => (
-                            <div key={r.id} style={{ fontSize: '0.8rem', padding: '0.6rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
-                                <span style={{ color: r.status === 'APPROVED' ? 'var(--status-success)' : 'var(--status-error)' }}>
-                                  {r.status === 'APPROVED' ? '✓ APPROVED' : '✕ REJECTED'} by {r.admin?.name || r.adminName || 'Admin Moderator'}
-                                </span>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
-                                  {formatDate(r.createdAt)}
-                                </span>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                        {dossier.reviewHistory.map((rev) => {
+                          const rMeta = STATUS_CONFIG[rev.status] || STATUS_CONFIG.PENDING;
+                          return (
+                            <div key={rev.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${rMeta.color}`, fontSize: '0.8rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                <span style={{ fontWeight: 700, color: rMeta.color }}>{rMeta.icon} {rev.status}</span>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{timeAgo(rev.createdAt)}</span>
                               </div>
-                              {r.feedback && (
-                                <div style={{ color: 'var(--text-secondary)', marginTop: '0.35rem', fontStyle: 'italic', lineHeight: 1.4 }}>
-                                  "{r.feedback}"
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                                Moderator: <strong>{rev.admin?.name || rev.adminName || 'Admin'}</strong>
+                              </div>
+                              {rev.feedback && (
+                                <div style={{ marginTop: '0.35rem', color: 'var(--text-primary)', fontStyle: 'italic' }}>
+                                  "{rev.feedback}"
                                 </div>
                               )}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clarification Requests Timeline */}
+                  {dossier?.clarifications && dossier.clarifications.length > 0 && (
+                    <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-highlight)', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
+                        Clarification Requests Sent ({dossier.clarifications.length})
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {dossier.clarifications.map((c) => (
+                          <div key={c.id} style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                              <span>Sent by: <strong>{c.admin?.name || c.adminName || 'Admin'}</strong></span>
+                              <span>{timeAgo(c.createdAt)}</span>
+                            </div>
+                            <div style={{ marginTop: '0.35rem', color: 'var(--text-primary)' }}>
+                              💬 {c.message}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Internal Review Notes (Admin Only) */}
+                  <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Internal Review Notes (Staff Only)
+                      </span>
+                      <span className="badge badge-admin" style={{ fontSize: '0.65rem' }}>PRIVATE</span>
+                    </div>
+
+                    {/* Existing Notes */}
+                    {(!dossier?.internalNotes || dossier.internalNotes.length === 0) ? (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                        No internal notes attached yet.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto' }}>
+                        {dossier.internalNotes.map((n) => (
+                          <div key={n.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontSize: '0.8rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                              <span>{n.admin?.name || n.adminName || 'Admin'}</span>
+                              <span>{timeAgo(n.createdAt)}</span>
+                            </div>
+                            <div style={{ color: 'var(--text-primary)' }}>{n.note}</div>
+                          </div>
+                        ))}
                       </div>
                     )}
 
+                    {/* Inline Quick Note Composer */}
+                    <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.3rem' }}>
+                      <input
+                        type="text"
+                        placeholder="Add quick internal note..."
+                        className="input-field"
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newNoteText.trim()) {
+                            e.preventDefault();
+                            handleAddInternalNote(newNoteText);
+                          }
+                        }}
+                        style={{ flex: 1, fontSize: '0.8rem', minHeight: '34px' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => handleAddInternalNote(newNoteText)}
+                        disabled={isSavingNote || !newNoteText.trim()}
+                        style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem' }}
+                      >
+                        {isSavingNote ? 'Saving…' : 'Add Note'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-
               </div>
-            ) : null}
-          </div>
+            </>
+          ) : null}
         </div>
-      )}
+      </div>
 
       {/* ====================================================================
-          CONFIRMATION MODAL (Approve / Reject Dialog)
+          MODALS & DIALOGS
           ==================================================================== */}
+
+      {/* ── 1. APPROVE / REJECT CONFIRMATION DIALOG (Destructive for Reject) ── */}
       {confirmModal.isOpen && (
-        <div
-          className="portal-modal-backdrop"
-          onClick={() => !confirmModal.isSubmitting && closeConfirmModal()}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm Decision"
-        >
-          <div
-            className="portal-modal-card"
-            style={{
-              maxWidth: '520px',
-              border: confirmModal.action === 'APPROVE'
-                ? '1px solid rgba(16, 185, 129, 0.4)'
-                : '1px solid rgba(239, 68, 68, 0.4)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Confirmation Header */}
-            <div className="portal-modal-header">
-              <div
-                style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.35rem',
-                  fontWeight: 800,
-                  background: confirmModal.action === 'APPROVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  color: confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)',
-                  border: `1px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`,
-                  flexShrink: 0,
-                }}
-              >
-                {confirmModal.action === 'APPROVE' ? '✓' : '✕'}
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
-                  {confirmModal.action === 'APPROVE' ? 'Confirm Submission Approval' : 'Confirm Submission Rejection'}
-                </h3>
-                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  {confirmModal.action === 'APPROVE'
-                    ? 'Verify this submission and record your approval.'
-                    : 'Reject this submission and provide required feedback for the creator.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="portal-modal-close-btn"
-                onClick={closeConfirmModal}
-                disabled={confirmModal.isSubmitting}
-                aria-label="Close modal"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="portal-modal-body">
-              {/* Submission Context Summary Card */}
-            <div
-              style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.85rem 1rem',
-                marginBottom: '1.25rem',
-                fontSize: '0.82rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.45rem',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Creator:</span>
-                <strong style={{ color: 'var(--text-highlight)' }}>
-                  {dossier?.creator?.name} ({dossier?.creator?.email})
-                </strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Platform &amp; Action:</span>
-                <span style={{ fontWeight: 600 }}>{dossier?.submission?.platform} • {dossier?.submission?.actionType}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-                <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>Target URL:</span>
-                <span style={{ color: 'var(--primary-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>
-                  {dossier?.submission?.postUrl}
+        <div className="modal-backdrop" onClick={closeConfirmModal}>
+          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '90%', padding: '1.75rem', borderLeft: `4px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>
+                  {confirmModal.action === 'APPROVE' ? '✓' : '⚠️'}
                 </span>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                  Confirm {confirmModal.action === 'APPROVE' ? 'Approval' : 'Rejection'}
+                </h3>
               </div>
+              <button type="button" onClick={closeConfirmModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
             </div>
 
-            {/* Error Message inside Modal */}
+            {confirmModal.action === 'REJECT' && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--status-error)', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                <strong>Destructive Action:</strong> Rejections are final and notify the creator immediately. A clear, specific explanation is mandatory so the creator understands what was invalid.
+              </div>
+            )}
+
+            {/* Quick Presets for Rejection */}
+            {confirmModal.action === 'REJECT' && (
+              <div style={{ marginBottom: '0.85rem' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.35rem' }}>Quick Reasons:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  {REJECTION_PRESETS.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="badge badge-outline"
+                      onClick={() => setConfirmModal(prev => ({ ...prev, feedback: preset }))}
+                      style={{ cursor: 'pointer', fontSize: '0.7rem', padding: '0.2rem 0.5rem', textAlign: 'left' }}
+                    >
+                      {preset.substring(0, 42)}…
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {confirmModal.action === 'APPROVE' ? 'Approval Notes (Optional):' : 'Rejection Reason (Mandatory):'}
+              </label>
+              <textarea
+                rows={3}
+                className="input-field"
+                placeholder={confirmModal.action === 'APPROVE' ? 'Add optional congratulations or feedback...' : 'Specify why this submission was rejected...'}
+                value={confirmModal.feedback}
+                onChange={(e) => setConfirmModal(prev => ({ ...prev, feedback: e.target.value, error: null }))}
+                style={{ width: '100%', fontSize: '0.85rem', resize: 'vertical' }}
+              />
+            </div>
+
             {confirmModal.error && (
-              <div
-                style={{
-                  padding: '0.75rem 1rem',
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  borderLeft: '4px solid var(--status-error)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--status-error)',
-                  fontSize: '0.84rem',
-                  marginBottom: '1rem',
-                }}
-              >
+              <div style={{ color: 'var(--status-error)', fontSize: '0.82rem', marginBottom: '1rem' }}>
                 ⚠️ {confirmModal.error}
               </div>
             )}
 
-            {/* Input Form Fields */}
-            {confirmModal.action === 'APPROVE' ? (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.4rem' }}>
-                  Approval Note / Feedback (Optional):
-                </label>
-                <textarea
-                  className="input-field"
-                  rows="3"
-                  value={confirmModal.feedback}
-                  onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
-                  placeholder="Optional congratulatory note or remark for the creator..."
-                  style={{ width: '100%', fontSize: '0.85rem', resize: 'vertical' }}
-                  disabled={confirmModal.isSubmitting}
-                />
-              </div>
-            ) : (
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-highlight)', marginBottom: '0.4rem' }}>
-                  Rejection Reason <span style={{ color: 'var(--status-error)' }}>* (Required)</span>:
-                </label>
-                <textarea
-                  id="rejection-reason-field"
-                  className="input-field"
-                  rows="3"
-                  value={confirmModal.feedback}
-                  onChange={(e) => setConfirmModal((prev) => ({ ...prev, feedback: e.target.value, error: null }))}
-                  placeholder="Explain why this proof is rejected (e.g. proof screenshot does not show valid timestamp, handle does not match creator profile)..."
-                  style={{
-                    width: '100%',
-                    fontSize: '0.85rem',
-                    resize: 'vertical',
-                    borderColor: confirmModal.error ? 'var(--status-error)' : undefined,
-                  }}
-                  disabled={confirmModal.isSubmitting}
-                  autoFocus
-                />
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                  This reason is required and will be delivered directly to the creator's notification inbox.
-                </div>
-              </div>
-            )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="portal-modal-footer">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={closeConfirmModal}
-                disabled={confirmModal.isSubmitting}
-                style={{ fontSize: '0.85rem', padding: '0.55rem 1.1rem' }}
-              >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+              <button type="button" className="btn-secondary" onClick={closeConfirmModal} disabled={confirmModal.isSubmitting}>
                 Cancel
               </button>
-
               <button
                 type="button"
-                id={confirmModal.action === 'APPROVE' ? 'btn-confirm-approve' : 'btn-confirm-reject'}
-                onClick={handleExecuteDecision}
+                className={confirmModal.action === 'APPROVE' ? 'btn-primary' : 'btn-danger'}
+                onClick={handleExecuteVerdict}
                 disabled={confirmModal.isSubmitting}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.85rem',
-                  padding: '0.55rem 1.35rem',
-                  fontWeight: 700,
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: confirmModal.isSubmitting ? 'not-allowed' : 'pointer',
-                  background: confirmModal.action === 'APPROVE'
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                  color: '#ffffff',
-                  boxShadow: confirmModal.action === 'APPROVE'
-                    ? '0 4px 15px rgba(16, 185, 129, 0.4)'
-                    : '0 4px 15px rgba(239, 68, 68, 0.4)',
-                }}
+                style={{ padding: '0.55rem 1.35rem' }}
               >
-                {confirmModal.isSubmitting ? (
-                  <>
-                    <span className="status-dot checking" style={{ width: '10px', height: '10px' }} />
-                    {confirmModal.action === 'APPROVE' ? 'Approving…' : 'Rejecting…'}
-                  </>
-                ) : (
-                  <>
-                    <span>{confirmModal.action === 'APPROVE' ? '✓' : '✕'}</span>
-                    {confirmModal.action === 'APPROVE' ? 'Confirm Approval' : 'Confirm Rejection'}
-                  </>
-                )}
+                {confirmModal.isSubmitting ? 'Processing…' : `Confirm ${confirmModal.action}`}
               </button>
             </div>
-
           </div>
         </div>
       )}
 
+      {/* ── 2. REQUEST CLARIFICATION DIALOG ── */}
+      {clarificationModal.isOpen && (
+        <div className="modal-backdrop" onClick={closeClarificationModal}>
+          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '90%', padding: '1.75rem', borderLeft: '4px solid var(--accent-cyan)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.4rem' }}>💬</span>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                  Request Proof Clarification
+                </h3>
+              </div>
+              <button type="button" onClick={closeClarificationModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <p style={{ margin: '0 0 1rem 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Sends an immediate notification to <strong>{creator?.name || 'the creator'}</strong> requesting additional details, higher resolution screenshots, or privacy settings adjustments. The submission remains PENDING.
+            </p>
+
+            {/* Presets */}
+            <div style={{ marginBottom: '0.85rem' }}>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.35rem' }}>Quick Prompts:</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                {CLARIFICATION_PRESETS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="badge badge-outline"
+                    onClick={() => setClarificationModal(prev => ({ ...prev, message: preset }))}
+                    style={{ cursor: 'pointer', fontSize: '0.7rem', padding: '0.2rem 0.5rem', textAlign: 'left' }}
+                  >
+                    {preset.substring(0, 45)}…
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Clarification Message to Creator:
+              </label>
+              <textarea
+                rows={3}
+                className="input-field"
+                placeholder="Explain what specific proof is needed to complete verification..."
+                value={clarificationModal.message}
+                onChange={(e) => setClarificationModal(prev => ({ ...prev, message: e.target.value, error: null }))}
+                style={{ width: '100%', fontSize: '0.85rem', resize: 'vertical' }}
+              />
+            </div>
+
+            {clarificationModal.error && (
+              <div style={{ color: 'var(--status-error)', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                ⚠️ {clarificationModal.error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+              <button type="button" className="btn-secondary" onClick={closeClarificationModal} disabled={clarificationModal.isSubmitting}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSendClarification}
+                disabled={clarificationModal.isSubmitting}
+                style={{ padding: '0.55rem 1.35rem' }}
+              >
+                {clarificationModal.isSubmitting ? 'Sending…' : 'Send Clarification Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. ADD INTERNAL NOTE DIALOG ── */}
+      {noteModal.isOpen && (
+        <div className="modal-backdrop" onClick={closeNoteModal}>
+          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', width: '90%', padding: '1.75rem', borderLeft: '4px solid var(--role-admin)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.4rem' }}>📝</span>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
+                  Add Internal Moderation Note
+                </h3>
+              </div>
+              <button type="button" onClick={closeNoteModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <p style={{ margin: '0 0 1rem 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Internal notes are <strong>strictly private to administrators</strong> and are never shown to the creator. Use for review annotations, verification tracking, or team coordination.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Note Content:</label>
+              <textarea
+                rows={3}
+                className="input-field"
+                placeholder="Enter internal review findings or team notes..."
+                value={noteModal.note}
+                onChange={(e) => setNoteModal(prev => ({ ...prev, note: e.target.value, error: null }))}
+                style={{ width: '100%', fontSize: '0.85rem', resize: 'vertical' }}
+              />
+            </div>
+
+            {noteModal.error && (
+              <div style={{ color: 'var(--status-error)', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                ⚠️ {noteModal.error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+              <button type="button" className="btn-secondary" onClick={closeNoteModal} disabled={noteModal.isSubmitting}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => handleAddInternalNote(noteModal.note, true)}
+                disabled={noteModal.isSubmitting}
+                style={{ padding: '0.55rem 1.35rem' }}
+              >
+                {noteModal.isSubmitting ? 'Saving…' : 'Save Internal Note'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

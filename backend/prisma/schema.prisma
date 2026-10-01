@@ -69,6 +69,8 @@ model User {
   submissions     Submission[]     @relation("UserSubmissions")
   reviews         Review[]         @relation("AdminReviews")
   notifications   Notification[]   @relation("UserNotifications")
+  internalNotes   ReviewNote[]     @relation("AdminNotes")
+  clarifications  ClarificationRequest[] @relation("AdminClarifications")
 
   @@index([email])
   @@index([role])
@@ -119,6 +121,8 @@ model Submission {
 
   // Relationships
   reviews         Review[]
+  internalNotes   ReviewNote[]            @relation("SubmissionNotes")
+  clarifications  ClarificationRequest[]  @relation("SubmissionClarifications")
 
   @@index([userId])
   @@index([socialAccountId])
@@ -145,6 +149,39 @@ model Review {
   @@index([status])
   @@index([createdAt])
   @@map("reviews")
+}
+
+/// Internal moderation notes attached by Admins for team auditability
+model ReviewNote {
+  id           String      @id @default(uuid())
+  submissionId String
+  submission   Submission  @relation("SubmissionNotes", fields: [submissionId], references: [id], onDelete: Cascade)
+  adminId      String
+  admin        User        @relation("AdminNotes", fields: [adminId], references: [id], onDelete: Cascade)
+  note         String
+  createdAt    DateTime    @default(now())
+
+  @@index([submissionId])
+  @@index([adminId])
+  @@map("review_notes")
+}
+
+/// Formal clarification requests sent by Admins to Creators
+model ClarificationRequest {
+  id           String      @id @default(uuid())
+  submissionId String
+  submission   Submission  @relation("SubmissionClarifications", fields: [submissionId], references: [id], onDelete: Cascade)
+  adminId      String
+  admin        User        @relation("AdminClarifications", fields: [adminId], references: [id], onDelete: Cascade)
+  message      String
+  response     String?
+  status       String      @default("PENDING")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([submissionId])
+  @@index([adminId])
+  @@map("clarification_requests")
 }
 
 /// User Notifications for submission updates, moderation alerts, and system info

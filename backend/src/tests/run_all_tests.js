@@ -10,6 +10,7 @@ const testFiles = [
   'rbac.test.js',
   'security_audit.test.js',
   'workflow.test.js',
+  'admin_review_workspace.test.js',
   'notification.test.js',
   'official_social_accounts.test.js',
   'profile_management.test.js',

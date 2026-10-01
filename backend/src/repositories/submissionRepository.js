@@ -170,9 +170,20 @@ const getSubmissionById = async (id) => {
       const record = await prisma.submission.findUnique({
         where: { id },
         include: {
-          user: { select: { id: true, name: true, email: true } },
+          user: { select: { id: true, name: true, email: true, status: true, createdAt: true } },
           socialAccount: { select: { id: true, name: true, platform: true, handle: true, accountUrl: true } },
-          reviews: { include: { admin: { select: { id: true, name: true } } } }
+          reviews: {
+            include: { admin: { select: { id: true, name: true, email: true } } },
+            orderBy: { createdAt: 'desc' }
+          },
+          internalNotes: {
+            include: { admin: { select: { id: true, name: true, email: true } } },
+            orderBy: { createdAt: 'desc' }
+          },
+          clarifications: {
+            include: { admin: { select: { id: true, name: true, email: true } } },
+            orderBy: { createdAt: 'desc' }
+          }
         }
       });
       if (record) return record;
@@ -417,11 +428,216 @@ const getSubmissionByScreenshotRef = async (screenshotRef, userId = null) => {
   return null;
 };
 
+/**
+ * Attach an internal moderation note to a submission.
+ * Strictly internal to administrators; never exposed to normal users.
+ */
+const addInternalNote = async (submissionId, { adminId, adminName, note }) => {
+  initializeInMemorySubmissions();
+  const dbStatus = await checkDatabaseConnection();
+  const cleanNote = note && typeof note === 'string' ? note.trim().substring(0, 2000) : '';
+
+  if (!cleanNote) {
+    return {
+      error: 'NOTE_REQUIRED',
+      code: 'NOTE_REQUIRED',
+      message: 'Internal review note content is required.'
+    };
+  }
+
+  const noteEntry = {
+    id: `note-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+    submissionId,
+    adminId,
+    adminName: adminName || 'Admin Moderator',
+    note: cleanNote,
+    createdAt: new Date()
+  };
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const created = await prisma.reviewNote.create({
+        data: {
+          submissionId,
+          adminId,
+          note: cleanNote
+        },
+        include: {
+          admin: { select: { id: true, name: true, email: true } }
+        }
+      });
+      return {
+        id: created.id,
+        submissionId: created.submissionId,
+        adminId: created.adminId,
+        adminName: created.admin?.name || adminName || 'Admin Moderator',
+        note: created.note,
+        createdAt: created.createdAt
+      };
+    } catch (err) {
+      console.warn('[SubRepo] Prisma addInternalNote failed, falling back to memory:', err.message);
+    }
+  }
+
+  const sub = inMemorySubmissions.get(submissionId);
+  if (sub) {
+    if (!sub.internalNotes) sub.internalNotes = [];
+    sub.internalNotes.unshift(noteEntry);
+  }
+  return noteEntry;
+};
+
+/**
+ * Record a formal clarification request sent by an admin to the creator.
+ */
+const createClarificationRequest = async (submissionId, { adminId, adminName, message }) => {
+  initializeInMemorySubmissions();
+  const dbStatus = await checkDatabaseConnection();
+  const cleanMsg = message && typeof message === 'string' ? message.trim().substring(0, 1000) : '';
+
+  if (!cleanMsg) {
+    return {
+      error: 'MESSAGE_REQUIRED',
+      code: 'MESSAGE_REQUIRED',
+      message: 'Clarification message to the creator is required.'
+    };
+  }
+
+  const clarificationEntry = {
+    id: `clar-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+    submissionId,
+    adminId,
+    adminName: adminName || 'Admin Moderator',
+    message: cleanMsg,
+    status: 'PENDING',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const created = await prisma.clarificationRequest.create({
+        data: {
+          submissionId,
+          adminId,
+          message: cleanMsg,
+          status: 'PENDING'
+        },
+        include: {
+          admin: { select: { id: true, name: true, email: true } }
+        }
+      });
+      return {
+        id: created.id,
+        submissionId: created.submissionId,
+        adminId: created.adminId,
+        adminName: created.admin?.name || adminName || 'Admin Moderator',
+        message: created.message,
+        status: created.status,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt
+      };
+    } catch (err) {
+      console.warn('[SubRepo] Prisma createClarificationRequest failed, falling back to memory:', err.message);
+    }
+  }
+
+  const sub = inMemorySubmissions.get(submissionId);
+  if (sub) {
+    if (!sub.clarifications) sub.clarifications = [];
+    sub.clarifications.unshift(clarificationEntry);
+  }
+  return clarificationEntry;
+};
+
+/**
+ * Calculate previous & next submission IDs in current moderation queue context.
+ */
+const getQueueNavigation = async (currentId, filters = {}) => {
+  initializeInMemorySubmissions();
+  const dbStatus = await checkDatabaseConnection();
+
+  const { status, platform, actionType, search } = filters;
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const where = {};
+      if (status && status.toUpperCase() !== 'ALL') {
+        where.status = status.toUpperCase();
+      } else if (!status) {
+        where.status = 'PENDING';
+      }
+      if (platform && platform.toUpperCase() !== 'ALL') {
+        where.platform = platform.toUpperCase();
+      }
+      if (actionType && actionType.toUpperCase() !== 'ALL') {
+        where.actionType = actionType.toUpperCase();
+      }
+      if (search && search.trim()) {
+        const q = search.trim();
+        where.OR = [
+          { postUrl: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { user: { name: { contains: q, mode: 'insensitive' } } },
+          { user: { email: { contains: q, mode: 'insensitive' } } },
+        ];
+      }
+
+      const queue = await prisma.submission.findMany({
+        where,
+        select: { id: true },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      const ids = queue.map(q => q.id);
+      const currentIndex = ids.indexOf(currentId);
+
+      return {
+        prevId: currentIndex > 0 ? ids[currentIndex - 1] : null,
+        nextId: currentIndex >= 0 && currentIndex < ids.length - 1 ? ids[currentIndex + 1] : null,
+        currentIndex: currentIndex >= 0 ? currentIndex + 1 : null,
+        totalQueue: ids.length
+      };
+    } catch (err) {
+      console.warn('[SubRepo] getQueueNavigation Prisma error:', err.message);
+    }
+  }
+
+  // In-memory navigation
+  let filtered = Array.from(inMemorySubmissions.values());
+  const targetStatus = status && status.toUpperCase() !== 'ALL' ? status.toUpperCase() : !status ? 'PENDING' : null;
+  if (targetStatus) filtered = filtered.filter(s => s.status === targetStatus);
+  if (platform && platform.toUpperCase() !== 'ALL') filtered = filtered.filter(s => s.platform === platform.toUpperCase());
+  if (actionType && actionType.toUpperCase() !== 'ALL') filtered = filtered.filter(s => s.actionType === actionType.toUpperCase());
+  if (search && search.trim()) {
+    const q = search.trim().toLowerCase();
+    filtered = filtered.filter(s =>
+      (s.postUrl && s.postUrl.toLowerCase().includes(q)) ||
+      (s.description && s.description.toLowerCase().includes(q)) ||
+      (s.userName && s.userName.toLowerCase().includes(q)) ||
+      (s.userEmail && s.userEmail.toLowerCase().includes(q))
+    );
+  }
+  filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const ids = filtered.map(s => s.id);
+  const currentIndex = ids.indexOf(currentId);
+
+  return {
+    prevId: currentIndex > 0 ? ids[currentIndex - 1] : null,
+    nextId: currentIndex >= 0 && currentIndex < ids.length - 1 ? ids[currentIndex + 1] : null,
+    currentIndex: currentIndex >= 0 ? currentIndex + 1 : null,
+    totalQueue: ids.length
+  };
+};
+
 module.exports = {
   getAllSubmissions,
   getUserSubmissions,
   getSubmissionById,
   getSubmissionByScreenshotRef,
   createSubmission,
-  reviewSubmission
+  reviewSubmission,
+  addInternalNote,
+  createClarificationRequest,
+  getQueueNavigation
 };

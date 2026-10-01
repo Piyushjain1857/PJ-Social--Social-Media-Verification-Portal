@@ -3,6 +3,9 @@ const {
   getSubmissionById,
   getAllSubmissions,
   reviewSubmission,
+  addInternalNote,
+  createClarificationRequest,
+  getQueueNavigation,
 } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 
@@ -260,7 +263,28 @@ const getSubmissionReviewDetails = async (req, res, next) => {
                 createdAt: true,
               },
             },
+            socialAccount: {
+              select: {
+                id: true,
+                name: true,
+                platform: true,
+                handle: true,
+                accountUrl: true,
+              },
+            },
             reviews: {
+              include: {
+                admin: { select: { id: true, name: true, email: true } },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
+            internalNotes: {
+              include: {
+                admin: { select: { id: true, name: true, email: true } },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
+            clarifications: {
               include: {
                 admin: { select: { id: true, name: true, email: true } },
               },
@@ -315,6 +339,9 @@ const getSubmissionReviewDetails = async (req, res, next) => {
       });
     }
 
+    // Determine queue navigation position in current queue context
+    const navigation = await getQueueNavigation(id, req.query);
+
     return res.status(200).json({
       success: true,
       data: {
@@ -331,6 +358,11 @@ const getSubmissionReviewDetails = async (req, res, next) => {
           memberSince: submission.user?.createdAt || null,
           stats: creatorStats,
         },
+        officialAccount: submission.socialAccount || null,
+        reviewHistory: submission.reviews || [],
+        internalNotes: submission.internalNotes || [],
+        clarifications: submission.clarifications || [],
+        navigation,
         verificationGuide: {
           notice:
             'Admin review is a human verification process. The portal does not perform automated scraping or claim the action is genuine without manual confirmation.',
@@ -450,10 +482,157 @@ const rejectReview = async (req, res, next) => {
   return submitReviewVerdict(req, res, next);
 };
 
+/**
+ * POST /api/reviews/:id/notes
+ * POST /api/reviews/submission/:id/notes
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const postInternalNote = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    const sub = await getSubmissionById(id);
+    if (!sub) {
+      return res.status(404).json({
+        success: false,
+        code: 'SUBMISSION_NOT_FOUND',
+        message: 'Submission not found to attach internal note.'
+      });
+    }
+
+    const result = await addInternalNote(id, {
+      adminId: req.user.id,
+      adminName: req.user.name,
+      note
+    });
+
+    if (result.error) {
+      return res.status(400).json({
+        success: false,
+        code: result.code,
+        message: result.message
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Internal review note attached successfully.',
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/reviews/:id/clarification
+ * POST /api/reviews/submission/:id/clarification
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const postClarificationRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    const sub = await getSubmissionById(id);
+    if (!sub) {
+      return res.status(404).json({
+        success: false,
+        code: 'SUBMISSION_NOT_FOUND',
+        message: 'Submission not found to request clarification.'
+      });
+    }
+
+    const result = await createClarificationRequest(id, {
+      adminId: req.user.id,
+      adminName: req.user.name,
+      message
+    });
+
+    if (result.error) {
+      return res.status(400).json({
+        success: false,
+        code: result.code,
+        message: result.message
+      });
+    }
+
+    // Send notification to creator
+    await createNotification({
+      userId: sub.userId,
+      type: 'REVIEW_FEEDBACK',
+      title: 'Clarification Requested for Submission',
+      message: `${req.user.name} requested clarification for your ${sub.platform} activity submission: "${result.message}"`
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Clarification request recorded and creator notified.',
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/reviews/:id/navigation
+ * GET /api/reviews/submission/:id/navigation
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const getQueueNavigationDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const nav = await getQueueNavigation(id, req.query);
+    return res.status(200).json({
+      success: true,
+      data: nav
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/reviews/:id/history
+ * GET /api/reviews/submission/:id/history
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const getSubmissionReviewHistory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const sub = await getSubmissionById(id);
+    if (!sub) {
+      return res.status(404).json({
+        success: false,
+        code: 'SUBMISSION_NOT_FOUND',
+        message: 'Submission not found.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        submissionId: id,
+        reviews: sub.reviews || [],
+        internalNotes: sub.internalNotes || [],
+        clarifications: sub.clarifications || []
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPendingReviews,
   getSubmissionReviewDetails,
   submitReviewVerdict,
   approveReview,
   rejectReview,
+  postInternalNote,
+  postClarificationRequest,
+  getQueueNavigationDetails,
+  getSubmissionReviewHistory,
 };

@@ -27,8 +27,8 @@ VeriSocial is an enterprise-grade full-stack platform engineered to verify creat
 
 The Social Media Verification Portal provides an audited pipeline for college and brand campaigns:
 1. **Creators (`USER`)**: Browse verified official college social media accounts, submit evidence proofs (post permalinks, activity types like Like, Comment, or Story, and screenshot evidence), track their submissions in real-time, receive instant notifications on moderation verdicts, and manage their profile and passwords.
-2. **Moderators (`ADMIN`)**: Access a dedicated moderation workspace with a filterable review queue, inspect evidence and auth-gated screenshot proofs, verify handle and timestamp consistency, and record approval or structured rejection feedback.
-3. **Super Administrators (`SUPER_ADMIN`)**: Retain full system governance. Manage official institutional accounts (Instagram, LinkedIn, Facebook with domain validation), administer all platform users and moderator appointments, inspect audit trails, adjust verification policies, and view platform-wide telemetry.
+2. **Moderators (`ADMIN`)**: Access a high-throughput **Professional Verification Workspace** featuring a two-pane layout (filterable queue on left, deep verification dossier on right), keyboard shortcuts (`A` Approve, `R` Reject, `N` Next, `P` Previous), confirmation modals for destructive verdicts, internal auditor notes, creator clarification requests, human verification inspection checklists, and queue navigation with audit history.
+3. **Super Administrators (`SUPER_ADMIN`)**: Retain full system governance. Manage official institutional accounts (Instagram, LinkedIn, Facebook with domain validation), administer all platform users and moderator appointments, inspect audit trails, adjust verification policies, review any submission, and view platform-wide telemetry.
 
 ---
 
@@ -356,9 +356,13 @@ The portal provides 3 pre-seeded demo accounts ready for testing:
 | `/api/submissions/:id` | `GET` | Authenticated | View submission details (IDOR protected for creators) |
 | `/api/submissions` | `GET` | `ADMIN`, `SUPER_ADMIN` | View all platform submissions for moderation |
 | `/api/reviews/pending` | `GET` | `ADMIN`, `SUPER_ADMIN` | Filterable and paginated moderation review queue |
-| `/api/reviews/submission/:id` | `GET` | `ADMIN`, `SUPER_ADMIN` | Submission review dossier with audit details |
+| `/api/reviews/submission/:id` | `GET` | `ADMIN`, `SUPER_ADMIN` | Comprehensive submission review dossier with creator history & audit details |
+| `/api/reviews/:id/navigation` | `GET` | `ADMIN`, `SUPER_ADMIN` | Queue navigation metrics (`prevId`, `nextId`, `currentIndex`, `totalQueue`) |
+| `/api/reviews/:id/notes` | `POST` | `ADMIN`, `SUPER_ADMIN` | Add internal auditor notes attached to the submission dossier |
+| `/api/reviews/:id/clarification` | `POST` | `ADMIN`, `SUPER_ADMIN` | Request clarification from creator with automated notification |
+| `/api/reviews/:id/history` | `GET` | `ADMIN`, `SUPER_ADMIN` | Complete timeline of audit reviews, internal notes, and clarifications |
 | `/api/reviews/:id/approve` | `POST` | `ADMIN`, `SUPER_ADMIN` | Approve submission and generate creator notification |
-| `/api/reviews/:id/reject` | `POST` | `ADMIN`, `SUPER_ADMIN` | Reject submission with mandatory feedback |
+| `/api/reviews/:id/reject` | `POST` | `ADMIN`, `SUPER_ADMIN` | Reject submission with mandatory structured feedback |
 | `/api/notifications` | `GET` | Authenticated | Retrieve user notifications & unread badge count |
 | `/api/notifications/:id/read`| `PATCH`| Authenticated | Mark a notification as read (ownership protected) |
 | `/api/notifications/read-all`| `PATCH`| Authenticated | Mark all notifications as read for current user |
@@ -376,7 +380,7 @@ The portal provides 3 pre-seeded demo accounts ready for testing:
 
 ## 🧪 Automated Testing Suite
 
-The repository includes a comprehensive 8-suite test harness verifying every layer of the platform:
+The repository includes a comprehensive 9-suite test harness verifying every layer of the platform:
 
 ```bash
 npm test
@@ -386,8 +390,9 @@ npm test
 1. **`rbac.test.js`**: 42 automated tests validating the role-based permission matrix across all endpoints.
 2. **`security_audit.test.js`**: Tests security headers, payload limits, JWT tamper resistance, IDOR protections, and file path traversal.
 3. **`workflow.test.js`**: Tests the complete submission lifecycle: creation, review, approval, rejection, state transitions, and creator notifications.
-4. **`notification.test.js`**: Validates notification delivery, unread count tracking, cross-user isolation, and bulk read operations.
-5. **`official_social_accounts.test.js`**: Validates official accounts CRUD, domain checks, handle formatting, and creator targeting.
-6. **`profile_management.test.js`**: Validates password changes, policy checks, name updates, and privilege escalation prevention.
-7. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
-8. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
+4. **`admin_review_workspace.test.js`**: Validates the professional Admin Review Workspace: RBAC protection on review APIs, dossier retrieval, queue navigation, internal notes, clarification requests, and human verification integrity.
+5. **`notification.test.js`**: Validates notification delivery, unread count tracking, cross-user isolation, and bulk read operations.
+6. **`official_social_accounts.test.js`**: Validates official accounts CRUD, domain checks, handle formatting, and creator targeting.
+7. **`profile_management.test.js`**: Validates password changes, policy checks, name updates, and privilege escalation prevention.
+8. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
+9. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
