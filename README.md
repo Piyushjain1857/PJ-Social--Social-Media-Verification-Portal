@@ -21,6 +21,7 @@ VeriSocial is an enterprise-grade full-stack platform engineered to verify creat
 - [API Reference Matrix](#-api-reference-matrix)
 - [Automated Testing Suite](#-automated-testing-suite)
 - [Global Search & Filtering Architecture](#-global-search--filtering-architecture)
+- [Gamification & Points System](#-gamification--points-system)
 
 ---
 
@@ -398,6 +399,7 @@ npm test
 8. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
 9. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
 10. **`search_and_filter.test.js`**: Validates server-side searching, multi-criteria filtering (status, platform, role, date range, reviewer, user), sorting (asc/desc), pagination, result count metrics, and strict RBAC enforcement across all directory endpoints.
+11. **`points_system.test.js`**: Validates point calculations (LIKE = 1, COMMENT = 2, STORY = 2), approval-triggered point awards, duplicate award prevention, 0 points on rejection, points history pagination, RBAC on point inspection and adjustments, and audit consistency.
 
 ---
 
@@ -423,3 +425,34 @@ VeriSocial implements a high-performance, server-side search and filtering engin
   - `EmptyState.jsx`: Clean glassmorphic zero-state cards with reset actions.
   - `LoadingSkeleton.jsx`: Shimmer table and card skeletons.
 - **Server-Side Pagination & Filtering**: Zero client-side bloat — queries leverage Prisma `skip`, `take`, and `count` to maintain lightning-fast response times even on large datasets.
+
+---
+
+## 🏆 Gamification & Points System
+
+VeriSocial features a unified, auditable gamification engine that rewards creators for verified institutional social media engagement:
+
+### Point Rules:
+- **Like (`LIKE`)**: **+1 Point** for liking an official post or update.
+- **Comment (`COMMENT`)**: **+2 Points** for substantive commentary or feedback on official discussion threads.
+- **Story (`STORY`)**: **+2 Points** for sharing campaign collateral to an active 24-hr story.
+- **Bonus / Adjustment (`BONUS` / `ADJUSTMENT`)**: Variable points awarded for special campus campaigns or authorized administrative adjustments.
+
+### Lifecycle & Guardrails:
+1. **Approval Gating**: Points are awarded **ONLY** when a submission receives an `APPROVED` verdict from an authenticated Admin or Super Admin.
+2. **Zero Points for Pending / Rejected**: Submissions in `PENDING` or `REJECTED` status award zero points.
+3. **Strict Duplicate Prevention**: The points service enforces submission idempotency: once points are awarded for a submission, subsequent approval calls or duplicates are strictly blocked.
+4. **Auditable Transaction Ledger**: Points are never stored solely as a mutable scalar. Every point change creates an immutable `PointTransaction` record linked to the user, submission, and reviewer.
+5. **Super Admin Adjustments**: Only Super Admins can execute manual adjustments via `POST /api/points/adjust`, requiring a mandatory target user, point delta, and audit justification reason.
+6. **Frontend Integration**:
+   - `PointsSummary.jsx` ([PointsSummary.jsx](file:///Users/piyush/Documents/Social%20Media%20Verification%20Portal/frontend/src/components/common/PointsSummary.jsx)): Displays verified point totals, point rules, action breakdown, recent earned point transactions, and loading/empty/error states.
+   - Live Points Pill in Header: Real-time badge displayed in the navigation bar for creator personas.
+
+### Gamification Endpoints:
+| Method | Route | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/points/me` | Authenticated | Fetch caller's total points, recent transactions, and breakdown |
+| `GET` | `/api/points/me/history` | Authenticated | Paginated point transactions with filter and sort controls |
+| `GET` | `/api/points/user/:id` | `ADMIN`, `SUPER_ADMIN` | Inspect another user's verified points ledger |
+| `POST` | `/api/points/adjust` | `SUPER_ADMIN` | Execute manual balance adjustments with required audit reason |
+

@@ -6,7 +6,8 @@ import {
   fetchMyNotifications,
   markNotificationRead,
   markAllNotificationsRead,
-  fetchHealth
+  fetchHealth,
+  fetchMyPoints
 } from '../services/api';
 
 const formatTimeAgo = (dateString) => {
@@ -207,6 +208,7 @@ export default function MainLayout({
   // Live badges and telemetry state
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [userPoints, setUserPoints] = useState(0);
   const [apiLatency, setApiLatency] = useState(null);
   const [isApiHealthy, setIsApiHealthy] = useState(true);
 
@@ -266,6 +268,17 @@ export default function MainLayout({
           const unread = notifRes.unreadCount ?? notifRes.data.filter(n => !n.isRead).length;
           setUnreadNotifCount(unread);
           setNotificationCount(unread);
+        }
+
+        if (user?.role === 'USER') {
+          try {
+            const ptRes = await fetchMyPoints();
+            if (ptRes && ptRes.success && ptRes.data) {
+              setUserPoints(ptRes.data.totalPoints ?? 0);
+            }
+          } catch (ptE) {
+            // silent fallback
+          }
         }
       }
     } catch (e) {
@@ -655,6 +668,32 @@ export default function MainLayout({
               <span className={`status-dot ${isApiHealthy ? 'online' : 'offline'}`} />
               <span>{isApiHealthy ? `API :5001 (${apiLatency || 12}ms)` : 'Offline'}</span>
             </div>
+
+            {/* Creator Verified Points Pill */}
+            {currentRole === 'USER' && (
+              <button
+                type="button"
+                className="navbar-points-pill"
+                title="Your Total Verified Points — Click to view Dashboard"
+                onClick={() => handleNavChange('dashboard')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.32rem 0.75rem',
+                  background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.16), rgba(249, 115, 22, 0.16))',
+                  border: '1px solid rgba(234, 179, 8, 0.35)',
+                  borderRadius: '20px',
+                  color: '#facc15',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <span>🏆</span>
+                <span>{userPoints} Pts</span>
+              </button>
+            )}
 
             {/* Prominent Role Indicator */}
             <div

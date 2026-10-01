@@ -49,28 +49,38 @@ enum NotificationType {
   SYSTEM
 }
 
+enum PointActionType {
+  LIKE
+  COMMENT
+  STORY
+  BONUS
+  ADJUSTMENT
+}
+
 // ============================================================================
 // Models
 // ============================================================================
 
 /// User entity with role-based access control (SUPER_ADMIN, ADMIN, USER)
 model User {
-  id              String           @id @default(uuid())
-  name            String
-  email           String           @unique
-  password        String
-  role            Role             @default(USER)
-  status          UserStatus       @default(ACTIVE)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                String           @id @default(uuid())
+  name              String
+  email             String           @unique
+  password          String
+  role              Role             @default(USER)
+  status            UserStatus       @default(ACTIVE)
+  totalPoints       Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   // Relationships
-  socialAccounts  SocialAccount[]
-  submissions     Submission[]     @relation("UserSubmissions")
-  reviews         Review[]         @relation("AdminReviews")
-  notifications   Notification[]   @relation("UserNotifications")
-  internalNotes   ReviewNote[]     @relation("AdminNotes")
-  clarifications  ClarificationRequest[] @relation("AdminClarifications")
+  socialAccounts    SocialAccount[]
+  submissions       Submission[]     @relation("UserSubmissions")
+  reviews           Review[]         @relation("AdminReviews")
+  notifications     Notification[]   @relation("UserNotifications")
+  internalNotes     ReviewNote[]     @relation("AdminNotes")
+  clarifications    ClarificationRequest[] @relation("AdminClarifications")
+  pointTransactions PointTransaction[] @relation("UserPointTransactions")
 
   @@index([email])
   @@index([role])
@@ -78,6 +88,7 @@ model User {
   @@index([name])
   @@index([role, status])
   @@index([createdAt])
+  @@index([totalPoints(sort: Desc)])
   @@index([role, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@map("users")
@@ -134,6 +145,7 @@ model Submission {
   reviews         Review[]
   internalNotes   ReviewNote[]            @relation("SubmissionNotes")
   clarifications  ClarificationRequest[]  @relation("SubmissionClarifications")
+  pointTransactions PointTransaction[]   @relation("SubmissionPointTransactions")
 
   @@index([userId])
   @@index([socialAccountId])
@@ -229,4 +241,26 @@ model Notification {
   @@index([userId, isRead, createdAt(sort: Desc)])
   @@index([userId, type, createdAt(sort: Desc)])
   @@map("notifications")
+}
+
+/// Gamification Point Transactions awarded for approved submissions and adjustments
+model PointTransaction {
+  id           String          @id @default(uuid())
+  userId       String
+  user         User            @relation("UserPointTransactions", fields: [userId], references: [id], onDelete: Cascade)
+  submissionId String?
+  submission   Submission?     @relation("SubmissionPointTransactions", fields: [submissionId], references: [id], onDelete: SetNull)
+  points       Int
+  actionType   PointActionType
+  description  String
+  metadata     Json?
+  createdAt    DateTime        @default(now())
+
+  @@index([userId])
+  @@index([submissionId])
+  @@index([actionType])
+  @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([actionType, createdAt(sort: Desc)])
+  @@map("point_transactions")
 }

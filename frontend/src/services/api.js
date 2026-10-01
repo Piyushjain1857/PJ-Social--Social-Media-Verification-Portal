@@ -676,4 +676,53 @@ export const testRestrictedEndpoint = async (endpoint, options = {}) => {
   }
 };
 
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Gamification & Points API Endpoints (/api/points)
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Fetch authenticated creator's points summary, recent transactions, and activity breakdown.
+ * @returns {Promise<{ success: boolean, data: { totalPoints: number, recentTransactions: Array, breakdown: Object } }>}
+ */
+export const fetchMyPoints = async () => {
+  return await apiFetch('/points/me');
+};
+
+/**
+ * Fetch paginated point transactions for current user.
+ * @param {Object} [params] - { page, limit, actionType, startDate, endDate, sortBy, sortOrder }
+ */
+export const fetchMyPointsHistory = async (params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const queryString = query.toString();
+  return await apiFetch(`/points/me/history${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Fetch points summary for a specific user (Admin / Super Admin only).
+ * @param {string} userId
+ */
+export const fetchUserPoints = async (userId) => {
+  return await apiFetch(`/points/user/${userId}`);
+};
+
+/**
+ * Manually adjust a user's points balance (Super Admin only).
+ * @param {Object} payload - { userId, points, reason }
+ */
+export const adjustUserPoints = async ({ userId, points, reason }) => {
+  return await apiFetch('/points/adjust', {
+    method: 'POST',
+    body: JSON.stringify({ userId, points, reason })
+  });
+};
+
+
 

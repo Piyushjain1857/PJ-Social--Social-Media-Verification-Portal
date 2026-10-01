@@ -16,7 +16,8 @@ const testFiles = [
   'official_social_accounts.test.js',
   'profile_management.test.js',
   'superadmin_dashboard.test.js',
-  'superadmin_users.test.js'
+  'superadmin_users.test.js',
+  'points_system.test.js'
 ];
 
 console.log('========================================================');

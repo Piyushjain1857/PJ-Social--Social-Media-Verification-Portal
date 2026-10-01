@@ -12,6 +12,7 @@ const {
 } = require('../repositories/socialAccountRepository');
 const { validateSubmissionPostUrl } = require('../utils/urlValidator');
 const { createNotification } = require('../repositories/notificationRepository');
+const { awardPoints } = require('../services/pointsService');
 
 /**
  * POST /api/submissions
@@ -360,21 +361,52 @@ const review = async (req, res, next) => {
       });
     }
 
-    // Notify the submission owner of the verdict
+    // If approved, award gamification points (preventing duplicates)
+    let pointsAwarded = null;
     const isApproved = cleanStatus === 'APPROVED';
+    if (isApproved) {
+      try {
+        pointsAwarded = await awardPoints({
+          userId: result.submission.userId,
+          submissionId: result.submission.id,
+          actionType: result.submission.actionType,
+          description: `Approved ${result.submission.platform} ${result.submission.actionType} verification proof`,
+          reviewerId: req.user.id,
+          reviewerName: req.user.name
+        });
+      } catch (ptErr) {
+        console.warn('[SubmissionController] Error awarding points on approval:', ptErr.message);
+      }
+    }
+
+    // Notify the submission owner of the verdict
+    let notifMessage = isApproved
+      ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${result.review.feedback ? ` Feedback: "${result.review.feedback}"` : ''}`
+      : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${result.review.feedback}"`;
+
+    if (isApproved && pointsAwarded && pointsAwarded.awarded) {
+      notifMessage += ` You earned +${pointsAwarded.points} point${pointsAwarded.points > 1 ? 's' : ''}!`;
+    }
+
     await createNotification({
       userId: result.submission.userId,
       type: 'REVIEW_FEEDBACK',
       title: `Submission ${cleanStatus}`,
-      message: isApproved
-        ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${result.review.feedback ? ` Feedback: "${result.review.feedback}"` : ''}`
-        : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${result.review.feedback}"`
+      message: notifMessage,
+      metadata: {
+        pointsAwarded: pointsAwarded?.points || 0,
+        submissionId: result.submission.id,
+        actionType: result.submission.actionType
+      }
     });
 
     return res.status(200).json({
       success: true,
-      message: `Submission successfully marked as ${cleanStatus}.`,
-      data: result
+      message: `Submission successfully marked as ${cleanStatus}.${pointsAwarded && pointsAwarded.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
+      data: {
+        ...result,
+        pointsAwarded: pointsAwarded || null
+      }
     });
   } catch (error) {
     next(error);

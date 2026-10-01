@@ -11,6 +11,7 @@ const uploadRoutes = require('./uploadRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const socialAccountRoutes = require('./socialAccountRoutes');
 const searchRoutes = require('./searchRoutes');
+const pointsRoutes = require('./pointsRoutes');
 
 // Authentication routes (/api/auth)
 router.use('/auth', authRoutes);
@@ -20,6 +21,9 @@ router.use('/submissions', submissionRoutes);
 
 // Admin Moderation & Review Queue routes (/api/reviews)
 router.use('/reviews', reviewRoutes);
+
+// Gamification Points & Transactions routes (/api/points)
+router.use('/points', pointsRoutes);
 
 // User Directory & Role Management routes (/api/users)
 router.use('/users', userRoutes);

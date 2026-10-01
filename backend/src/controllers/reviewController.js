@@ -8,6 +8,7 @@ const {
   getQueueNavigation,
 } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
+const { awardPoints } = require('../services/pointsService');
 
 /**
  * GET /api/reviews/pending
@@ -449,21 +450,52 @@ const submitReviewVerdict = async (req, res, next) => {
       });
     }
 
-    // Create creator notification
+    // If approved, award gamification points (preventing duplicate awards)
+    let pointsAwarded = null;
     const isApproved = cleanStatus === 'APPROVED';
+    if (isApproved) {
+      try {
+        pointsAwarded = await awardPoints({
+          userId: result.submission.userId,
+          submissionId: result.submission.id,
+          actionType: result.submission.actionType,
+          description: `Approved ${result.submission.platform} ${result.submission.actionType} verification proof`,
+          reviewerId: req.user.id,
+          reviewerName: req.user.name,
+        });
+      } catch (ptErr) {
+        console.warn('[ReviewController] Error awarding points on approval:', ptErr.message);
+      }
+    }
+
+    // Create creator notification
+    let notifMessage = isApproved
+      ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${cleanFeedback ? ` Feedback: "${cleanFeedback}"` : ''}`
+      : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${cleanFeedback}"`;
+
+    if (isApproved && pointsAwarded && pointsAwarded.awarded) {
+      notifMessage += ` You earned +${pointsAwarded.points} point${pointsAwarded.points > 1 ? 's' : ''}!`;
+    }
+
     await createNotification({
       userId: result.submission.userId,
       type: 'REVIEW_FEEDBACK',
       title: `Submission ${cleanStatus}`,
-      message: isApproved
-        ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${cleanFeedback ? ` Feedback: "${cleanFeedback}"` : ''}`
-        : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${cleanFeedback}"`,
+      message: notifMessage,
+      metadata: {
+        pointsAwarded: pointsAwarded?.points || 0,
+        submissionId: result.submission.id,
+        actionType: result.submission.actionType,
+      },
     });
 
     return res.status(200).json({
       success: true,
-      message: `Submission ${id} has been marked as ${cleanStatus}.`,
-      data: result,
+      message: `Submission ${id} has been marked as ${cleanStatus}.${pointsAwarded && pointsAwarded.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
+      data: {
+        ...result,
+        pointsAwarded: pointsAwarded || null,
+      },
       verificationNote:
         'Human moderator determination applied. Social media engagement proof logged.',
     });
