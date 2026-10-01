@@ -38,14 +38,14 @@ const DEFAULT_PERSONALIZATION = {
   avatarIcon: '👑',
   avatarGradient: 'indigo',
   avatarPhoto: null,
-  statusHeadline: 'Institutional Super Administrator & Security Officer',
-  bio: 'Overseeing social media verification policies, gamification progression, and university audit integrity.',
+  statusHeadline: '',
+  bio: '',
   socialHandles: {
-    instagram: 'piyush.jain',
-    linkedin: 'piyush-jain',
+    instagram: '',
+    linkedin: '',
     facebook: '',
-    twitter: 'piyushjain_dev',
-    github: 'piyushjain'
+    twitter: '',
+    github: ''
   },
   confettiEnabled: true,
   soundEffects: true,
@@ -92,12 +92,60 @@ export default function ProfileView({ onNavigateToNav }) {
   const [personalization, setPersonalization] = useState(() => {
     try {
       const saved = localStorage.getItem(PERSONALIZATION_KEY);
-      if (saved) return { ...DEFAULT_PERSONALIZATION, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Clear out any legacy hardcoded placeholder data
+        const dummyPatterns = ['piyush.jain', 'piyush-jain', 'piyushjain_dev', 'piyushjain'];
+        if (parsed.socialHandles) {
+          Object.keys(parsed.socialHandles).forEach(k => {
+            const val = parsed.socialHandles[k];
+            if (typeof val === 'string' && dummyPatterns.some(p => val.toLowerCase().includes(p.toLowerCase()))) {
+              parsed.socialHandles[k] = '';
+            }
+          });
+        }
+        if (parsed.statusHeadline === 'Institutional Super Administrator & Security Officer') {
+          parsed.statusHeadline = '';
+        }
+        if (parsed.bio === 'Overseeing social media verification policies, gamification progression, and university audit integrity.') {
+          parsed.bio = '';
+        }
+        const cleaned = { ...DEFAULT_PERSONALIZATION, ...parsed };
+        localStorage.setItem(PERSONALIZATION_KEY, JSON.stringify(cleaned));
+        return cleaned;
+      }
     } catch (e) {
       console.warn('Could not load personalization preferences:', e);
     }
     return DEFAULT_PERSONALIZATION;
   });
+
+  // Ensure default handles/dummy handles are cleared so by default value is none
+  useEffect(() => {
+    const dummyPatterns = ['piyush.jain', 'piyush-jain', 'piyushjain_dev', 'piyushjain'];
+    if (personalization?.socialHandles) {
+      let needsCleanup = false;
+      const current = { ...personalization.socialHandles };
+      Object.keys(current).forEach(k => {
+        const val = current[k];
+        if (typeof val === 'string' && dummyPatterns.some(p => val.toLowerCase().includes(p.toLowerCase()))) {
+          current[k] = '';
+          needsCleanup = true;
+        }
+      });
+      if (needsCleanup) {
+        const cleaned = {
+          ...personalization,
+          socialHandles: current
+        };
+        setPersonalization(cleaned);
+        try {
+          localStorage.setItem(PERSONALIZATION_KEY, JSON.stringify(cleaned));
+          window.dispatchEvent(new CustomEvent('portal-personalization-updated', { detail: cleaned }));
+        } catch (e) {}
+      }
+    }
+  }, [personalization]);
 
   const [copiedId, setCopiedId] = useState(false);
 
@@ -181,6 +229,23 @@ export default function ProfileView({ onNavigateToNav }) {
     setPersonalization(updated);
     localStorage.setItem(PERSONALIZATION_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('portal-personalization-updated', { detail: updated }));
+  };
+
+  const handleClearAllSocial = () => {
+    const updated = {
+      ...personalization,
+      socialHandles: {
+        instagram: '',
+        linkedin: '',
+        facebook: '',
+        twitter: '',
+        github: ''
+      }
+    };
+    setPersonalization(updated);
+    localStorage.setItem(PERSONALIZATION_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('portal-personalization-updated', { detail: updated }));
+    showToast('All social handles cleared.');
   };
 
   const handleSaveHeadlineBio = (e) => {
@@ -566,11 +631,13 @@ export default function ProfileView({ onNavigateToNav }) {
               </div>
             </div>
 
-            {/* Custom Status Headline */}
-            <div className="profile-headline-text" style={{ color: currentAccent.light }}>
-              <span>✨</span>
-              <span>{personalization.statusHeadline}</span>
-            </div>
+            {/* Custom Status Headline (only if set) */}
+            {personalization.statusHeadline && (
+              <div className="profile-headline-text" style={{ color: currentAccent.light }}>
+                <span>✨</span>
+                <span>{personalization.statusHeadline}</span>
+              </div>
+            )}
 
             {/* Email & ID Row */}
             <div className="profile-meta-row">
@@ -593,53 +660,55 @@ export default function ProfileView({ onNavigateToNav }) {
               </span>
             </div>
 
-            {/* Connected Social Chips */}
-            <div className="profile-social-row">
-              {personalization.socialHandles.instagram && (
-                <a
-                  href={`https://instagram.com/${personalization.socialHandles.instagram}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="profile-social-chip"
-                >
-                  <span>📸</span>
-                  <span>@{personalization.socialHandles.instagram}</span>
-                </a>
-              )}
-              {personalization.socialHandles.linkedin && (
-                <a
-                  href={`https://linkedin.com/in/${personalization.socialHandles.linkedin}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="profile-social-chip"
-                >
-                  <span>💼</span>
-                  <span>{personalization.socialHandles.linkedin}</span>
-                </a>
-              )}
-              {personalization.socialHandles.twitter && (
-                <a
-                  href={`https://twitter.com/${personalization.socialHandles.twitter}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="profile-social-chip"
-                >
-                  <span>🐦</span>
-                  <span>@{personalization.socialHandles.twitter}</span>
-                </a>
-              )}
-              {personalization.socialHandles.github && (
-                <a
-                  href={`https://github.com/${personalization.socialHandles.github}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="profile-social-chip"
-                >
-                  <span>🐙</span>
-                  <span>{personalization.socialHandles.github}</span>
-                </a>
-              )}
-            </div>
+            {/* Connected Social Chips (only shown if configured by user) */}
+            {Object.values(personalization.socialHandles || {}).some(h => Boolean(h && h.trim())) && (
+              <div className="profile-social-row">
+                {personalization.socialHandles.instagram && (
+                  <a
+                    href={`https://instagram.com/${personalization.socialHandles.instagram}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="profile-social-chip"
+                  >
+                    <span>📸</span>
+                    <span>@{personalization.socialHandles.instagram}</span>
+                  </a>
+                )}
+                {personalization.socialHandles.linkedin && (
+                  <a
+                    href={`https://linkedin.com/in/${personalization.socialHandles.linkedin}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="profile-social-chip"
+                  >
+                    <span>💼</span>
+                    <span>{personalization.socialHandles.linkedin}</span>
+                  </a>
+                )}
+                {personalization.socialHandles.twitter && (
+                  <a
+                    href={`https://twitter.com/${personalization.socialHandles.twitter}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="profile-social-chip"
+                  >
+                    <span>🐦</span>
+                    <span>@{personalization.socialHandles.twitter}</span>
+                  </a>
+                )}
+                {personalization.socialHandles.github && (
+                  <a
+                    href={`https://github.com/${personalization.socialHandles.github}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="profile-social-chip"
+                  >
+                    <span>🐙</span>
+                    <span>{personalization.socialHandles.github}</span>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -657,9 +726,27 @@ export default function ProfileView({ onNavigateToNav }) {
             type="button"
             className="btn-secondary profile-action-btn"
             onClick={loadProfile}
+            disabled={isLoading}
             title="Refresh profile data"
           >
-            <span>🔄</span> Refresh
+            <svg
+              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>{isLoading ? 'Refreshing…' : 'Refresh'}</span>
           </button>
           <button
             type="button"
@@ -1169,16 +1256,37 @@ export default function ProfileView({ onNavigateToNav }) {
 
             {/* Social Media Connected Handles */}
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.65rem' }}>
-                Public Profile Social Handles
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+                  Public Profile Social Handles
+                </label>
+                {Object.values(personalization.socialHandles || {}).some(h => Boolean(h && h.trim())) && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllSocial}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '4px',
+                      textDecoration: 'underline'
+                    }}
+                    title="Clear all configured social links"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontSize: '1.2rem', width: '24px' }}>📸</span>
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="Instagram handle (e.g. piyush.jain)"
+                    placeholder="Instagram handle (e.g. your_handle)"
                     value={personalization.socialHandles.instagram || ''}
                     onChange={(e) => handleUpdateSocial('instagram', e.target.value)}
                     style={{ flex: 1, fontSize: '0.85rem' }}
@@ -1189,7 +1297,7 @@ export default function ProfileView({ onNavigateToNav }) {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="LinkedIn handle (e.g. piyush-jain)"
+                    placeholder="LinkedIn username or URL (e.g. your-profile)"
                     value={personalization.socialHandles.linkedin || ''}
                     onChange={(e) => handleUpdateSocial('linkedin', e.target.value)}
                     style={{ flex: 1, fontSize: '0.85rem' }}
@@ -1200,23 +1308,23 @@ export default function ProfileView({ onNavigateToNav }) {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="Twitter/X handle (e.g. piyushjain_dev)"
+                    placeholder="Twitter/X handle (e.g. your_handle)"
                     value={personalization.socialHandles.twitter || ''}
                     onChange={(e) => handleUpdateSocial('twitter', e.target.value)}
                     style={{ flex: 1, fontSize: '0.85rem' }}
                   />
                 </div>
-                {/* <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontSize: '1.2rem', width: '24px' }}>🐙</span>
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="GitHub username (e.g. piyushjain)"
+                    placeholder="GitHub username (e.g. your_username)"
                     value={personalization.socialHandles.github || ''}
                     onChange={(e) => handleUpdateSocial('github', e.target.value)}
                     style={{ flex: 1, fontSize: '0.85rem' }}
                   />
-                </div> */}
+                </div>
               </div>
             </div>
 
@@ -1321,9 +1429,11 @@ export default function ProfileView({ onNavigateToNav }) {
                   <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '1.3rem', color: '#ffffff', fontWeight: 800 }}>
                     {profileData?.name || user?.name}
                   </h4>
-                  <div style={{ fontSize: '0.82rem', color: currentAccent.light, fontWeight: 600 }}>
-                    {personalization.statusHeadline}
-                  </div>
+                  {personalization.statusHeadline && (
+                    <div style={{ fontSize: '0.82rem', color: currentAccent.light, fontWeight: 600 }}>
+                      {personalization.statusHeadline}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                     {profileData?.email || user?.email}
                   </div>

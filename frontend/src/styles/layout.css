@@ -1307,6 +1307,71 @@ div:hover > .profile-photo-hover-badge {
   flex-wrap: wrap;
 }
 
+/* Modern Refresh Pill Button & Smooth Rotating SVG Icon */
+.btn-refresh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.btn-refresh-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px var(--primary-glow);
+  transform: translateY(-1px);
+}
+
+.btn-refresh-pill:active {
+  transform: scale(0.96);
+}
+
+.btn-refresh-pill:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.refresh-icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+  color: #38bdf8;
+  flex-shrink: 0;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+
+.btn-refresh-pill:hover .refresh-icon-svg {
+  transform: rotate(180deg);
+  color: #67e8f9;
+}
+
+.refresh-icon-svg.spinning {
+  animation: refresh-icon-spin 0.75s linear infinite;
+  color: #38bdf8;
+}
+
+@keyframes refresh-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ==========================================================================
    Responsive Breakpoints: Desktop / Laptop / Tablet / Mobile Behavior
    ========================================================================== */

@@ -230,6 +230,7 @@ export default function MainLayout({
   const [gamificationData, setGamificationData] = useState(null);
   const [apiLatency, setApiLatency] = useState(null);
   const [isApiHealthy, setIsApiHealthy] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Close profile and notification dropdowns when clicking outside
   useEffect(() => {
@@ -311,6 +312,16 @@ export default function MainLayout({
       }
     } catch (e) {
       console.warn('Metrics refresh error:', e.message);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await refreshMetrics();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 650);
     }
   };
 
@@ -1296,11 +1307,29 @@ export default function MainLayout({
                 <>
                   <button
                     type="button"
-                    className="btn-secondary"
-                    onClick={refreshMetrics}
-                    style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
+                    className="btn-refresh-pill"
+                    onClick={handleManualRefresh}
+                    disabled={isRefreshing}
+                    title="Refresh telemetry, badge alerts, and server data"
                   >
-                    🔄 Refresh Data
+                    <svg
+                      className={`refresh-icon-svg ${isRefreshing ? 'spinning' : ''}`}
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                      <path d="M3 21v-5h5" />
+                    </svg>
+                    <span>{isRefreshing ? 'Refreshing…' : 'Refresh Data'}</span>
                   </button>
 
                   {currentRole === 'USER' && activeNav !== 'submit-activity' && (
