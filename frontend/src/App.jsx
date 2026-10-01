@@ -27,6 +27,8 @@ import './styles/gamification.css';
  */
 const AUTHENTICATED_SUB_VIEWS = [
   'dashboard',
+  'levels',
+  'super-admin/levels',
   'users',
   'admins',
   'submissions',

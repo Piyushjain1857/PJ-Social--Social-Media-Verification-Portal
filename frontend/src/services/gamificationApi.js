@@ -72,9 +72,63 @@ export const fetchUserGamification = async (userId) => {
   return await authFetch(`/gamification/user/${userId}`);
 };
 
+/**
+ * Super Admin Level Management API Methods (/api/admin/levels)
+ */
+export const fetchAdminLevels = async () => {
+  return await authFetch('/admin/levels');
+};
+
+export const fetchLevelConfiguration = async () => {
+  return await authFetch('/admin/levels/configuration');
+};
+
+export const createAdminLevel = async (levelData) => {
+  return await authFetch('/admin/levels', {
+    method: 'POST',
+    body: JSON.stringify(levelData)
+  });
+};
+
+export const updateAdminLevel = async (id, levelData) => {
+  return await authFetch(`/admin/levels/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(levelData)
+  });
+};
+
+export const updateAdminLevelStatus = async (id, isActive) => {
+  return await authFetch(`/admin/levels/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive })
+  });
+};
+
+export const deleteAdminLevel = async (id, options = {}) => {
+  return await authFetch(`/admin/levels/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify(options)
+  });
+};
+
+export const generateAdminLevels = async (options = {}) => {
+  return await authFetch('/admin/levels/generate', {
+    method: 'POST',
+    body: JSON.stringify(options)
+  });
+};
+
 export default {
   fetchMyGamification,
   fetchMyXPHistory,
   fetchGamificationLevels,
-  fetchUserGamification
+  fetchUserGamification,
+  fetchAdminLevels,
+  fetchLevelConfiguration,
+  createAdminLevel,
+  updateAdminLevel,
+  updateAdminLevelStatus,
+  deleteAdminLevel,
+  generateAdminLevels
 };
+

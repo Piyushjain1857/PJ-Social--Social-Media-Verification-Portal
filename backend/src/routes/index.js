@@ -40,6 +40,11 @@ router.use('/users', userRoutes);
 // Notifications routes (/api/notifications)
 router.use('/notifications', notificationRoutes);
 
+// Super Admin Level Management routes (/api/admin/levels & /api/superadmin/levels)
+const adminLevelRoutes = require('./adminLevelRoutes');
+router.use('/admin/levels', adminLevelRoutes);
+router.use('/superadmin/levels', adminLevelRoutes);
+
 // Super Admin Exclusive Governance routes (/api/superadmin)
 router.use('/superadmin', superAdminRoutes);
 

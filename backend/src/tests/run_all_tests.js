@@ -18,7 +18,8 @@ const testFiles = [
   'superadmin_dashboard.test.js',
   'superadmin_users.test.js',
   'points_system.test.js',
-  'gamification_level_system.test.js'
+  'gamification_level_system.test.js',
+  'superadmin_levels.test.js'
 ];
 
 console.log('========================================================');

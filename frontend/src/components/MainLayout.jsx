@@ -49,13 +49,14 @@ import SubmitActivityView from './views/SubmitActivityView';
 import MySubmissionsView from './views/MySubmissionsView';
 import NotificationsView from './views/NotificationsView';
 import ProfileView from './views/ProfileView';
+import LevelManagementView from './views/LevelManagementView';
 import GlobalSearchModal from './common/GlobalSearchModal';
 
 /**
  * Role-Based Navigation Definitions strictly enforced from authenticated role data:
  * 
  * SUPER_ADMIN:
- * - Dashboard, Users, Admins, Submissions, Social Accounts, Settings, Profile
+ * - Dashboard, Levels, Users, Admins, Submissions, Social Accounts, Settings, Profile
  * 
  * ADMIN:
  * - Dashboard, Review Submissions, Submissions, Profile
@@ -66,6 +67,7 @@ import GlobalSearchModal from './common/GlobalSearchModal';
 export const ROLE_NAVIGATION = {
   SUPER_ADMIN: [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Platform analytics & system overview' },
+    { id: 'levels', label: 'Levels', icon: '⚡', description: 'Level progression & XP engine manager' },
     { id: 'users', label: 'Users', icon: '👥', description: 'User directory & RBAC assignment' },
     { id: 'admins', label: 'Admins', icon: '🛡️', description: 'Administrator directory & governance' },
     { id: 'submissions', label: 'Submissions', icon: '📋', description: 'Verification submissions repository' },
@@ -101,7 +103,11 @@ export default function MainLayout({
 
   // Helper to determine initial nav for MainLayout on load / reload
   const getInitialNav = () => {
-    const hash = window.location.hash.replace('#', '');
+    let hash = window.location.hash.replace('#', '');
+    const pathname = window.location.pathname;
+    if (hash === 'super-admin/levels' || pathname === '/super-admin/levels') {
+      hash = 'levels';
+    }
     if (hash === 'gamification') {
       window.location.hash = 'dashboard';
       return 'dashboard';
@@ -387,6 +393,9 @@ export default function MainLayout({
     switch (activeNav) {
       case 'dashboard':
         return <DashboardView onNavigateToNav={handleNavChange} />;
+      case 'levels':
+      case 'super-admin/levels':
+        return <LevelManagementView />;
       case 'users':
         return <UsersView />;
       case 'admins':

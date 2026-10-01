@@ -284,3 +284,22 @@ model Level {
   @@index([isActive])
   @@map("levels")
 }
+
+/// System Audit Log for Super Admin actions and configuration changes
+model AuditLog {
+  id        String   @id @default(uuid())
+  actor     String
+  action    String
+  entity    String
+  entityId  String?
+  details   String
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([actor])
+  @@index([action])
+  @@index([entity])
+  @@index([timestamp(sort: Desc)])
+  @@map("audit_logs")
+}
+

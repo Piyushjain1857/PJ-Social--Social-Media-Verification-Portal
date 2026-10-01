@@ -16,13 +16,15 @@ const { hashPassword } = require('../utils/hash');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const { getAuditLogs: getRecordedAuditLogs } = require('../services/auditLogService');
+
 /**
  * GET /api/superadmin/audit-logs
  * Protected: SUPER_ADMIN ONLY
  */
 const getAuditLogs = async (req, res, next) => {
   try {
-    const logs = [
+    const staticLogs = [
       {
         id: 'log-001',
         event: 'USER_ROLE_INITIALIZED',
@@ -57,11 +59,34 @@ const getAuditLogs = async (req, res, next) => {
       }
     ];
 
+    let dynamicLogs = [];
+    try {
+      const dbLogsResult = await getRecordedAuditLogs({ limit: 100 });
+      dynamicLogs = (dbLogsResult.records || []).map(r => ({
+        id: r.id,
+        event: r.action,
+        action: r.action,
+        actor: r.actor,
+        target: r.entityId || r.entity,
+        entity: r.entity,
+        entityId: r.entityId,
+        details: r.details,
+        metadata: r.metadata,
+        timestamp: r.timestamp
+      }));
+    } catch (dbErr) {
+      console.warn('[SuperAdminController] Could not fetch dynamic audit logs:', dbErr.message);
+    }
+
+    const allLogs = [...dynamicLogs, ...staticLogs].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
     return res.status(200).json({
       success: true,
       message: 'System audit logs retrieved successfully.',
-      count: logs.length,
-      data: logs
+      count: allLogs.length,
+      data: allLogs
     });
   } catch (error) {
     next(error);
