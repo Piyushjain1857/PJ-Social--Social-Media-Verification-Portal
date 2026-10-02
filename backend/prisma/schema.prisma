@@ -88,6 +88,7 @@ model User {
   @@index([status])
   @@index([name])
   @@index([role, status])
+  @@index([role, status, totalXP(sort: Desc)])
   @@index([createdAt])
   @@index([totalPoints(sort: Desc)])
   @@index([totalXP(sort: Desc)])

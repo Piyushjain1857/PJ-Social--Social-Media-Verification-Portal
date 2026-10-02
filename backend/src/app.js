@@ -65,10 +65,14 @@ app.get('/', (req, res) => {
   res.status(200).json({
     name: 'Social Media Activity Verification Portal API',
     status: 'online',
+    docs: '/api/docs',
     healthCheck: '/api/health',
     info: '/api/info'
   });
 });
+
+// Top-level Swagger Docs alias
+app.get('/docs', (req, res) => res.redirect('/api/docs'));
 
 // Mount API routes
 app.use('/api', apiRoutes);

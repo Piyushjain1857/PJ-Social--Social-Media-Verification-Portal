@@ -27,6 +27,7 @@ import './styles/gamification.css';
  */
 const AUTHENTICATED_SUB_VIEWS = [
   'dashboard',
+  'game-points',
   'points',
   'gamification',
   'levels',
@@ -52,7 +53,17 @@ export default function App() {
 
   const getInitialView = () => {
     const hash = window.location.hash.replace('#', '');
+    const pathname = window.location.pathname.replace(/^\//, '');
     const hasToken = !!localStorage.getItem('auth_token');
+
+    // Handle direct path /game-points
+    if (pathname === 'game-points' || pathname.startsWith('game-points')) {
+      if (hasToken) {
+        window.location.hash = 'game-points';
+        return 'dashboard';
+      }
+      return 'login';
+    }
 
     // Any authenticated workspace views map to 'dashboard' container layout
     if (AUTHENTICATED_SUB_VIEWS.includes(hash)) {

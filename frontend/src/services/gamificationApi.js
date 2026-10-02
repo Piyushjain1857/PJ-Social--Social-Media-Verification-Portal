@@ -77,11 +77,54 @@ export const fetchGamificationLevels = async () => {
 };
 
 /**
+ * Fetch authenticated creator's XP Progression Chart data
+ * @param {string} [timeframe='30d'] - '7d', '30d', '3m', '6m', 'all'
+ */
+export const fetchMyXPChart = async (timeframe = '30d') => {
+  return await authFetch(`/gamification/me/chart?timeframe=${encodeURIComponent(timeframe)}`);
+};
+
+/**
+ * Fetch authenticated creator's current rank, total participants, and percentile
+ */
+export const fetchMyRank = async () => {
+  return await authFetch('/gamification/me/rank');
+};
+
+/**
+ * Fetch authenticated creator's monthly position / rank timeline over time
+ */
+export const fetchMyRankHistory = async () => {
+  return await authFetch('/gamification/me/rank-history');
+};
+
+/**
  * Admin / Super Admin: Fetch target user's gamification XP & level profile
  * @param {string} userId
  */
 export const fetchUserGamification = async (userId) => {
   return await authFetch(`/gamification/user/${userId}`);
+};
+
+/**
+ * Admin / Super Admin: Fetch target user's XP progression chart data
+ */
+export const fetchUserXPChart = async (userId, timeframe = '30d') => {
+  return await authFetch(`/gamification/user/${userId}/chart?timeframe=${encodeURIComponent(timeframe)}`);
+};
+
+/**
+ * Admin / Super Admin: Fetch target user's rank metrics
+ */
+export const fetchUserRank = async (userId) => {
+  return await authFetch(`/gamification/user/${userId}/rank`);
+};
+
+/**
+ * Admin / Super Admin: Fetch target user's rank timeline
+ */
+export const fetchUserRankHistory = async (userId) => {
+  return await authFetch(`/gamification/user/${userId}/rank-history`);
 };
 
 /**
@@ -132,10 +175,16 @@ export const generateAdminLevels = async (options = {}) => {
 
 export default {
   fetchMyGamification,
+  fetchMyXPChart,
+  fetchMyRank,
+  fetchMyRankHistory,
   fetchMyXPHistory,
   fetchMyLevelJourney,
   fetchGamificationLevels,
   fetchUserGamification,
+  fetchUserXPChart,
+  fetchUserRank,
+  fetchUserRankHistory,
   fetchAdminLevels,
   fetchLevelConfiguration,
   createAdminLevel,

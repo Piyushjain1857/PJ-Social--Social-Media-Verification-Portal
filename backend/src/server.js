@@ -11,6 +11,7 @@ const startServer = (port) => {
     console.log(` Listening on port: ${port}`);
     console.log(` Environment:       ${env.NODE_ENV}`);
     console.log(` Health endpoint:   http://localhost:${port}/api/health`);
+    console.log(` Swagger UI Docs:   http://localhost:${port}/api/docs`);
     console.log(` Database status:   http://localhost:${port}/api/database/status`);
     console.log(`====================================================`);
   });

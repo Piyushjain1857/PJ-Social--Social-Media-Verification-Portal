@@ -61,6 +61,11 @@ router.use('/dashboard', dashboardRoutes);
 // Replaces the public /uploads static serve — files are only served to authorized users.
 router.use('/uploads', uploadRoutes);
 
+// Swagger OpenAPI Documentation (/api/docs and /api/swagger.json)
+const swaggerRoutes = require('./swaggerRoutes');
+router.use('/docs', swaggerRoutes);
+router.get('/swagger.json', (req, res) => res.redirect('/api/docs/json'));
+
 // Health and Diagnostics
 router.use('/', healthRoutes);
 

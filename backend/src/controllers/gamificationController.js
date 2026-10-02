@@ -3,17 +3,49 @@ const {
   calculateUserXP,
   getActiveLevels,
   buildLevelThresholds,
-  calculateUserLevel
+  calculateUserLevel,
+  getUserRankMetrics,
+  getUserXPChartData,
+  getUserRankHistory
 } = require('../services/levelService');
 const {
   getUserTransactionsHistory
 } = require('../repositories/pointTransactionRepository');
 const { prisma, checkDatabaseConnection } = require('../config/db');
 
+const ACTION_NAMES = {
+  LIKE: 'Like',
+  COMMENT: 'Comment',
+  STORY: 'Story',
+  BONUS: 'Manual Bonus',
+  ADJUSTMENT: 'Adjustment'
+};
+
+const ACTION_ICONS = {
+  LIKE: '❤️',
+  COMMENT: '💬',
+  STORY: '📱',
+  BONUS: '🎁',
+  ADJUSTMENT: '⚖️'
+};
+
+function getSourceFromTx(tx) {
+  if (tx.submission?.platform) {
+    return tx.submission.platform;
+  }
+  if (tx.metadata?.platform) {
+    return tx.metadata.platform;
+  }
+  if (tx.actionType === 'BONUS' || tx.actionType === 'ADJUSTMENT') {
+    return tx.metadata?.adminName || 'Admin Bonus';
+  }
+  return 'Platform Activity';
+}
+
 /**
  * GET /api/gamification/me
  * Protected: Authenticated User
- * Returns user's totalXP, current level, progress, and thresholds.
+ * Returns user's totalXP, current level, progress, rank, recentXP, and thresholds.
  */
 const getMyGamification = async (req, res, next) => {
   try {
@@ -23,6 +55,67 @@ const getMyGamification = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: profile
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/gamification/me/chart
+ * Protected: Authenticated User
+ * Returns user's XP progression over time with date, xp, level, and summary metrics.
+ * Query param: timeframe (7d, 30d, 3m, 6m, all)
+ */
+const getMyXPChart = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { timeframe = '30d' } = req.query;
+
+    const chartData = await getUserXPChartData(userId, timeframe);
+
+    return res.status(200).json({
+      success: true,
+      data: chartData
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/gamification/me/rank
+ * Protected: Authenticated User
+ * Returns user's real leaderboard rank, total participants, users behind, and percentile ahead.
+ */
+const getMyRankMetrics = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const rankData = await getUserRankMetrics(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: rankData
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/gamification/me/rank-history
+ * Protected: Authenticated User
+ * Section: "📊 My Position Over Time"
+ * Returns monthly timeline snapshots of rank and XP, trajectory trend, and position changes.
+ */
+const getMyRankHistory = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const historyData = await getUserRankHistory(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: historyData
     });
   } catch (err) {
     next(err);
@@ -59,18 +152,26 @@ const getMyXPHistory = async (req, res, next) => {
 
     const rawRecords = result.records || result.transactions || [];
 
-    // Ensure xp field is formatted clearly
-    const formattedTransactions = rawRecords.map(tx => ({
-      id: tx.id,
-      userId: tx.userId,
-      submissionId: tx.submissionId,
-      actionType: tx.actionType,
-      xp: tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points,
-      points: tx.points,
-      description: tx.description,
-      createdAt: tx.createdAt,
-      submission: tx.submission || null
-    }));
+    // Ensure xp, action, source, icon fields are formatted clearly
+    const formattedTransactions = rawRecords.map(tx => {
+      const xpVal = tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points;
+      const act = tx.actionType || 'BONUS';
+      return {
+        id: tx.id,
+        userId: tx.userId,
+        submissionId: tx.submissionId,
+        actionType: act,
+        actionName: ACTION_NAMES[act] || act,
+        icon: ACTION_ICONS[act] || '⚡',
+        xp: xpVal,
+        points: tx.points,
+        description: tx.description,
+        source: getSourceFromTx(tx),
+        date: tx.createdAt,
+        createdAt: tx.createdAt,
+        submission: tx.submission || null
+      };
+    });
 
     return res.status(200).json({
       success: true,
@@ -209,10 +310,72 @@ const getUserGamificationById = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/gamification/user/:id/chart
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const getUserXPChartById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { timeframe = '30d' } = req.query;
+
+    const chartData = await getUserXPChartData(id, timeframe);
+
+    return res.status(200).json({
+      success: true,
+      data: chartData
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/gamification/user/:id/rank
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const getUserRankMetricsById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const rankData = await getUserRankMetrics(id);
+
+    return res.status(200).json({
+      success: true,
+      data: rankData
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/gamification/user/:id/rank-history
+ * Protected: ADMIN, SUPER_ADMIN only
+ */
+const getUserRankHistoryById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const historyData = await getUserRankHistory(id);
+
+    return res.status(200).json({
+      success: true,
+      data: historyData
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMyGamification,
+  getMyXPChart,
+  getMyRankMetrics,
+  getMyRankHistory,
   getMyXPHistory,
   getLevelsList,
   getMyLevelJourney,
-  getUserGamificationById
+  getUserGamificationById,
+  getUserXPChartById,
+  getUserRankMetricsById,
+  getUserRankHistoryById
 };

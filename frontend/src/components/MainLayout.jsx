@@ -55,23 +55,25 @@ import LevelManagementView from './views/LevelManagementView';
 import GlobalSearchModal from './common/GlobalSearchModal';
 import GamificationSummary from './gamification/GamificationSummary';
 import PointsSummary from './common/PointsSummary';
+import GamePointsView from './views/GamePointsView';
 import { fetchMyGamification } from '../services/gamificationApi';
 
 /**
  * Role-Based Navigation Definitions strictly enforced from authenticated role data:
  * 
  * SUPER_ADMIN:
- * - Dashboard, Levels, Users, Admins, Submissions, Social Accounts, Settings, Profile
+ * - Dashboard, Game Points, Levels, Users, Admins, Submissions, Social Accounts, Settings, Profile
  * 
  * ADMIN:
- * - Dashboard, Review Submissions, Submissions, Profile
+ * - Dashboard, Game Points, Review Submissions, Submissions, Profile
  * 
  * USER:
- * - Dashboard, Submit Activity, My Submissions, Notifications, Profile
+ * - Dashboard, Game Points, Submit Activity, My Submissions, Notifications, Profile
  */
 export const ROLE_NAVIGATION = {
   SUPER_ADMIN: [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Platform analytics & system overview' },
+    { id: 'game-points', label: 'Game Points', icon: '🎮', description: 'Gamification engine, XP progression & leaderboard' },
     { id: 'levels', label: 'Levels', icon: '⚡', description: 'Level progression & XP engine manager' },
     { id: 'users', label: 'Users', icon: '👥', description: 'User directory & RBAC assignment' },
     { id: 'admins', label: 'Admins', icon: '🛡️', description: 'Administrator directory & governance' },
@@ -82,12 +84,14 @@ export const ROLE_NAVIGATION = {
   ],
   ADMIN: [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Moderator workload & statistics' },
+    { id: 'game-points', label: 'Game Points', icon: '🎮', description: 'Gamification engine, XP progression & leaderboard' },
     { id: 'review-submissions', label: 'Review Submissions', icon: '⚖️', description: 'Moderation review queue', isUrgentBadge: true },
     { id: 'submissions', label: 'Submissions', icon: '📋', description: 'Browse and inspect platform submissions' },
     { id: 'profile', label: 'Profile', icon: '👤', description: 'Moderator profile & credentials' },
   ],
   USER: [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Creator dashboard & activity score' },
+    { id: 'game-points', label: 'Game Points', icon: '🎮', description: 'My XP level, progression graph & ranking' },
     { id: 'submit-activity', label: 'Submit Activity', icon: '➕', description: 'Submit social media activity proof' },
     { id: 'my-submissions', label: 'My Submissions', icon: '📋', description: 'Track your submission verification statuses' },
     { id: 'notifications', label: 'Notifications', icon: '🔔', description: 'Verification updates & alerts', hasBadge: true },
@@ -114,9 +118,11 @@ export default function MainLayout({
     if (hash === 'super-admin/levels' || pathname === '/super-admin/levels') {
       hash = 'levels';
     }
+    if (hash === 'game-points' || pathname === '/game-points') {
+      return 'game-points';
+    }
     if (hash === 'gamification') {
-      window.location.hash = 'dashboard';
-      return 'dashboard';
+      return 'game-points';
     }
     const role = user?.role || 'USER';
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
@@ -438,37 +444,10 @@ export default function MainLayout({
     switch (activeNav) {
       case 'dashboard':
         return <DashboardView onNavigateToNav={handleNavChange} />;
+      case 'game-points':
       case 'points':
       case 'gamification':
-        return (
-          <div className="layout-content-area">
-            <div className="layout-page-header">
-              <div className="layout-header-title-wrap">
-                <h1 className="layout-header-title">
-                  <span>🏆</span> Verification Points &amp; XP Progression
-                </h1>
-                <p className="layout-header-subtitle">
-                  Monitor your approved verification rewards, level progression milestones, and recent point transactions.
-                </p>
-              </div>
-              <div className="layout-header-actions">
-                <button
-                  type="button"
-                  className="btn-portal-primary"
-                  onClick={() => handleNavChange('submit-activity')}
-                >
-                  <span>➕</span> Submit Activity
-                </button>
-              </div>
-            </div>
-
-            <GamificationSummary onNavigateToNav={handleNavChange} />
-
-            <div style={{ marginTop: '2rem' }}>
-              <PointsSummary onNavigateToNav={handleNavChange} />
-            </div>
-          </div>
-        );
+        return <GamePointsView onNavigateToNav={handleNavChange} />;
       case 'levels':
       case 'super-admin/levels':
         return <LevelManagementView />;
@@ -628,11 +607,11 @@ export default function MainLayout({
 
               <div
                 className="sidebar-points-widget"
-                onClick={() => handleNavChange('points')}
+                onClick={() => handleNavChange('game-points')}
                 title="View full points activity and XP milestones"
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange('points'); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange('game-points'); }}
               >
                 <div className="sidebar-points-widget-top">
                   <div className="sidebar-points-tier">
@@ -817,7 +796,7 @@ export default function MainLayout({
 
               <div
                 className="sidebar-points-widget"
-                onClick={() => { handleNavChange('points'); setIsMobileDrawerOpen(false); }}
+                onClick={() => { handleNavChange('game-points'); setIsMobileDrawerOpen(false); }}
                 title="View full points activity and XP milestones"
                 role="button"
                 tabIndex={0}

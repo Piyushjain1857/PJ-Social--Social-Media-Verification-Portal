@@ -345,6 +345,29 @@ const getUserGamificationProfile = async (userId) => {
   // 3. Compute level progression using dynamic active level records
   const levelData = calculateUserLevel(totalXP, activeLevels);
 
+  // 4. Calculate recent XP (past 30 days) and rank metrics
+  let recentXP = 0;
+  let rankMetrics = null;
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentSum = await prisma.pointTransaction.aggregate({
+        where: { userId, createdAt: { gte: thirtyDaysAgo } },
+        _sum: { xp: true }
+      });
+      recentXP = recentSum._sum.xp || 0;
+    } catch (err) {
+      console.warn('[LevelService] Error calculating recent XP:', err.message);
+    }
+  }
+
+  try {
+    rankMetrics = await getUserRankMetrics(userId);
+  } catch (err) {
+    console.warn('[LevelService] Error calculating rank metrics:', err.message);
+  }
+
   return {
     totalXP: levelData.totalXP,
     currentLevel: levelData.currentLevel,
@@ -358,7 +381,426 @@ const getUserGamificationProfile = async (userId) => {
     progressPercentage: levelData.progressPercentage,
     icon: levelData.icon,
     isMaxLevel: levelData.isMaxLevel,
-    description: levelData.description
+    description: levelData.description,
+    recentXP,
+    rank: rankMetrics?.rank || 1,
+    totalParticipants: rankMetrics?.totalParticipants || 1,
+    percentileAhead: rankMetrics?.percentileAhead ?? 100,
+    pointsToNextRank: rankMetrics?.pointsToNextRank || 0,
+    usersBehind: rankMetrics?.usersBehind || 0
+  };
+};
+
+/**
+ * Retrieve user's authoritative leaderboard rank, total participants, and percentile.
+ * Only counts eligible users (role: 'USER', status: 'ACTIVE').
+ * Fully calculated on PostgreSQL/backend.
+ * 
+ * @param {string} userId
+ * @returns {Promise<Object>}
+ */
+const getUserRankMetrics = async (userId) => {
+  if (!userId) {
+    throw new Error('User ID is required to calculate rank metrics.');
+  }
+
+  const dbStatus = await checkDatabaseConnection();
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, totalXP: true, totalPoints: true, createdAt: true, role: true, status: true }
+      });
+
+      if (!user) {
+        throw new Error('User not found.');
+      }
+
+      const userXP = Math.max(0, user.totalXP ?? user.totalPoints ?? 0);
+
+      // Total eligible participants
+      const totalParticipants = await prisma.user.count({
+        where: { role: 'USER', status: 'ACTIVE' }
+      });
+
+      // Users ahead: higher totalXP, or same XP but created earlier (tie-breaker)
+      const usersAhead = await prisma.user.count({
+        where: {
+          role: 'USER',
+          status: 'ACTIVE',
+          OR: [
+            { totalXP: { gt: userXP } },
+            {
+              totalXP: userXP,
+              createdAt: { lt: user.createdAt }
+            }
+          ]
+        }
+      });
+
+      const rank = usersAhead + 1;
+
+      // Users behind
+      const usersBehind = await prisma.user.count({
+        where: {
+          role: 'USER',
+          status: 'ACTIVE',
+          OR: [
+            { totalXP: { lt: userXP } },
+            {
+              totalXP: userXP,
+              createdAt: { gt: user.createdAt }
+            }
+          ]
+        }
+      });
+
+      // Calculate real percentile ahead of participants
+      // e.g. Rank 24 of 486 -> ahead of 95% of participants
+      const effectiveTotal = Math.max(1, totalParticipants);
+      const percentileAhead = effectiveTotal > 1
+        ? Math.min(100, Math.max(0, Math.round((usersBehind / (effectiveTotal - 1)) * 100)))
+        : 100;
+
+      // Find user directly ahead in rank to calculate XP needed to overtake
+      const userAbove = await prisma.user.findFirst({
+        where: {
+          role: 'USER',
+          status: 'ACTIVE',
+          OR: [
+            { totalXP: { gt: userXP } },
+            {
+              totalXP: userXP,
+              createdAt: { lt: user.createdAt }
+            }
+          ]
+        },
+        orderBy: [
+          { totalXP: 'asc' },
+          { createdAt: 'desc' }
+        ],
+        select: { totalXP: true }
+      });
+
+      const pointsToNextRank = userAbove ? Math.max(1, (userAbove.totalXP - userXP) + 1) : 0;
+
+      return {
+        rank,
+        totalParticipants,
+        usersBehind,
+        usersAhead,
+        percentileAhead,
+        totalXP: userXP,
+        pointsToNextRank,
+        nextRank: rank > 1 ? rank - 1 : null
+      };
+    } catch (err) {
+      console.warn('[LevelService] Error calculating user rank metrics from DB:', err.message);
+    }
+  }
+
+  return {
+    rank: 1,
+    totalParticipants: 1,
+    usersBehind: 0,
+    usersAhead: 0,
+    percentileAhead: 100,
+    totalXP: 0,
+    pointsToNextRank: 0,
+    nextRank: null
+  };
+};
+
+/**
+ * Retrieve user's XP progression over time with configurable timeframes:
+ * '7d', '30d', '3m' (or '90d'), '6m' (or '180d'), 'all'.
+ * Returns an array of chronological data points with Date, cumulative XP, and Level at that point.
+ * 
+ * @param {string} userId
+ * @param {string} [timeframe='30d']
+ * @returns {Promise<Object>}
+ */
+const getUserXPChartData = async (userId, timeframe = '30d') => {
+  if (!userId) {
+    throw new Error('User ID is required to fetch chart data.');
+  }
+
+  const activeLevels = await getActiveLevels();
+  const dbStatus = await checkDatabaseConnection();
+
+  let transactions = [];
+  let userCreatedAt = new Date();
+
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const [user, txs] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { createdAt: true, totalXP: true, totalPoints: true }
+        }),
+        prisma.pointTransaction.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, xp: true, points: true, createdAt: true, actionType: true }
+        })
+      ]);
+
+      if (user) {
+        userCreatedAt = user.createdAt;
+      }
+      transactions = txs || [];
+    } catch (err) {
+      console.warn('[LevelService] Error fetching transactions for chart:', err.message);
+    }
+  }
+
+  const now = new Date();
+  const cleanTf = (timeframe || '30d').toLowerCase();
+
+  // Determine interval and points
+  const points = [];
+  let daysBack = 30;
+  let intervalDays = 1;
+
+  if (cleanTf === '7d' || cleanTf === '7_days') {
+    daysBack = 7;
+    intervalDays = 1;
+  } else if (cleanTf === '30d' || cleanTf === '30_days') {
+    daysBack = 30;
+    intervalDays = 1;
+  } else if (cleanTf === '3m' || cleanTf === '90d' || cleanTf === '3_months') {
+    daysBack = 90;
+    intervalDays = 3;
+  } else if (cleanTf === '6m' || cleanTf === '180d' || cleanTf === '6_months') {
+    daysBack = 180;
+    intervalDays = 7;
+  } else if (cleanTf === 'all' || cleanTf === 'all_time') {
+    const earliestDate = transactions.length > 0
+      ? new Date(transactions[0].createdAt)
+      : new Date(userCreatedAt);
+    const diffDays = Math.max(7, Math.ceil((now.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)));
+    daysBack = Math.min(730, diffDays); // Up to 2 years
+    intervalDays = Math.max(1, Math.ceil(daysBack / 30));
+  }
+
+  const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  startDate.setHours(0, 0, 0, 0);
+
+  // Pre-calculate cumulative XP before startDate
+  let runningXP = 0;
+  for (const tx of transactions) {
+    const txDate = new Date(tx.createdAt);
+    if (txDate < startDate) {
+      runningXP += (tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points) || 0;
+    }
+  }
+
+  let txIndex = 0;
+  // Advance txIndex to first transaction inside the window
+  while (txIndex < transactions.length && new Date(transactions[txIndex].createdAt) < startDate) {
+    txIndex++;
+  }
+
+  // Generate bucket dates
+  let currentDate = new Date(startDate);
+  while (currentDate <= now) {
+    const bucketEnd = new Date(currentDate);
+    bucketEnd.setHours(23, 59, 59, 999);
+
+    let xpGainedInInterval = 0;
+    while (txIndex < transactions.length && new Date(transactions[txIndex].createdAt) <= bucketEnd) {
+      const tx = transactions[txIndex];
+      const val = (tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points) || 0;
+      runningXP += val;
+      xpGainedInInterval += val;
+      txIndex++;
+    }
+
+    const levelData = calculateUserLevel(runningXP, activeLevels);
+
+    points.push({
+      date: currentDate.toISOString().split('T')[0],
+      label: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      timestamp: currentDate.getTime(),
+      xp: runningXP,
+      xpGained: xpGainedInInterval,
+      level: levelData.currentLevel,
+      levelName: levelData.levelName,
+      icon: levelData.icon
+    });
+
+    currentDate = new Date(currentDate.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+  }
+
+  // Ensure today's end state is included as final point if not already
+  if (points.length === 0 || points[points.length - 1].date !== now.toISOString().split('T')[0]) {
+    while (txIndex < transactions.length) {
+      const tx = transactions[txIndex];
+      runningXP += (tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points) || 0;
+      txIndex++;
+    }
+    const finalLevel = calculateUserLevel(runningXP, activeLevels);
+    points.push({
+      date: now.toISOString().split('T')[0],
+      label: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      timestamp: now.getTime(),
+      xp: runningXP,
+      xpGained: 0,
+      level: finalLevel.currentLevel,
+      levelName: finalLevel.levelName,
+      icon: finalLevel.icon
+    });
+  }
+
+  const startXP = points.length > 0 ? points[0].xp : 0;
+  const endXP = points.length > 0 ? points[points.length - 1].xp : 0;
+
+  return {
+    timeframe: cleanTf,
+    points,
+    summary: {
+      startingXP: startXP,
+      endingXP: endXP,
+      netXPGained: Math.max(0, endXP - startXP),
+      dataPointsCount: points.length,
+      currentLevel: points.length > 0 ? points[points.length - 1].level : 1,
+      currentLevelName: points.length > 0 ? points[points.length - 1].levelName : 'Novice'
+    }
+  };
+};
+
+/**
+ * Retrieve user's position/rank over monthly intervals.
+ * Section: "📊 My Position Over Time"
+ * Returns chronological timeline: January #87, February #63, March #41, April #24...
+ * Along with trajectory trend (upward, downward, stable) and rank change.
+ * 
+ * @param {string} userId
+ * @returns {Promise<Object>}
+ */
+const getUserRankHistory = async (userId) => {
+  if (!userId) {
+    throw new Error('User ID is required to fetch rank history.');
+  }
+
+  const dbStatus = await checkDatabaseConnection();
+  if (dbStatus.isConnected && prisma) {
+    try {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, createdAt: true, role: true, totalXP: true, totalPoints: true }
+      });
+
+      if (!currentUser) {
+        throw new Error('User not found.');
+      }
+
+      const now = new Date();
+      // Generate the last 4 to 6 months
+      const months = [];
+      const numMonths = 5; // e.g. 5 months back to current
+      for (let i = numMonths; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        const cutoff = endOfMonth > now ? now : endOfMonth;
+        months.push({
+          month: d.toLocaleDateString('en-US', { month: 'short' }),
+          monthLong: d.toLocaleDateString('en-US', { month: 'long' }),
+          year: d.getFullYear(),
+          cutoff
+        });
+      }
+
+      // Query rank at each monthly cutoff
+      const timeline = await Promise.all(months.map(async (m) => {
+        // User cumulative XP at cutoff
+        const userTxSum = await prisma.pointTransaction.aggregate({
+          where: { userId, createdAt: { lte: m.cutoff } },
+          _sum: { xp: true }
+        });
+        const uXP = userTxSum._sum.xp || 0;
+
+        // Group total XP for all eligible users at that cutoff
+        const group = await prisma.pointTransaction.groupBy({
+          by: ['userId'],
+          where: {
+            createdAt: { lte: m.cutoff },
+            user: { role: 'USER', status: 'ACTIVE' }
+          },
+          _sum: { xp: true }
+        });
+
+        // Total eligible users who existed on platform by that date
+        const totalEligible = await prisma.user.count({
+          where: {
+            role: 'USER',
+            status: 'ACTIVE',
+            createdAt: { lte: m.cutoff }
+          }
+        });
+
+        const effectiveTotal = Math.max(1, Math.max(totalEligible, group.length));
+
+        // Users ahead of current user at cutoff
+        const ahead = group.filter(g => (g._sum.xp || 0) > uXP).length;
+        const rank = ahead + 1;
+        const behind = Math.max(0, effectiveTotal - rank);
+        const percentileAhead = effectiveTotal > 1
+          ? Math.min(100, Math.max(0, Math.round((behind / (effectiveTotal - 1)) * 100)))
+          : 100;
+
+        return {
+          month: m.month,
+          monthLong: m.monthLong,
+          year: m.year,
+          period: `${m.monthLong} ${m.year}`,
+          rank,
+          xp: uXP,
+          totalParticipants: effectiveTotal,
+          percentileAhead
+        };
+      }));
+
+      // Calculate trend and position change
+      const firstSnapshot = timeline[0];
+      const latestSnapshot = timeline[timeline.length - 1];
+
+      let trend = 'stable';
+      let rankChange = 0;
+      if (firstSnapshot && latestSnapshot) {
+        // Note: Lower rank number means higher position! (e.g. rank 24 is better than rank 87)
+        rankChange = firstSnapshot.rank - latestSnapshot.rank;
+        if (rankChange > 0) {
+          trend = 'upward';
+        } else if (rankChange < 0) {
+          trend = 'downward';
+        }
+      }
+
+      return {
+        timeline,
+        currentRank: latestSnapshot ? latestSnapshot.rank : 1,
+        initialRank: firstSnapshot ? firstSnapshot.rank : 1,
+        rankChange: Math.abs(rankChange),
+        trend,
+        summary: trend === 'upward'
+          ? `You have moved up ${Math.abs(rankChange)} positions over time!`
+          : trend === 'downward'
+          ? `Position adjusted by ${Math.abs(rankChange)} ranks.`
+          : `Position is holding steady at #${latestSnapshot?.rank || 1}.`
+      };
+    } catch (err) {
+      console.warn('[LevelService] Error calculating rank history:', err.message);
+    }
+  }
+
+  return {
+    timeline: [],
+    currentRank: 1,
+    initialRank: 1,
+    rankChange: 0,
+    trend: 'stable',
+    summary: 'No rank history recorded yet.'
   };
 };
 
@@ -372,5 +814,8 @@ module.exports = {
   getXPRequiredForNextLevel,
   calculateUserXP,
   getUserGamificationProfile,
+  getUserRankMetrics,
+  getUserXPChartData,
+  getUserRankHistory,
   invalidateLevelsCache
 };
