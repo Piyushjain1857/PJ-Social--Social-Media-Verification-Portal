@@ -7,10 +7,20 @@ export default function SuperAdminGamificationOverview({
 }) {
   if (isLoading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div className="superadmin-kpi-grid">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-          <div key={i} className="glass-panel" style={{ padding: '1.5rem', height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading command center metrics...</span>
+          <div
+            key={i}
+            className="superadmin-kpi-card"
+            style={{ minHeight: '110px', opacity: 0.6 }}
+          >
+            <div className="superadmin-kpi-icon-box" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              ⏳
+            </div>
+            <div className="superadmin-kpi-info" style={{ width: '100%' }}>
+              <div style={{ width: '60%', height: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginBottom: '8px' }} />
+              <div style={{ width: '40%', height: '24px', background: 'rgba(255,255,255,0.15)', borderRadius: '6px' }} />
+            </div>
           </div>
         ))}
       </div>
@@ -21,187 +31,226 @@ export default function SuperAdminGamificationOverview({
 
   return (
     <div className="superadmin-gamification-overview">
-      {/* 9 Core Key Performance Metric Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem',
-          marginBottom: '1.75rem'
-        }}
-      >
-        {/* Total XP */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>⚡</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Total XP Distributed
+      {/* 9 Core Key Performance Metric HUD Cards */}
+      <div className="superadmin-kpi-grid" style={{ marginBottom: '1.75rem' }}>
+        {/* Total XP Distributed */}
+        <div
+          className="superadmin-kpi-card xp"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('transactions')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('transactions'); } }}
+          title="Click to view all verified transactions"
+        >
+          <div className="superadmin-kpi-icon-box xp">
+            ⚡
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total XP Distributed</span>
+            <span className="superadmin-kpi-value" style={{ color: '#38bdf8' }}>
+              {(overview.totalXPDistributed || 0).toLocaleString()}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#38bdf8' }}>
-            {(overview.totalXPDistributed || 0).toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Across all verified activities
+            <span className="superadmin-kpi-subtext">Across all verified activities →</span>
           </div>
         </div>
 
-        {/* Total Users */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>👥</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Total Creators
+        {/* Total Creators */}
+        <div
+          className="superadmin-kpi-card creators"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('users')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('users'); } }}
+          title="Click to open creator user directory"
+        >
+          <div className="superadmin-kpi-icon-box creators">
+            👥
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total Creators</span>
+            <span className="superadmin-kpi-value" style={{ color: '#10b981' }}>
+              {(overview.totalUsers || 0).toLocaleString()}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
-            {(overview.totalUsers || 0).toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: '#10b981', marginTop: '0.25rem' }}>
-            Registered platform creators
+            <span className="superadmin-kpi-subtext">Registered platform creators →</span>
           </div>
         </div>
 
-        {/* Active Users */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>🔥</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Active Creators
+        {/* Active Creators */}
+        <div
+          className="superadmin-kpi-card active-users"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('users')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('users'); } }}
+          title="Click to view active creators"
+        >
+          <div className="superadmin-kpi-icon-box active-users">
+            🔥
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Active Creators</span>
+            <span className="superadmin-kpi-value" style={{ color: '#f59e0b' }}>
+              {(overview.activeUsers || 0).toLocaleString()}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#f59e0b' }}>
-            {(overview.activeUsers || 0).toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Creators with earned XP
+            <span className="superadmin-kpi-subtext">Creators with earned XP →</span>
           </div>
         </div>
 
         {/* Average XP */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>📊</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Average XP
+        <div
+          className="superadmin-kpi-card avg-xp"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('analytics')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('analytics'); } }}
+          title="Click to open gamification analytics"
+        >
+          <div className="superadmin-kpi-icon-box avg-xp">
+            📊
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Average XP</span>
+            <span className="superadmin-kpi-value" style={{ color: '#a855f7' }}>
+              {(overview.averageXP || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', color: '#c084fc' }}>XP</span>
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#a855f7' }}>
-            {(overview.averageXP || 0).toLocaleString()} XP
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Mean balance per creator
+            <span className="superadmin-kpi-subtext">Mean balance per creator →</span>
           </div>
         </div>
 
         {/* Highest XP */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>👑</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Highest XP
+        <div
+          className="superadmin-kpi-card highest-xp"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('leaderboard')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('leaderboard'); } }}
+          title="Click to open leaderboard"
+        >
+          <div className="superadmin-kpi-icon-box highest-xp">
+            👑
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Highest XP</span>
+            <span className="superadmin-kpi-value" style={{ color: '#facc15' }}>
+              {(overview.highestXP || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', color: '#fde047' }}>XP</span>
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#facc15' }}>
-            {(overview.highestXP || 0).toLocaleString()} XP
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Platform record holder
+            <span className="superadmin-kpi-subtext">Platform record holder →</span>
           </div>
         </div>
 
         {/* Highest Level Reached */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>🏆</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Highest Level
+        <div
+          className="superadmin-kpi-card highest-lvl"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('levels')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('levels'); } }}
+          title="Click to manage progression levels"
+        >
+          <div className="superadmin-kpi-icon-box highest-lvl">
+            🏆
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Highest Level</span>
+            <span className="superadmin-kpi-value" style={{ color: '#ec4899' }}>
+              Level {overview.highestLevelReached || 1}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ec4899' }}>
-            Level {overview.highestLevelReached || 1}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Peak creator milestone
+            <span className="superadmin-kpi-subtext">Peak creator milestone →</span>
           </div>
         </div>
 
         {/* Total XP Transactions */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>🧾</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Total Transactions
+        <div
+          className="superadmin-kpi-card tx"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('transactions')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('transactions'); } }}
+          title="Click to inspect all transactions"
+        >
+          <div className="superadmin-kpi-icon-box tx">
+            🧾
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total Transactions</span>
+            <span className="superadmin-kpi-value" style={{ color: '#818cf8' }}>
+              {(overview.totalXPTransactions || 0).toLocaleString()}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
-            {(overview.totalXPTransactions || 0).toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Immutable ledger records
+            <span className="superadmin-kpi-subtext">Immutable ledger records →</span>
           </div>
         </div>
 
         {/* Manual Adjustments */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>✏️</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Manual Adjustments
+        <div
+          className="superadmin-kpi-card manual"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('transactions')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('transactions'); } }}
+          title="Click to filter manual admin adjustments"
+        >
+          <div className="superadmin-kpi-icon-box manual">
+            ✏️
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Manual Adjustments</span>
+            <span className="superadmin-kpi-value" style={{ color: '#f87171' }}>
+              {(overview.manualAdjustments || 0).toLocaleString()}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#6366f1' }}>
-            {(overview.manualAdjustments || 0).toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Super Admin &amp; Admin overrides
+            <span className="superadmin-kpi-subtext">Admin overrides applied →</span>
           </div>
         </div>
 
         {/* Active Levels */}
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.2rem' }}>⚡</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Active Levels
+        <div
+          className="superadmin-kpi-card levels"
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigateTab('levels')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('levels'); } }}
+          title="Click to manage progression tiers"
+        >
+          <div className="superadmin-kpi-icon-box levels">
+            ⚡
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Active Levels</span>
+            <span className="superadmin-kpi-value" style={{ color: '#14b8a6' }}>
+              {(overview.activeLevels || 0).toLocaleString()}
             </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#10b981' }}>
-            {(overview.activeLevels || 0).toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Active milestone tiers
+            <span className="superadmin-kpi-subtext">Milestone tiers online →</span>
           </div>
         </div>
       </div>
 
-      {/* Quick Launch Control Modules */}
-      <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '14px', marginBottom: '1.5rem' }}>
-        <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span>🚀</span> Quick Command Modules
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      {/* Quick Launch Mission Control Modules */}
+      <div className="admin-dash-panel" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+          <span style={{ fontSize: '1.3rem' }}>🚀</span>
+          <h3 style={{ margin: 0, color: 'var(--text-highlight)', fontSize: '1.15rem', fontWeight: 800 }}>
+            Institutional Command Modules
+          </h3>
+        </div>
+        <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+          Direct access to critical administrative subsystems, ledger audits, and XP policy engine configurations.
+        </p>
+
+        <div className="superadmin-mission-grid">
           <div
             role="button"
             tabIndex={0}
             onClick={() => onNavigateTab('users')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('users'); } }}
-            className="table-row-hover"
-            style={{
-              padding: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+            className="superadmin-mission-card"
           >
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👥</div>
-            <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>All Users Directory</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Inspect creator levels, weekly XP velocity, and apply manual balances.</div>
-            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Open Directory →</div>
+            <div className="superadmin-mission-icon-box" style={{ color: '#10b981' }}>
+              👥
+            </div>
+            <div className="superadmin-mission-title">All Users Directory</div>
+            <div className="superadmin-mission-desc">
+              Inspect creator levels, weekly XP velocity, and apply manual balances with full audit trails.
+            </div>
+            <div className="superadmin-mission-action">Open Directory →</div>
           </div>
 
           <div
@@ -209,22 +258,16 @@ export default function SuperAdminGamificationOverview({
             tabIndex={0}
             onClick={() => onNavigateTab('transactions')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('transactions'); } }}
-            className="table-row-hover"
-            style={{
-              padding: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+            className="superadmin-mission-card"
           >
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🧾</div>
-            <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Transaction Explorer</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Audit every Like, Comment, Story, and Admin Adjustment transaction.</div>
-            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Explore Ledgers →</div>
+            <div className="superadmin-mission-icon-box" style={{ color: '#38bdf8' }}>
+              🧾
+            </div>
+            <div className="superadmin-mission-title">Transaction Explorer</div>
+            <div className="superadmin-mission-desc">
+              Audit every Like, Comment, Story, and Admin Adjustment transaction in real-time.
+            </div>
+            <div className="superadmin-mission-action">Explore Ledgers →</div>
           </div>
 
           <div
@@ -232,22 +275,16 @@ export default function SuperAdminGamificationOverview({
             tabIndex={0}
             onClick={() => onNavigateTab('settings')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('settings'); } }}
-            className="table-row-hover"
-            style={{
-              padding: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+            className="superadmin-mission-card"
           >
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚙️</div>
-            <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Gamification Settings</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Configure dynamic point rules for Like, Comment, and Story verifications.</div>
-            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Configure Rules →</div>
+            <div className="superadmin-mission-icon-box" style={{ color: '#f59e0b' }}>
+              ⚙️
+            </div>
+            <div className="superadmin-mission-title">Gamification Settings</div>
+            <div className="superadmin-mission-desc">
+              Configure dynamic point rules for Like, Comment, and Story activity verifications.
+            </div>
+            <div className="superadmin-mission-action">Configure Rules →</div>
           </div>
 
           <div
@@ -255,22 +292,16 @@ export default function SuperAdminGamificationOverview({
             tabIndex={0}
             onClick={() => onNavigateTab('levels')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('levels'); } }}
-            className="table-row-hover"
-            style={{
-              padding: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+            className="superadmin-mission-card"
           >
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚡</div>
-            <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Level Engine Manager</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Create, edit, or regenerate progression tiers and cumulative thresholds.</div>
-            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Manage Levels →</div>
+            <div className="superadmin-mission-icon-box" style={{ color: '#14b8a6' }}>
+              ⚡
+            </div>
+            <div className="superadmin-mission-title">Level Engine Manager</div>
+            <div className="superadmin-mission-desc">
+              Create, edit, or regenerate progression tiers and cumulative XP thresholds.
+            </div>
+            <div className="superadmin-mission-action">Manage Levels →</div>
           </div>
 
           <div
@@ -278,22 +309,16 @@ export default function SuperAdminGamificationOverview({
             tabIndex={0}
             onClick={() => onNavigateTab('admins')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('admins'); } }}
-            className="table-row-hover"
-            style={{
-              padding: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+            className="superadmin-mission-card"
           >
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🛡️</div>
-            <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Admin Activity Oversight</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Inspect moderator reviews, manual adjustments, and moderation volume.</div>
-            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Audit Admins →</div>
+            <div className="superadmin-mission-icon-box" style={{ color: '#a855f7' }}>
+              🛡️
+            </div>
+            <div className="superadmin-mission-title">Admin Activity Oversight</div>
+            <div className="superadmin-mission-desc">
+              Inspect moderator reviews, manual adjustments, and individual moderation volumes.
+            </div>
+            <div className="superadmin-mission-action">Audit Admins →</div>
           </div>
 
           <div
@@ -301,25 +326,20 @@ export default function SuperAdminGamificationOverview({
             tabIndex={0}
             onClick={() => onNavigateTab('audit-logs')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('audit-logs'); } }}
-            className="table-row-hover"
-            style={{
-              padding: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+            className="superadmin-mission-card"
           >
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📜</div>
-            <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>System Audit Logs</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Trace all policy adjustments, rule changes, and Super Admin actions.</div>
-            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>View Logs →</div>
+            <div className="superadmin-mission-icon-box" style={{ color: '#ec4899' }}>
+              📜
+            </div>
+            <div className="superadmin-mission-title">System Audit Logs</div>
+            <div className="superadmin-mission-desc">
+              Trace all policy adjustments, rule changes, security events, and administrative actions.
+            </div>
+            <div className="superadmin-mission-action">View Logs →</div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

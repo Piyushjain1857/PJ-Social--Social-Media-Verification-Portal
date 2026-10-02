@@ -225,7 +225,7 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
   // If viewing specific user dossier
   if (selectedUserId) {
     return (
-      <div className="layout-content-area gamepoints-admin-container">
+      <div className="superadmin-gamification-root">
         {toast && (
           <div className={`admin-gamification-toast ${toast.type}`}>
             <span>{toast.text}</span>
@@ -253,7 +253,7 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
   }
 
   return (
-    <div className="layout-content-area gamepoints-admin-container">
+    <div className="superadmin-gamification-root">
       {/* Toast Notification */}
       {toast && (
         <div className={`admin-gamification-toast ${toast.type}`}>
@@ -262,112 +262,158 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
         </div>
       )}
 
-      {/* Super Admin Command Center Banner */}
-      <div className="gamepoints-dashboard-banner glass-panel">
-        <div className="gamepoints-banner-content">
-          <div className="gamepoints-banner-badge admin" style={{ background: 'rgba(236, 72, 153, 0.15)', borderColor: 'rgba(236, 72, 153, 0.35)', color: '#f472b6' }}>
-            <span className="gamepoints-banner-dot" style={{ background: '#ec4899' }} />
-            <span>👑 Super Administrator Command Center</span>
+      {/* Super Admin Command Center Hero Banner */}
+      <div className="superadmin-gamification-hero">
+        <div className="superadmin-gamification-hero-content">
+          <div className="superadmin-gamification-badge-row">
+            <span className="superadmin-gamification-role-badge">
+              👑 SUPER ADMINISTRATOR GOVERNANCE
+            </span>
+            <div className="superadmin-gamification-telemetry-tag">
+              <span className="superadmin-gamification-telemetry-dot" />
+              <span>Telemetry Active • Progression Engines Online</span>
+            </div>
           </div>
-          <h1 className="gamepoints-banner-title">
-            <span className="gamepoints-banner-icon">🎮</span> Gamification Governance &amp; Control Center
-          </h1>
-          <p className="gamepoints-banner-description">
-            Complete institutional visibility over creators, admins, XP rules, level curves, immutable transaction ledgers, and compliance audits.
+          <h2 className="superadmin-gamification-title">
+            <span>🎮</span> Gamification Governance &amp; Control Center
+          </h2>
+          <p className="superadmin-gamification-desc">
+            Complete institutional oversight over creators, admins, XP rules, level curves, immutable transaction ledgers, and compliance audits.
           </p>
         </div>
 
-        {/* Master Navigation Tabs */}
-        <div className="gamepoints-banner-actions">
-          <div className="gamepoints-subnav-tabs" role="tablist" style={{ flexWrap: 'wrap', gap: '0.4rem' }}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'overview'}
-              className={`gamepoints-subnav-btn ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => handleTabChange('overview')}
-            >
-              <span>📊</span> Overview
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'users'}
-              className={`gamepoints-subnav-btn ${activeTab === 'users' ? 'active' : ''}`}
-              onClick={() => handleTabChange('users')}
-            >
-              <span>👥</span> All Users
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'admins'}
-              className={`gamepoints-subnav-btn ${activeTab === 'admins' ? 'active' : ''}`}
-              onClick={() => handleTabChange('admins')}
-            >
-              <span>🛡️</span> All Admins
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'transactions'}
-              className={`gamepoints-subnav-btn ${activeTab === 'transactions' ? 'active' : ''}`}
-              onClick={() => handleTabChange('transactions')}
-            >
-              <span>🧾</span> Transactions
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'levels'}
-              className={`gamepoints-subnav-btn ${activeTab === 'levels' ? 'active' : ''}`}
-              onClick={() => handleTabChange('levels')}
-            >
-              <span>⚡</span> Levels
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'settings'}
-              className={`gamepoints-subnav-btn ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => handleTabChange('settings')}
-            >
-              <span>⚙️</span> XP Rules &amp; Settings
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'leaderboard'}
-              className={`gamepoints-subnav-btn ${activeTab === 'leaderboard' ? 'active' : ''}`}
-              onClick={() => handleTabChange('leaderboard')}
-            >
-              <span>🏆</span> Leaderboard
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'analytics'}
-              className={`gamepoints-subnav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
-              onClick={() => handleTabChange('analytics')}
-            >
-              <span>📈</span> Analytics
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'audit-logs'}
-              className={`gamepoints-subnav-btn ${activeTab === 'audit-logs' ? 'active' : ''}`}
-              onClick={() => handleTabChange('audit-logs')}
-            >
-              <span>📜</span> Audit Logs
-            </button>
+        {/* Right-side Stats HUD chips */}
+        <div className="superadmin-gamification-hud-chips">
+          <div className="superadmin-gamification-hud-chip" title="Total XP Distributed across all verified actions">
+            <span>⚡ Distributed:</span>
+            <strong>{(overview?.totalXPDistributed || 0).toLocaleString()} XP</strong>
+          </div>
+          <div className="superadmin-gamification-hud-chip" title="Active milestone progression tiers configured">
+            <span>⚡ Milestone Tiers:</span>
+            <strong>{overview?.activeLevels || 0} Levels</strong>
+          </div>
+          <div className="superadmin-gamification-hud-chip" title="Immutable transaction ledger records">
+            <span>🧾 Ledger Records:</span>
+            <strong>{(overview?.totalXPTransactions || 0).toLocaleString()}</strong>
           </div>
         </div>
       </div>
 
+      {/* Dedicated Master Navigation Tabs Bar */}
+      <nav className="superadmin-gamification-nav-bar" role="tablist" aria-label="Gamification Control Modules">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'overview'}
+          className={`superadmin-gamification-tab ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => handleTabChange('overview')}
+        >
+          <span>📊</span>
+          <span>Overview</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'users'}
+          className={`superadmin-gamification-tab ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => handleTabChange('users')}
+        >
+          <span>👥</span>
+          <span>All Users</span>
+          {overview?.totalUsers > 0 && (
+            <span className="superadmin-gamification-tab-badge">
+              {overview.totalUsers}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'admins'}
+          className={`superadmin-gamification-tab ${activeTab === 'admins' ? 'active' : ''}`}
+          onClick={() => handleTabChange('admins')}
+        >
+          <span>🛡️</span>
+          <span>All Admins</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'transactions'}
+          className={`superadmin-gamification-tab ${activeTab === 'transactions' ? 'active' : ''}`}
+          onClick={() => handleTabChange('transactions')}
+        >
+          <span>🧾</span>
+          <span>Transactions</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'levels'}
+          className={`superadmin-gamification-tab ${activeTab === 'levels' ? 'active' : ''}`}
+          onClick={() => handleTabChange('levels')}
+        >
+          <span>⚡</span>
+          <span>Levels</span>
+          {overview?.activeLevels > 0 && (
+            <span className="superadmin-gamification-tab-badge">
+              {overview.activeLevels}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'settings'}
+          className={`superadmin-gamification-tab ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => handleTabChange('settings')}
+        >
+          <span>⚙️</span>
+          <span>XP Rules &amp; Settings</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'leaderboard'}
+          className={`superadmin-gamification-tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
+          onClick={() => handleTabChange('leaderboard')}
+        >
+          <span>🏆</span>
+          <span>Leaderboard</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'analytics'}
+          className={`superadmin-gamification-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => handleTabChange('analytics')}
+        >
+          <span>📈</span>
+          <span>Analytics</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'audit-logs'}
+          className={`superadmin-gamification-tab ${activeTab === 'audit-logs' ? 'active' : ''}`}
+          onClick={() => handleTabChange('audit-logs')}
+        >
+          <span>📜</span>
+          <span>Audit Logs</span>
+        </button>
+      </nav>
+
       {/* Tab 1: Overview */}
       {activeTab === 'overview' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminGamificationOverview
             overview={overview}
             isLoading={isOverviewLoading}
@@ -378,7 +424,7 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
 
       {/* Tab 2: All Users */}
       {activeTab === 'users' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminUsersTable
             users={users}
             pagination={pagination}
@@ -416,7 +462,7 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
 
       {/* Tab 3: All Admins */}
       {activeTab === 'admins' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminAdminsView
             admins={admins}
             isLoading={isAdminsLoading}
@@ -427,21 +473,21 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
 
       {/* Tab 4: Transactions Explorer */}
       {activeTab === 'transactions' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminTransactionsExplorer />
         </div>
       )}
 
       {/* Tab 5: Levels (Integrated Level Management System) */}
       {activeTab === 'levels' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <LevelManagementView />
         </div>
       )}
 
       {/* Tab 6: Gamification Settings (Dynamic Activity XP Configuration) */}
       {activeTab === 'settings' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminGamificationSettings
             onSettingsUpdated={() => {
               loadOverview();
@@ -452,21 +498,21 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
 
       {/* Tab 7: Leaderboard */}
       {activeTab === 'leaderboard' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <Leaderboard onSelectUser={handleViewUser} />
         </div>
       )}
 
       {/* Tab 8: Analytics */}
       {activeTab === 'analytics' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminGamificationAnalytics />
         </div>
       )}
 
       {/* Tab 9: Audit Logs */}
       {activeTab === 'audit-logs' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '0.25rem' }}>
           <SuperAdminAuditLogsView />
         </div>
       )}

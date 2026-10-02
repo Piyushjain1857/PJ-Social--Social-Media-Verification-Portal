@@ -32,7 +32,7 @@ export default function SuperAdminGamificationAnalytics() {
 
   if (isLoading) {
     return (
-      <div className="glass-panel" style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)', borderRadius: '16px' }}>
+      <div className="admin-dash-panel" style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⏳</div>
         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.35rem' }}>
           Aggregating Global Gamification Telemetry…
@@ -46,7 +46,7 @@ export default function SuperAdminGamificationAnalytics() {
 
   if (error || !analytics) {
     return (
-      <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center', borderRadius: '16px' }}>
+      <div className="admin-dash-panel" style={{ padding: '2.5rem', textAlign: 'center' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
         <h3 style={{ color: '#f87171', margin: '0 0 0.5rem 0' }}>Could Not Load Platform Analytics</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>{error || 'No analytics data received.'}</p>
@@ -124,48 +124,62 @@ export default function SuperAdminGamificationAnalytics() {
   return (
     <div className="superadmin-gamification-analytics" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* 1. Global Summary KPI Tiles */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem'
-        }}
-      >
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #38bdf8' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total XP Distributed</span>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.2rem' }}>
-            {(summary.totalXPDistributed || 0).toLocaleString()} XP
+      <div className="superadmin-kpi-grid">
+        <div className="superadmin-kpi-card xp">
+          <div className="superadmin-kpi-icon-box xp">
+            ⚡
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>All-time verified points</div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total XP Distributed</span>
+            <span className="superadmin-kpi-value" style={{ color: '#38bdf8' }}>
+              {(summary.totalXPDistributed || 0).toLocaleString()} XP
+            </span>
+            <span className="superadmin-kpi-subtext">All-time verified points</span>
+          </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #a855f7' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Transactions</span>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#a855f7', marginTop: '0.2rem' }}>
-            {(summary.totalTransactions || 0).toLocaleString()}
+        <div className="superadmin-kpi-card tx">
+          <div className="superadmin-kpi-icon-box tx">
+            📜
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Ledger audit records</div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total Transactions</span>
+            <span className="superadmin-kpi-value" style={{ color: '#a855f7' }}>
+              {(summary.totalTransactions || 0).toLocaleString()}
+            </span>
+            <span className="superadmin-kpi-subtext">Ledger audit records</span>
+          </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #10b981' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Active Creators</span>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>
-            {(summary.totalUsers || 0).toLocaleString()}
+        <div className="superadmin-kpi-card creators">
+          <div className="superadmin-kpi-icon-box creators">
+            👥
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Participating users</div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Active Creators</span>
+            <span className="superadmin-kpi-value" style={{ color: '#10b981' }}>
+              {(summary.totalUsers || 0).toLocaleString()}
+            </span>
+            <span className="superadmin-kpi-subtext">Participating users</span>
+          </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #f59e0b' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Peak Daily Volume</span>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>
-            {(summary.peakDailyXP || 0).toLocaleString()} XP
+        <div className="superadmin-kpi-card highest-xp">
+          <div className="superadmin-kpi-icon-box highest-xp">
+            🚀
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Single-day platform high</div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Peak Daily Volume</span>
+            <span className="superadmin-kpi-value" style={{ color: '#f59e0b' }}>
+              {(summary.peakDailyXP || 0).toLocaleString()} XP
+            </span>
+            <span className="superadmin-kpi-subtext">Single-day platform high</span>
+          </div>
         </div>
       </div>
 
       {/* 2. Interactive XP Growth & Velocity Visualizer */}
-      <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+      <div className="admin-dash-panel" style={{ padding: '1.75rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -361,7 +375,7 @@ export default function SuperAdminGamificationAnalytics() {
       {/* 3. Users by Level & XP Distribution Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
         {/* Users by Level Distribution */}
-        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+        <div className="admin-dash-panel" style={{ padding: '1.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
               ⚡ Users by Dynamic Level Tier
@@ -419,7 +433,7 @@ export default function SuperAdminGamificationAnalytics() {
         </div>
 
         {/* XP Distribution Buckets */}
-        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+        <div className="admin-dash-panel" style={{ padding: '1.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
               👥 Creator XP Distribution Buckets
@@ -467,7 +481,7 @@ export default function SuperAdminGamificationAnalytics() {
       </div>
 
       {/* 4. Global Activity Contribution Breakdown */}
-      <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+      <div className="admin-dash-panel" style={{ padding: '1.75rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
             <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.15rem' }}>
@@ -525,7 +539,7 @@ export default function SuperAdminGamificationAnalytics() {
       {/* 5. Top Creators & Fastest Progressing Gainers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {/* Top 10 Creators */}
-        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+        <div className="admin-dash-panel" style={{ padding: '1.75rem' }}>
           <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
             👑 Top 10 Platform Record Holders
           </h4>
@@ -561,7 +575,7 @@ export default function SuperAdminGamificationAnalytics() {
         </div>
 
         {/* Fastest Progressing Creators */}
-        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+        <div className="admin-dash-panel" style={{ padding: '1.75rem' }}>
           <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
             🚀 Fastest 7-Day Velocity Gainers
           </h4>

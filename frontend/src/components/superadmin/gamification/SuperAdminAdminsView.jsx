@@ -54,124 +54,148 @@ export default function SuperAdminAdminsView({
       </div>
 
       {/* Grid of Admin Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-        {admins.map((adm) => (
-          <div
-            key={adm.id}
-            className="glass-panel"
-            style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              border: selectedAdmin?.id === adm.id ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}
-            onClick={() => setSelectedAdmin(adm)}
-          >
-            {/* Header: Admin Avatar, Name, Email, Role */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+        {admins.map((adm) => {
+          const isSuperAdmin = adm.role === 'SUPER_ADMIN';
+
+          return (
+            <div
+              key={adm.id}
+              className={`superadmin-admin-card ${isSuperAdmin ? 'superadmin' : 'admin'}`}
+              style={{
+                borderColor: selectedAdmin?.id === adm.id ? '#38bdf8' : undefined,
+                cursor: 'pointer'
+              }}
+              onClick={() => setSelectedAdmin(adm)}
+            >
+              {/* Header: Admin Avatar, Name, Email, Role */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div
+                    style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '50%',
+                      background: isSuperAdmin
+                        ? 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)'
+                        : 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '1.1rem',
+                      boxShadow: isSuperAdmin
+                        ? '0 0 14px rgba(236, 72, 153, 0.35)'
+                        : '0 0 14px rgba(99, 102, 241, 0.35)'
+                    }}
+                  >
+                    {adm.name ? adm.name[0].toUpperCase() : 'A'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-highlight)', fontSize: '1rem' }}>
+                      {adm.name}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      {adm.email}
+                    </div>
+                  </div>
+                </div>
+
+                <span
                   style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    background: adm.role === 'SUPER_ADMIN'
-                      ? 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)'
-                      : 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    fontSize: '0.72rem',
                     fontWeight: 800,
-                    fontSize: '1rem'
+                    letterSpacing: '0.04em',
+                    padding: '0.22rem 0.65rem',
+                    borderRadius: '9999px',
+                    background: isSuperAdmin ? 'rgba(236, 72, 153, 0.18)' : 'rgba(99, 102, 241, 0.18)',
+                    color: isSuperAdmin ? '#f472b6' : '#a5b4fc',
+                    border: `1px solid ${isSuperAdmin ? 'rgba(236, 72, 153, 0.4)' : 'rgba(99, 102, 241, 0.4)'}`
                   }}
                 >
-                  {adm.name ? adm.name[0].toUpperCase() : 'A'}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, color: 'var(--text-highlight)', fontSize: '0.98rem' }}>
-                    {adm.name}
-                  </div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                    {adm.email}
-                  </div>
-                </div>
+                  {adm.role}
+                </span>
               </div>
 
-              <span
+              {/* Performance Stats KPI Grid (4 micro-stat chips) */}
+              <div
                 style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.2rem 0.55rem',
-                  borderRadius: '6px',
-                  background: adm.role === 'SUPER_ADMIN' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                  color: adm.role === 'SUPER_ADMIN' ? '#f472b6' : '#a5b4fc',
-                  border: `1px solid ${adm.role === 'SUPER_ADMIN' ? 'rgba(236, 72, 153, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0.65rem'
                 }}
               >
-                {adm.role}
-              </span>
-            </div>
+                <div className="superadmin-admin-stat-chip">
+                  <span className="superadmin-admin-stat-label">Actions Performed</span>
+                  <span className="superadmin-admin-stat-val" style={{ color: 'var(--text-highlight)' }}>
+                    {adm.actionsPerformed}
+                  </span>
+                </div>
 
-            {/* Performance Stats KPI Pill Grid */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '0.65rem',
-                background: 'rgba(255, 255, 255, 0.02)',
-                padding: '0.85rem',
-                borderRadius: '8px'
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Actions Performed</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
-                  {adm.actionsPerformed}
+                <div className="superadmin-admin-stat-chip">
+                  <span className="superadmin-admin-stat-label">XP Adjustments</span>
+                  <span className="superadmin-admin-stat-val" style={{ color: '#38bdf8' }}>
+                    {adm.xpAdjustmentsCount}
+                  </span>
                 </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>XP Adjustments</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#38bdf8' }}>
-                  {adm.xpAdjustmentsCount}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Users Modified</div>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#a855f7' }}>
-                  {adm.usersModifiedCount} creators
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Net Points Impact</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: adm.totalXPAwarded >= adm.totalXPDeducted ? '#10b981' : '#f87171' }}>
-                  +{adm.totalXPAwarded} / -{adm.totalXPDeducted}
-                </div>
-              </div>
-            </div>
 
-            {/* Last Activity */}
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-              <strong>Last Activity:</strong> {adm.lastActivity}
-            </div>
+                <div className="superadmin-admin-stat-chip">
+                  <span className="superadmin-admin-stat-label">Users Modified</span>
+                  <span className="superadmin-admin-stat-val" style={{ color: '#a855f7' }}>
+                    {adm.usersModifiedCount} <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>creators</span>
+                  </span>
+                </div>
 
-            <button
-              type="button"
-              className="btn-portal-secondary"
-              style={{ fontSize: '0.78rem', marginTop: 'auto', width: '100%' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedAdmin(adm);
-              }}
-            >
-              🔍 Inspect Admin Audit Log ({adm.recentAuditLogs?.length || 0})
-            </button>
-          </div>
-        ))}
+                <div className="superadmin-admin-stat-chip">
+                  <span className="superadmin-admin-stat-label">Net Points Impact</span>
+                  <span className="superadmin-admin-stat-val" style={{ color: adm.totalXPAwarded >= adm.totalXPDeducted ? '#10b981' : '#f87171' }}>
+                    +{adm.totalXPAwarded} / -{adm.totalXPDeducted}
+                  </span>
+                </div>
+              </div>
+
+              {/* Last Activity */}
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: 'var(--text-secondary)',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  padding: '0.6rem 0.8rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Last Activity:</span>{' '}
+                <span style={{ color: 'var(--text-highlight)' }}>{adm.lastActivity || 'No recent activity'}</span>
+              </div>
+
+              {/* Bottom Inspection Action Button */}
+              <button
+                type="button"
+                className="superadmin-btn-adjust"
+                style={{
+                  fontSize: '0.82rem',
+                  padding: '0.6rem 1rem',
+                  marginTop: 'auto',
+                  width: '100%',
+                  justifyContent: 'center',
+                  background: isSuperAdmin
+                    ? 'linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(168, 85, 247, 0.25) 100%)'
+                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(56, 189, 248, 0.25) 100%)',
+                  borderColor: isSuperAdmin ? 'rgba(236, 72, 153, 0.4)' : 'rgba(99, 102, 241, 0.4)',
+                  color: isSuperAdmin ? '#f472b6' : '#a5b4fc'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedAdmin(adm);
+                }}
+              >
+                <span>🔍</span> Inspect Admin Audit Log ({adm.recentAuditLogs?.length || 0}) →
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Admin Audit Details Modal / Drawer */}

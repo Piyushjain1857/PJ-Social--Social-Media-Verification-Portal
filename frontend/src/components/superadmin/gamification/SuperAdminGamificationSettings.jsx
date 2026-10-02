@@ -166,8 +166,8 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
       )}
 
       {/* Activity Settings Table / Cards */}
-      <div className="glass-panel" style={{ borderRadius: '14px', padding: '1.5rem', marginBottom: '1.75rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div className="admin-dash-panel" style={{ padding: '1.5rem', marginBottom: '1.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {settings.map((s) => {
             const current = editedSettings[s.activity] || { xp: s.xp, isActive: s.isActive, description: s.description };
             const isChanged = current.xp !== s.xp || current.isActive !== s.isActive;
@@ -175,46 +175,25 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
             return (
               <div
                 key={s.id || s.activity}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '1.25rem',
-                  borderRadius: '10px',
-                  background: isChanged ? 'rgba(56, 189, 248, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                  border: isChanged ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
-                  flexWrap: 'wrap',
-                  gap: '1rem'
-                }}
+                className={`superadmin-rule-row ${isChanged ? 'is-changed' : ''}`}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '220px' }}>
-                  <div
-                    style={{
-                      width: '46px',
-                      height: '46px',
-                      borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.5rem'
-                    }}
-                  >
+                  <div className="superadmin-rule-icon">
                     {s.activity === 'LIKE' ? '👍' : (s.activity === 'COMMENT' ? '💬' : '📱')}
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 800, color: 'var(--text-highlight)', fontSize: '1.05rem' }}>
+                      <span style={{ fontWeight: 800, color: 'var(--text-highlight)', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
                         {s.activity}
                       </span>
                       {isChanged && (
-                        <span style={{ fontSize: '0.72rem', background: '#38bdf8', color: '#0f172a', fontWeight: 800, padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                        <span style={{ fontSize: '0.72rem', background: '#38bdf8', color: '#0f172a', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
                           Modified
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      Current active: <strong>{s.xp} XP</strong> per verification
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Current active: <strong style={{ color: '#38bdf8' }}>{s.xp} XP</strong> per verification
                     </div>
                   </div>
                 </div>
@@ -227,14 +206,14 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
                     value={current.description}
                     onChange={(e) => handleDescriptionChange(s.activity, e.target.value)}
                     placeholder="Rule description or institutional policy note…"
-                    style={{ fontSize: '0.82rem', width: '100%' }}
+                    style={{ fontSize: '0.82rem', width: '100%', background: 'rgba(255, 255, 255, 0.03)' }}
                   />
                 </div>
 
                 {/* XP Input & Toggle */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Points (XP):</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Points (XP):</label>
                     <input
                       type="number"
                       min="0"
@@ -243,12 +222,15 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
                       onChange={(e) => handleXPChange(s.activity, e.target.value)}
                       className="input-portal"
                       style={{
-                        width: '75px',
-                        padding: '0.45rem',
+                        width: '80px',
+                        padding: '0.5rem',
                         fontWeight: 800,
                         color: '#38bdf8',
                         textAlign: 'center',
-                        fontSize: '1rem'
+                        fontSize: '1.05rem',
+                        fontFamily: 'var(--font-mono, monospace)',
+                        background: 'rgba(56, 189, 248, 0.06)',
+                        borderColor: 'rgba(56, 189, 248, 0.25)'
                       }}
                     />
                   </div>
@@ -256,18 +238,10 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
                   <button
                     type="button"
                     onClick={() => handleToggleActive(s.activity)}
-                    style={{
-                      padding: '0.45rem 0.85rem',
-                      borderRadius: '6px',
-                      background: current.isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      border: `1px solid ${current.isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
-                      color: current.isActive ? '#10b981' : '#f87171',
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
+                    className={`superadmin-toggle-active ${current.isActive ? 'active' : 'disabled'}`}
                   >
-                    {current.isActive ? 'Active' : 'Disabled'}
+                    <span>{current.isActive ? '●' : '○'}</span>
+                    <span>{current.isActive ? 'Active' : 'Disabled'}</span>
                   </button>
                 </div>
               </div>
@@ -277,7 +251,7 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
       </div>
 
       {/* Save Action & Reason Section */}
-      <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '14px' }}>
+      <div className="admin-dash-panel" style={{ padding: '1.5rem', borderRadius: '14px' }}>
         <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-highlight)' }}>
           Policy Change Justification
         </h4>
@@ -294,23 +268,22 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
           style={{ width: '100%', marginBottom: '1.25rem', fontSize: '0.86rem' }}
         />
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', alignItems: 'center' }}>
           <button
             type="button"
             className="btn-portal-secondary"
             onClick={loadSettings}
             disabled={isSaving}
           >
-            Reset Form
+            <span>↺</span> Reset Form
           </button>
           <button
             type="button"
             className="btn-portal-primary"
             onClick={() => setShowConfirmModal(true)}
             disabled={!hasModifications || isSaving || !reason.trim()}
-            style={{ fontWeight: 800 }}
           >
-            💾 Save Gamification Configuration
+            <span>💾</span> Save Gamification Configuration
           </button>
         </div>
       </div>
@@ -318,7 +291,7 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}>
-          <div className="modal-container glass-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '1.75rem' }}>
+          <div className="modal-container admin-dash-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '1.75rem', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
             <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-highlight)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span>⚠️</span> Confirm Gamification Rules Update
             </h3>
@@ -344,7 +317,7 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.85rem', alignItems: 'center' }}>
               <button
                 type="button"
                 className="btn-portal-secondary"
@@ -359,7 +332,7 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
                 onClick={handleSaveConfirmed}
                 disabled={isSaving}
               >
-                {isSaving ? 'Synchronizing Rules…' : 'Confirm & Apply Rules'}
+                {isSaving ? 'Synchronizing Rules…' : '✓ Confirm & Apply Rules'}
               </button>
             </div>
           </div>

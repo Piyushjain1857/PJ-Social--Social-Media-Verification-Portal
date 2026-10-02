@@ -430,51 +430,28 @@ export default function SocialAccountsView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
       {/* Institutional Directory Header Banner */}
       <div
-        className="glass-panel"
+        className="admin-dash-panel"
         style={{
-          padding: '1.25rem 1.5rem',
-          borderLeft: '4px solid var(--role-superadmin)',
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(13, 18, 31, 0.7) 100%)'
+          padding: '1.75rem',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                background: 'rgba(99, 102, 241, 0.15)',
-                border: '1px solid rgba(99, 102, 241, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.35rem',
-                flexShrink: 0
-              }}
-            >
+            <div className="admin-hero-icon-box blue">
               🏛️
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
                   Official College Channels
                 </h2>
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '10px',
-                    background: 'rgba(99, 102, 241, 0.18)',
-                    color: '#a5b4fc',
-                    border: '1px solid rgba(99, 102, 241, 0.3)'
-                  }}
-                >
+                <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
                   INSTITUTIONAL DIRECTORY
                 </span>
               </div>
-              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
+              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
                 Central directory of authorized university channels. Creators can only submit verification claims against active official accounts.
               </p>
             </div>
@@ -510,17 +487,10 @@ export default function SocialAccountsView() {
             {isSuperAdmin && (
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-portal-primary"
                 id="btn-add-official-account"
                 onClick={handleOpenAdd}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.55rem 1.15rem',
-                  fontSize: '0.86rem',
-                  fontWeight: 600
-                }}
+                style={{ fontSize: '0.84rem', padding: '0.55rem 1.15rem' }}
               >
                 <span>➕</span>
                 <span>Connect Account</span>
@@ -552,29 +522,18 @@ export default function SocialAccountsView() {
       )}
 
       {/* Metrics Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div className="superadmin-kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         {/* Metric 1: Total Channels */}
-        <div
-          className="stat-metric-card"
-          style={{
-            borderTop: '3px solid #6366f1',
-            background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
-          }}
-        >
-          <div
-            className="stat-metric-icon"
-            style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#818cf8' }}
-          >
+        <div className="superadmin-kpi-card users">
+          <div className="superadmin-kpi-icon-box users">
             🏛️
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-              Total Channels
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.15, marginTop: '0.15rem' }}>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total Channels</span>
+            <span className="superadmin-kpi-value" style={{ color: '#38bdf8' }}>
               {totalCount}
             </span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', gap: '0.35rem' }}>
+            <span className="superadmin-kpi-subtext" style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
               <span>📸 {instagramCount}</span>
               <span>·</span>
               <span>💼 {linkedinCount}</span>
@@ -585,84 +544,45 @@ export default function SocialAccountsView() {
         </div>
 
         {/* Metric 2: Active Channels */}
-        <div
-          className="stat-metric-card"
-          style={{
-            borderTop: '3px solid #10b981',
-            background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
-          }}
-        >
-          <div
-            className="stat-metric-icon"
-            style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399' }}
-          >
-            🟢
+        <div className="superadmin-kpi-card active-accts">
+          <div className="superadmin-kpi-icon-box active-accts">
+            ✓
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-              Active Profiles
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: '#34d399', lineHeight: 1.15, marginTop: '0.15rem' }}>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Active Profiles</span>
+            <span className="superadmin-kpi-value" style={{ color: '#10b981' }}>
               {activeCount}
             </span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Accepting creator claims
-            </span>
+            <span className="superadmin-kpi-subtext">Accepting creator claims</span>
           </div>
         </div>
 
         {/* Metric 3: Paused / Inactive */}
-        <div
-          className="stat-metric-card"
-          style={{
-            borderTop: '3px solid #f59e0b',
-            background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
-          }}
-        >
-          <div
-            className="stat-metric-icon"
-            style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24' }}
-          >
+        <div className="superadmin-kpi-card suspended-accts">
+          <div className="superadmin-kpi-icon-box suspended-accts">
             ⏸️
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-              Paused / Inactive
-            </span>
-            <span style={{ fontSize: '1.65rem', fontWeight: 800, color: inactiveCount > 0 ? '#fbbf24' : 'var(--text-muted)', lineHeight: 1.15, marginTop: '0.15rem' }}>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Paused / Inactive</span>
+            <span className="superadmin-kpi-value" style={{ color: inactiveCount > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
               {inactiveCount}
             </span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Submissions paused
-            </span>
+            <span className="superadmin-kpi-subtext">Submissions paused</span>
           </div>
         </div>
 
         {/* Metric 4: Total Linked Submissions */}
         {isSuperAdmin && (
-          <div
-            className="stat-metric-card"
-            style={{
-              borderTop: '3px solid #06b6d4',
-              background: 'linear-gradient(180deg, rgba(6, 182, 212, 0.09) 0%, rgba(13, 18, 31, 0.6) 100%)'
-            }}
-          >
-            <div
-              className="stat-metric-icon"
-              style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', color: '#22d3ee' }}
-            >
+          <div className="superadmin-kpi-card creators-accts">
+            <div className="superadmin-kpi-icon-box creators-accts">
               📊
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-                Linked Submissions
-              </span>
-              <span style={{ fontSize: '1.65rem', fontWeight: 800, color: '#22d3ee', lineHeight: 1.15, marginTop: '0.15rem' }}>
+            <div className="superadmin-kpi-info">
+              <span className="superadmin-kpi-label">Linked Submissions</span>
+              <span className="superadmin-kpi-value" style={{ color: '#818cf8' }}>
                 {totalSubmissions}
               </span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Across all official channels
-              </span>
+              <span className="superadmin-kpi-subtext">Across all official channels</span>
             </div>
           </div>
         )}
@@ -766,11 +686,10 @@ export default function SocialAccountsView() {
             return (
               <div
                 key={acc.id}
-                className="official-account-card"
+                className="official-channel-card"
                 style={{
                   borderTop: `3px solid ${cfg.color}`,
                   opacity: acc.isActive ? 1 : 0.75,
-                  background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(13, 18, 31, 0.6) 100%)'
                 }}
               >
                 {/* Header Row: Platform Icon + Title + Status Badge */}
@@ -955,20 +874,14 @@ export default function SocialAccountsView() {
                     justifyContent: 'space-between',
                     gap: '0.5rem',
                     flexWrap: 'wrap',
-                    paddingTop: '0.2rem'
+                    paddingTop: '0.4rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.05)'
                   }}
                 >
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-action-chip view"
                     onClick={() => handleOpenView(acc)}
-                    style={{
-                      fontSize: '0.8rem',
-                      padding: '0.4rem 0.85rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem'
-                    }}
                   >
                     <span>👁️</span>
                     <span>Dossier</span>
@@ -978,15 +891,8 @@ export default function SocialAccountsView() {
                     <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className="btn-action-chip edit"
                         onClick={() => handleOpenEdit(acc)}
-                        style={{
-                          fontSize: '0.8rem',
-                          padding: '0.4rem 0.8rem',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.3rem'
-                        }}
                       >
                         <span>✏️</span>
                         <span>Edit</span>
@@ -994,34 +900,18 @@ export default function SocialAccountsView() {
 
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className={`btn-action-chip ${acc.isActive ? 'danger' : 'success'}`}
                         onClick={() => handleToggleStatus(acc)}
                         disabled={isToggling}
-                        style={{
-                          fontSize: '0.8rem',
-                          padding: '0.4rem 0.75rem',
-                          color: acc.isActive ? '#fca5a5' : '#86efac',
-                          borderColor: acc.isActive ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)',
-                          background: acc.isActive ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)'
-                        }}
                       >
-                        {isToggling ? '⏳...' : acc.isActive ? 'Pause' : 'Activate'}
+                        <span>{isToggling ? '⏳...' : acc.isActive ? 'Pause' : 'Activate'}</span>
                       </button>
 
                       <button
                         type="button"
+                        className="btn-action-chip danger icon-only"
                         onClick={() => handleOpenDelete(acc)}
                         title="Delete official account"
-                        style={{
-                          background: 'rgba(239, 68, 68, 0.08)',
-                          border: '1px solid rgba(239, 68, 68, 0.35)',
-                          borderRadius: '6px',
-                          color: '#f87171',
-                          cursor: 'pointer',
-                          padding: '0.4rem 0.65rem',
-                          fontSize: '0.82rem',
-                          transition: 'all 0.2s ease'
-                        }}
                       >
                         🗑️
                       </button>

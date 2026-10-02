@@ -10428,3 +10428,1214 @@ input[type="text"]:hover {
   border-color: #34d399;
   color: #34d399;
 }
+
+/* ==========================================================================
+   ADMIN MODERATOR DASHBOARD STYLES (DashboardView.jsx -> AdminDashboard)
+   ========================================================================== */
+
+.admin-dash-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* Moderator Cockpit Hero Banner */
+.admin-dash-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.admin-dash-hero::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.admin-dash-hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 680px;
+}
+
+.admin-dash-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.admin-dash-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.admin-dash-telemetry-tag {
+  font-size: 0.76rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-dash-telemetry-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-dot 2s infinite;
+}
+
+.admin-dash-hero-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-highlight, #f8fafc);
+  letter-spacing: -0.02em;
+}
+
+.admin-dash-hero-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #cbd5e1);
+  line-height: 1.5;
+}
+
+.admin-dash-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-dash-btn-queue {
+  padding: 0.65rem 1.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.admin-dash-btn-queue:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.55);
+}
+
+/* 4 KPI Cards Grid */
+.admin-dash-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.admin-dash-kpi-card {
+  padding: 1.25rem 1.4rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.admin-dash-kpi-card:active {
+  transform: translateY(0);
+}
+
+.admin-dash-kpi-card.pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.admin-dash-kpi-card.pending:hover {
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.admin-dash-kpi-card.reviewed {
+  border-left: 4px solid #6366f1;
+}
+
+.admin-dash-kpi-card.reviewed:hover {
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.28);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.admin-dash-kpi-card.approved {
+  border-left: 4px solid #10b981;
+}
+
+.admin-dash-kpi-card.approved:hover {
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.admin-dash-kpi-card.rejected {
+  border-left: 4px solid #ef4444;
+}
+
+.admin-dash-kpi-card.rejected:hover {
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.admin-dash-kpi-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.admin-dash-kpi-icon-box.pending {
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.admin-dash-kpi-icon-box.reviewed {
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.admin-dash-kpi-icon-box.approved {
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.admin-dash-kpi-icon-box.rejected {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.admin-dash-kpi-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-dash-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+}
+
+.admin-dash-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-highlight, #f8fafc);
+  font-family: var(--font-mono, monospace);
+  line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-dash-kpi-subtext {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Command Queue Callout Banner */
+.admin-dash-queue-callout {
+  padding: 1.4rem 1.75rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+.admin-dash-queue-callout.has-pending {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.07) 0%, rgba(15, 23, 42, 0.7) 100%);
+}
+
+.admin-dash-queue-callout.empty {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.07) 0%, rgba(15, 23, 42, 0.7) 100%);
+}
+
+/* Recent Submissions Panel */
+.admin-dash-panel {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.admin-dash-submission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.18s ease;
+}
+
+.admin-dash-submission-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+/* SOP Procedures Grid */
+.admin-dash-sop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.admin-dash-sop-card {
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.admin-dash-sop-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-dash-sop-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   SUPER ADMIN GAMIFICATION GOVERNANCE & CONTROL CENTER STYLES
+   ========================================================================== */
+
+.superadmin-gamification-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  width: 100%;
+}
+
+/* Hero Cockpit Banner */
+.superadmin-gamification-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.4) 0%, rgba(30, 27, 75, 0.6) 50%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.superadmin-gamification-hero::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.superadmin-gamification-hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-width: 680px;
+}
+
+.superadmin-gamification-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.superadmin-gamification-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.superadmin-gamification-telemetry-tag {
+  font-size: 0.76rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.superadmin-gamification-telemetry-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-dot 2s infinite;
+}
+
+.superadmin-gamification-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: var(--text-highlight, #f8fafc);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.superadmin-gamification-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #cbd5e1);
+  line-height: 1.5;
+}
+
+/* Hero Telemetry Chips on the right */
+.superadmin-gamification-hud-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.superadmin-gamification-hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  color: var(--text-secondary, #cbd5e1);
+  backdrop-filter: blur(8px);
+}
+
+.superadmin-gamification-hud-chip strong {
+  color: var(--text-highlight, #f8fafc);
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+}
+
+/* Master Navigation Tabs Bar */
+.superadmin-gamification-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.4rem 0.55rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.superadmin-gamification-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.superadmin-gamification-tab:hover {
+  color: var(--text-highlight, #f8fafc);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.superadmin-gamification-tab.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(99, 102, 241, 0.2) 100%);
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.25);
+}
+
+.superadmin-gamification-tab-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-highlight, #f8fafc);
+}
+
+/* 9 KPI HUD Cards Grid */
+.superadmin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.superadmin-kpi-card {
+  padding: 1.25rem 1.35rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.superadmin-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.superadmin-kpi-card:active {
+  transform: translateY(0);
+}
+
+/* KPI Card Themed Variants */
+.superadmin-kpi-card.xp { border-left: 4px solid #38bdf8; }
+.superadmin-kpi-card.xp:hover { box-shadow: 0 8px 25px rgba(56, 189, 248, 0.22); border-color: rgba(56, 189, 248, 0.4); }
+
+.superadmin-kpi-card.creators { border-left: 4px solid #10b981; }
+.superadmin-kpi-card.creators:hover { box-shadow: 0 8px 25px rgba(16, 185, 129, 0.22); border-color: rgba(16, 185, 129, 0.4); }
+
+.superadmin-kpi-card.active-users { border-left: 4px solid #f59e0b; }
+.superadmin-kpi-card.active-users:hover { box-shadow: 0 8px 25px rgba(245, 158, 11, 0.22); border-color: rgba(245, 158, 11, 0.4); }
+
+.superadmin-kpi-card.avg-xp { border-left: 4px solid #a855f7; }
+.superadmin-kpi-card.avg-xp:hover { box-shadow: 0 8px 25px rgba(168, 85, 247, 0.25); border-color: rgba(168, 85, 247, 0.4); }
+
+.superadmin-kpi-card.highest-xp { border-left: 4px solid #facc15; }
+.superadmin-kpi-card.highest-xp:hover { box-shadow: 0 8px 25px rgba(250, 204, 21, 0.22); border-color: rgba(250, 204, 21, 0.4); }
+
+.superadmin-kpi-card.highest-lvl { border-left: 4px solid #ec4899; }
+.superadmin-kpi-card.highest-lvl:hover { box-shadow: 0 8px 25px rgba(236, 72, 153, 0.25); border-color: rgba(236, 72, 153, 0.4); }
+
+.superadmin-kpi-card.tx { border-left: 4px solid #818cf8; }
+.superadmin-kpi-card.tx:hover { box-shadow: 0 8px 25px rgba(129, 140, 248, 0.22); border-color: rgba(129, 140, 248, 0.4); }
+
+.superadmin-kpi-card.manual { border-left: 4px solid #f87171; }
+.superadmin-kpi-card.manual:hover { box-shadow: 0 8px 25px rgba(248, 113, 113, 0.22); border-color: rgba(248, 113, 113, 0.4); }
+
+.superadmin-kpi-card.levels { border-left: 4px solid #14b8a6; }
+.superadmin-kpi-card.levels:hover { box-shadow: 0 8px 25px rgba(20, 184, 166, 0.22); border-color: rgba(20, 184, 166, 0.4); }
+
+.superadmin-kpi-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.superadmin-kpi-icon-box.xp { background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); }
+.superadmin-kpi-icon-box.creators { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); }
+.superadmin-kpi-icon-box.active-users { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); }
+.superadmin-kpi-icon-box.avg-xp { background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); }
+.superadmin-kpi-icon-box.highest-xp { background: rgba(250, 204, 21, 0.12); border: 1px solid rgba(250, 204, 21, 0.3); }
+.superadmin-kpi-icon-box.highest-lvl { background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3); }
+.superadmin-kpi-icon-box.tx { background: rgba(129, 140, 248, 0.12); border: 1px solid rgba(129, 140, 248, 0.3); }
+.superadmin-kpi-icon-box.manual { background: rgba(248, 113, 113, 0.12); border: 1px solid rgba(248, 113, 113, 0.3); }
+.superadmin-kpi-icon-box.levels { background: rgba(20, 184, 166, 0.12); border: 1px solid rgba(20, 184, 166, 0.3); }
+
+.superadmin-kpi-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.superadmin-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+}
+
+.superadmin-kpi-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--text-highlight, #f8fafc);
+  font-family: var(--font-mono, monospace);
+  line-height: 1.1;
+}
+
+.superadmin-kpi-subtext {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Quick Mission Command Modules Grid */
+.superadmin-mission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.1rem;
+}
+
+.superadmin-mission-card {
+  padding: 1.35rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.superadmin-mission-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(168, 85, 247, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.superadmin-mission-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 0.85rem;
+  transition: transform 0.2s ease;
+}
+
+.superadmin-mission-card:hover .superadmin-mission-icon-box {
+  transform: scale(1.08);
+}
+
+.superadmin-mission-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-highlight, #f8fafc);
+  margin-bottom: 0.35rem;
+}
+
+.superadmin-mission-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.45;
+  margin-bottom: 1rem;
+  flex: 1;
+}
+
+.superadmin-mission-action {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c084fc;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+  transition: gap 0.2s ease;
+}
+
+.superadmin-mission-card:hover .superadmin-mission-action {
+  gap: 0.55rem;
+  color: #e9d5ff;
+}
+
+/* ==========================================================================
+   SUPER ADMIN SUB-VIEWS STYLES (Users, Admins, Transactions, Levels, Settings)
+   ========================================================================== */
+
+/* Universal Dark Form Inputs for Super Admin */
+input[type="date"] {
+  color-scheme: dark;
+}
+
+/* User & Transaction Filter Bar */
+.superadmin-filter-bar {
+  padding: 1.25rem 1.4rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Super Admin Action Buttons */
+.superadmin-btn-view {
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-highlight, #f8fafc);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.superadmin-btn-view:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.superadmin-btn-adjust {
+  padding: 0.42rem 0.9rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #d8b4fe;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+  transition: all 0.18s ease;
+}
+
+.superadmin-btn-adjust:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
+  border-color: rgba(168, 85, 247, 0.6);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+}
+
+/* Super Admin Admin Governance Cards */
+.superadmin-admin-card {
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.superadmin-admin-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.superadmin-admin-card.superadmin {
+  border-left: 4px solid #ec4899;
+}
+
+.superadmin-admin-card.superadmin:hover {
+  box-shadow: 0 10px 28px rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.4);
+}
+
+.superadmin-admin-card.admin {
+  border-left: 4px solid #6366f1;
+}
+
+.superadmin-admin-card.admin:hover {
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.superadmin-admin-stat-chip {
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.superadmin-admin-stat-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #94a3b8);
+}
+
+.superadmin-admin-stat-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  line-height: 1.1;
+}
+
+.superadmin-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 1.2rem 1.4rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.superadmin-rule-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(168, 85, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+.superadmin-rule-row.is-changed {
+  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.08);
+}
+
+.superadmin-rule-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.superadmin-toggle-active {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.superadmin-toggle-active.active {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.superadmin-toggle-active.active:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
+.superadmin-toggle-active.disabled {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.superadmin-toggle-active.disabled:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+/* ==========================================================================
+   PORTAL ACTION BUTTONS (Used throughout Gamification and Admin Centers)
+   ========================================================================== */
+.btn-portal-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1.35rem;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  outline: none;
+  user-select: none;
+}
+
+.btn-portal-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.btn-portal-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+}
+
+.btn-portal-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.btn-portal-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #e2e8f0 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  user-select: none;
+}
+
+.btn-portal-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.btn-portal-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.btn-portal-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: #64748b !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ==========================================================================
+   SUPER ADMIN PORTAL CORE VIEWS REFINED HUD DESIGN SYSTEM
+   ========================================================================== */
+
+/* Hero Banner Icon Box */
+.admin-hero-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(168, 85, 247, 0.14) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.25);
+}
+
+.admin-hero-icon-box.yellow {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.22) 0%, rgba(245, 158, 11, 0.12) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.38);
+  box-shadow: 0 4px 16px rgba(234, 179, 8, 0.2);
+}
+
+.admin-hero-icon-box.cyan {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(14, 165, 233, 0.12) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2);
+}
+
+.admin-hero-icon-box.blue {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.22) 0%, rgba(59, 130, 246, 0.12) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.38);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+}
+
+/* Extended KPI Card Themes */
+.superadmin-kpi-card.users { border-left: 4px solid #38bdf8; }
+.superadmin-kpi-card.users:hover { box-shadow: 0 8px 25px rgba(56, 189, 248, 0.22); border-color: rgba(56, 189, 248, 0.4); }
+
+.superadmin-kpi-card.active-accts { border-left: 4px solid #10b981; }
+.superadmin-kpi-card.active-accts:hover { box-shadow: 0 8px 25px rgba(16, 185, 129, 0.22); border-color: rgba(16, 185, 129, 0.4); }
+
+.superadmin-kpi-card.suspended-accts { border-left: 4px solid #f59e0b; }
+.superadmin-kpi-card.suspended-accts:hover { box-shadow: 0 8px 25px rgba(245, 158, 11, 0.22); border-color: rgba(245, 158, 11, 0.4); }
+
+.superadmin-kpi-card.creators-accts { border-left: 4px solid #6366f1; }
+.superadmin-kpi-card.creators-accts:hover { box-shadow: 0 8px 25px rgba(99, 102, 241, 0.22); border-color: rgba(99, 102, 241, 0.4); }
+
+.superadmin-kpi-card.admins-accts { border-left: 4px solid #8b5cf6; }
+.superadmin-kpi-card.admins-accts:hover { box-shadow: 0 8px 25px rgba(139, 92, 246, 0.22); border-color: rgba(139, 92, 246, 0.4); }
+
+.superadmin-kpi-card.superadmins-accts { border-left: 4px solid #ec4899; }
+.superadmin-kpi-card.superadmins-accts:hover { box-shadow: 0 8px 25px rgba(236, 72, 153, 0.22); border-color: rgba(236, 72, 153, 0.4); }
+
+.superadmin-kpi-icon-box.users { background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); }
+.superadmin-kpi-icon-box.active-accts { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); }
+.superadmin-kpi-icon-box.suspended-accts { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); }
+.superadmin-kpi-icon-box.creators-accts { background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); }
+.superadmin-kpi-icon-box.admins-accts { background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); }
+.superadmin-kpi-icon-box.superadmins-accts { background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3); }
+
+/* Compact HUD Action Button Chips */
+.btn-action-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.68rem;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  line-height: 1.25;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn-action-chip:active {
+  transform: scale(0.97);
+}
+
+.btn-action-chip.view {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+}
+.btn-action-chip.view:hover {
+  background: rgba(99, 102, 241, 0.24);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.btn-action-chip.edit {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fde047;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+.btn-action-chip.edit:hover {
+  background: rgba(245, 158, 11, 0.24);
+  color: #ffffff;
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-action-chip.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+.btn-action-chip.danger:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-action-chip.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.btn-action-chip.success:hover {
+  background: rgba(16, 185, 129, 0.24);
+  color: #ffffff;
+  border-color: rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.btn-action-chip.icon-only {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+/* Pulsing Status Dot */
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: dotPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+/* Official Social Channel Card */
+.official-channel-card {
+  background: linear-gradient(170deg, rgba(22, 27, 46, 0.85) 0%, rgba(13, 17, 30, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.35rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.official-channel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Admin Security Governance Card */
+.admin-gov-card {
+  background: linear-gradient(165deg, rgba(24, 30, 52, 0.85) 0%, rgba(13, 17, 28, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.35rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-gov-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}

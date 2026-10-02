@@ -1441,75 +1441,84 @@ export default function MainLayout({
             4. Main Content Area
             ==================================================================== */}
         <main className="layout-content-area" id="main-content">
-          {/* Page Header */}
-          <div className="layout-page-header">
-            <div className="layout-header-title-wrap">
-              <h1 className="layout-header-title">
-                <span>{currentItem?.icon}</span>
-                <span>{pageTitle}</span>
-              </h1>
-              <p className="layout-header-subtitle">
-                {pageSubtitle}
-              </p>
-            </div>
+          {/* Page Header (hidden when view has its own dedicated hero banner) */}
+          {!(
+            (currentRole === 'SUPER_ADMIN' && [
+              'game-points', 'points', 'gamification',
+              'levels', 'super-admin/levels',
+              'users', 'admins', 'submissions', 'social-accounts'
+            ].includes(activeNav)) ||
+            (currentRole === 'ADMIN' && ['submissions'].includes(activeNav))
+          ) && (
+            <div className="layout-page-header">
+              <div className="layout-header-title-wrap">
+                <h1 className="layout-header-title">
+                  <span>{currentItem?.icon}</span>
+                  <span>{pageTitle}</span>
+                </h1>
+                <p className="layout-header-subtitle">
+                  {pageSubtitle}
+                </p>
+              </div>
 
-            <div className="layout-header-actions">
-              {customActions ? (
-                customActions
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="btn-refresh-pill"
-                    onClick={handleManualRefresh}
-                    disabled={isRefreshing}
-                    title="Refresh telemetry, badge alerts, and server data"
-                  >
-                    <svg
-                      className={`refresh-icon-svg ${isRefreshing ? 'spinning' : ''}`}
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                      <path d="M21 3v5h-5" />
-                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                      <path d="M3 21v-5h5" />
-                    </svg>
-                    <span>{isRefreshing ? 'Refreshing…' : 'Refresh Data'}</span>
-                  </button>
-
-                  {currentRole === 'USER' && activeNav !== 'submit-activity' && (
+              <div className="layout-header-actions">
+                {customActions ? (
+                  customActions
+                ) : (
+                  <>
                     <button
                       type="button"
-                      className="btn-primary"
-                      onClick={() => handleNavChange('submit-activity')}
-                      style={{ fontSize: '0.82rem', padding: '0.45rem 1rem', background: 'var(--role-user)', color: '#07090e', fontWeight: 700 }}
+                      className="btn-refresh-pill"
+                      onClick={handleManualRefresh}
+                      disabled={isRefreshing}
+                      title="Refresh telemetry, badge alerts, and server data"
                     >
-                      ➕ Submit Activity Proof
+                      <svg
+                        className={`refresh-icon-svg ${isRefreshing ? 'spinning' : ''}`}
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                        <path d="M3 21v-5h5" />
+                      </svg>
+                      <span>{isRefreshing ? 'Refreshing…' : 'Refresh Data'}</span>
                     </button>
-                  )}
 
-                  {currentRole === 'ADMIN' && activeNav !== 'review-submissions' && (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => handleNavChange('review-submissions')}
-                      style={{ fontSize: '0.82rem', padding: '0.45rem 1rem', fontWeight: 600 }}
-                    >
-                      ⚖️ Moderation Queue ({pendingReviewCount})
-                    </button>
-                  )}
-                </>
-              )}
+                    {currentRole === 'USER' && activeNav !== 'submit-activity' && (
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => handleNavChange('submit-activity')}
+                        style={{ fontSize: '0.82rem', padding: '0.45rem 1rem', background: 'var(--role-user)', color: '#07090e', fontWeight: 700 }}
+                      >
+                        ➕ Submit Activity Proof
+                      </button>
+                    )}
+
+                    {currentRole === 'ADMIN' && activeNav !== 'review-submissions' && activeNav !== 'dashboard' && (
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => handleNavChange('review-submissions')}
+                        style={{ fontSize: '0.82rem', padding: '0.45rem 1rem', fontWeight: 600 }}
+                      >
+                        ⚖️ Moderation Queue ({pendingReviewCount})
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Active View Content */}
           <div className="layout-view-body">

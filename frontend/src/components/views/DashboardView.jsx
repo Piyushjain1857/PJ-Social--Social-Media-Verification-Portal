@@ -1286,7 +1286,7 @@ function AdminDashboard({ onNavigateToNav }) {
   const adminName = user?.name || 'Admin Moderator';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+    <div className="admin-dash-container">
 
       {/* ── Error Banner ── */}
       {status === 'error' && (
@@ -1296,76 +1296,46 @@ function AdminDashboard({ onNavigateToNav }) {
         />
       )}
 
-      {/* ── Welcome & Operational Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-            <span className="badge badge-admin" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>
+      {/* ── Moderator Cockpit Hero Banner ── */}
+      <div className="admin-dash-hero">
+        <div className="admin-dash-hero-content">
+          <div className="admin-dash-tag-row">
+            <span className="admin-dash-role-badge">
               🛡️ MODERATOR CONTROL
             </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              • Live Queue Telemetry
-            </span>
+            <div className="admin-dash-telemetry-tag">
+              <span className="admin-dash-telemetry-dot" />
+              <span>Live Queue Telemetry Active</span>
+            </div>
+            {pendingCount === 0 && (
+              <span className="badge badge-success" style={{ fontSize: '0.72rem', padding: '0.15rem 0.55rem' }}>
+                ✓ Queue Cleared
+              </span>
+            )}
           </div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+          <h2 className="admin-dash-hero-title">
             Welcome back, {adminName}
           </h2>
-          <p style={{ margin: '0.3rem 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Review pending creator proofs, track daily moderation throughput, and enforce compliance guidelines.
+          <p className="admin-dash-hero-subtitle">
+            Review pending creator proofs, track daily moderation throughput, and enforce compliance guidelines with real-time audit trails.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="admin-dash-hero-actions">
           <button
             type="button"
-            className="btn-refresh-pill"
-            onClick={load}
-            disabled={isLoading}
-            title="Refresh dashboard metrics"
-          >
-            <svg
-              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-              <path d="M3 21v-5h5" />
-            </svg>
-            <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
-          </button>
-
-          <button
-            type="button"
-            className="btn-primary"
+            className="admin-dash-btn-queue"
             onClick={() => onNavigateToNav('review-submissions')}
-            style={{
-              padding: '0.55rem 1.25rem',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              background: 'var(--role-admin)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              boxShadow: '0 4px 15px rgba(99, 102, 241, 0.35)',
-            }}
           >
-            <span>⚖️</span> Review Queue ({pendingCount}) →
+            <span>⚖️</span>
+            <span>Launch Review Desk ({pendingCount})</span>
+            <span>→</span>
           </button>
         </div>
       </div>
 
-      {/* ── Statistics Cards (4 KPI Cards) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      {/* ── Statistics Cards (4 KPI HUD Cards) ── */}
+      <div className="admin-dash-kpi-grid">
         {isLoading ? (
           <>
             <SkeletonCard />
@@ -1375,108 +1345,157 @@ function AdminDashboard({ onNavigateToNav }) {
           </>
         ) : (
           <>
-            <StatCard
-              label="Pending Submissions"
-              value={pendingCount}
-              sub="Awaiting verification decision"
-              color="var(--status-warning)"
-              icon="⏳"
-              pulse={pendingCount > 0}
-            />
-            <StatCard
-              label="Reviewed Today"
-              value={reviewedToday}
-              sub="Evaluated in the last 24 hours"
-              color="var(--role-admin)"
-              icon="🎯"
-            />
-            <StatCard
-              label="Approved Submissions"
-              value={approvedCount}
-              sub="Valid creator activities logged"
-              color="var(--status-success)"
-              icon="✓"
-            />
-            <StatCard
-              label="Rejected Submissions"
-              value={rejectedCount}
-              sub="Invalid or non-compliant proof"
-              color="var(--status-error)"
-              icon="✕"
-            />
+            <div
+              className="admin-dash-kpi-card pending"
+              onClick={() => onNavigateToNav('review-submissions')}
+              role="button"
+              tabIndex={0}
+              title="Click to launch pending review queue"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToNav('review-submissions'); }}
+            >
+              <div className="admin-dash-kpi-icon-box pending">
+                ⏳
+              </div>
+              <div className="admin-dash-kpi-info">
+                <span className="admin-dash-kpi-label">Pending Submissions</span>
+                <span className="admin-dash-kpi-value" style={{ color: '#f59e0b' }}>
+                  {pendingCount}
+                  {pendingCount > 0 && (
+                    <span style={{
+                      width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b',
+                      display: 'inline-block', animation: 'pulse-dot 2s infinite',
+                    }} />
+                  )}
+                </span>
+                <span className="admin-dash-kpi-subtext">Awaiting verification decision →</span>
+              </div>
+            </div>
+
+            <div
+              className="admin-dash-kpi-card reviewed"
+              onClick={() => onNavigateToNav('submissions')}
+              role="button"
+              tabIndex={0}
+              title="Click to browse reviewed submissions"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToNav('submissions'); }}
+            >
+              <div className="admin-dash-kpi-icon-box reviewed">
+                🎯
+              </div>
+              <div className="admin-dash-kpi-info">
+                <span className="admin-dash-kpi-label">Reviewed Today</span>
+                <span className="admin-dash-kpi-value" style={{ color: '#818cf8' }}>
+                  {reviewedToday}
+                </span>
+                <span className="admin-dash-kpi-subtext">Evaluated in last 24 hours →</span>
+              </div>
+            </div>
+
+            <div
+              className="admin-dash-kpi-card approved"
+              onClick={() => onNavigateToNav('submissions')}
+              role="button"
+              tabIndex={0}
+              title="Click to view verified approved submissions"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToNav('submissions'); }}
+            >
+              <div className="admin-dash-kpi-icon-box approved">
+                ✓
+              </div>
+              <div className="admin-dash-kpi-info">
+                <span className="admin-dash-kpi-label">Approved Submissions</span>
+                <span className="admin-dash-kpi-value" style={{ color: '#34d399' }}>
+                  {approvedCount}
+                </span>
+                <span className="admin-dash-kpi-subtext">Valid creator activities logged →</span>
+              </div>
+            </div>
+
+            <div
+              className="admin-dash-kpi-card rejected"
+              onClick={() => onNavigateToNav('submissions')}
+              role="button"
+              tabIndex={0}
+              title="Click to inspect rejected submissions"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToNav('submissions'); }}
+            >
+              <div className="admin-dash-kpi-icon-box rejected">
+                ✕
+              </div>
+              <div className="admin-dash-kpi-info">
+                <span className="admin-dash-kpi-label">Rejected Submissions</span>
+                <span className="admin-dash-kpi-value" style={{ color: '#f87171' }}>
+                  {rejectedCount}
+                </span>
+                <span className="admin-dash-kpi-subtext">Invalid or non-compliant proof →</span>
+              </div>
+            </div>
           </>
         )}
       </div>
 
       {/* ── Quick Link to Review Queue Callout ── */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '1.5rem 1.75rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1.25rem',
-          borderLeft: '4px solid var(--role-admin)',
-          background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(15, 23, 42, 0.4) 100%)',
-        }}
-      >
-        <div style={{ maxWidth: '600px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>⚖️</span>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
-              Moderation &amp; Verification Queue
+      <div className={`admin-dash-queue-callout ${pendingCount > 0 ? 'has-pending' : 'empty'}`}>
+        <div style={{ maxWidth: '640px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>{pendingCount > 0 ? '🚨' : '✨'}</span>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
+              {pendingCount > 0 ? 'Action Required: Pending Verification Requests' : 'Moderation Queue Fully Cleared'}
             </h3>
-            {pendingCount > 0 && (
-              <span className="badge badge-warning" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+            {pendingCount > 0 ? (
+              <span className="badge badge-warning" style={{ fontSize: '0.72rem', fontWeight: 800 }}>
                 {pendingCount} PENDING
+              </span>
+            ) : (
+              <span className="badge badge-success" style={{ fontSize: '0.72rem', fontWeight: 800 }}>
+                ALL CLEAR
               </span>
             )}
           </div>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.5 }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.55 }}>
             {pendingCount > 0
-              ? `There are currently ${pendingCount} social activity submissions awaiting evidence inspection and approval.`
-              : 'All pending submissions have been evaluated. Great job! Check back as creators log new activity.'}
+              ? `There are currently ${pendingCount} creator social engagement proof submissions awaiting evidence inspection and approval.`
+              : 'All submitted evidence has been reviewed and verified. Fantastic work! Creators receive real-time notifications once you approve or reject submissions.'}
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => onNavigateToNav('review-submissions')}
-          style={{
-            padding: '0.7rem 1.6rem',
-            fontSize: '0.92rem',
-            fontWeight: 700,
-            background: 'var(--role-admin)',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            boxShadow: '0 6px 20px rgba(99, 102, 241, 0.4)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span>⚖️</span> Open Review Queue ({pendingCount}) →
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {pendingCount > 0 ? (
+            <button
+              type="button"
+              className="admin-dash-btn-queue"
+              onClick={() => onNavigateToNav('review-submissions')}
+            >
+              <span>⚖️</span> Open Review Queue ({pendingCount}) →
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onNavigateToNav('submissions')}
+              style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', fontWeight: 700 }}
+            >
+              📋 Browse All Historical Submissions →
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Recent Pending Submissions List / Queue Preview ── */}
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+      <div className="admin-dash-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
                 ⏳ Recent Pending Submissions
               </h3>
               {!isLoading && (
-                <span className="badge" style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                <span className="badge" style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', fontSize: '0.72rem', fontWeight: 700 }}>
                   {recentPending.length} shown
                 </span>
               )}
             </div>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
               Most recent creator evidence submissions awaiting admin moderation verdict.
             </p>
           </div>
@@ -1492,10 +1511,10 @@ function AdminDashboard({ onNavigateToNav }) {
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 color: 'var(--primary-light)',
-                fontWeight: 600,
+                fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.3rem',
+                gap: '0.35rem',
               }}
             >
               Go to Full Queue ({pendingCount}) →
@@ -1527,26 +1546,7 @@ function AdminDashboard({ onNavigateToNav }) {
               return (
                 <div
                   key={sub.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                    padding: '1rem 1.15rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255,255,255,0.025)',
-                    border: '1px solid var(--border-subtle)',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                    e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.025)';
-                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                  }}
+                  className="admin-dash-submission-row"
                 >
                   {/* Left: Platform Icon + Info */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 300px', minWidth: 0 }}>
@@ -1559,8 +1559,9 @@ function AdminDashboard({ onNavigateToNav }) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderRadius: '50%',
+                        borderRadius: '10px',
                         background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.1)',
                         flexShrink: 0,
                       }}
                       title={sub.platform}
@@ -1570,7 +1571,7 @@ function AdminDashboard({ onNavigateToNav }) {
 
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.94rem', color: 'var(--text-highlight)' }}>
                           {creatorName}
                         </span>
                         {creatorEmail && (
@@ -1582,7 +1583,8 @@ function AdminDashboard({ onNavigateToNav }) {
                           className="badge"
                           style={{
                             fontSize: '0.68rem',
-                            padding: '0.15rem 0.45rem',
+                            fontWeight: 700,
+                            padding: '0.15rem 0.5rem',
                             background: 'rgba(99, 102, 241, 0.15)',
                             color: '#a5b4fc',
                             border: '1px solid rgba(99, 102, 241, 0.3)',
@@ -1639,18 +1641,19 @@ function AdminDashboard({ onNavigateToNav }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
                       <div
                         style={{
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '6px',
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '8px',
                           overflow: 'hidden',
-                          border: '1px solid var(--border-subtle)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: '#000',
                           cursor: 'pointer',
                         }}
                         title="Click to view evidence in lightbox"
                       >
                         <ScreenshotImage
                           screenshotUrl={sub.screenshotUrl}
-                          thumbnailStyle={{ width: '44px', height: '44px', objectFit: 'cover' }}
+                          thumbnailStyle={{ width: '46px', height: '46px', objectFit: 'cover' }}
                         />
                       </div>
                     </div>
@@ -1659,10 +1662,10 @@ function AdminDashboard({ onNavigateToNav }) {
                   {/* Right: Status + Timing + Quick link to queue */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
-                      <span className="badge badge-warning" style={{ fontSize: '0.7rem', fontWeight: 700 }}>
+                      <span className="badge badge-warning" style={{ fontSize: '0.7rem', fontWeight: 800 }}>
                         ⏳ PENDING
                       </span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
                         {timeAgo(sub.createdAt)}
                       </span>
                     </div>
@@ -1672,16 +1675,16 @@ function AdminDashboard({ onNavigateToNav }) {
                       className="btn-secondary"
                       onClick={() => onNavigateToNav('review-submissions')}
                       style={{
-                        padding: '0.45rem 0.85rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
+                        padding: '0.45rem 0.95rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.35rem',
                       }}
-                      title="Inspect in moderation queue (actions handled in queue view)"
+                      title="Inspect in moderation queue"
                     >
-                      Inspect Queue →
+                      Review Desk →
                     </button>
                   </div>
                 </div>
@@ -1692,43 +1695,61 @@ function AdminDashboard({ onNavigateToNav }) {
       </div>
 
       {/* ── Standard Moderation Procedures ── */}
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', color: 'var(--text-highlight)', fontWeight: 700 }}>
-          📋 Moderator Verification Standard Operating Procedures
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.2rem', color: 'var(--status-warning)' }}>1️⃣</span>
+      <div className="admin-dash-panel">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+          <span style={{ fontSize: '1.2rem' }}>📋</span>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
+            Moderator Verification Standard Operating Procedures
+          </h3>
+        </div>
+        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          Follow these core compliance guidelines to ensure fair, accurate, and consistent verification decisions.
+        </p>
+
+        <div className="admin-dash-sop-grid">
+          <div className="admin-dash-sop-card">
+            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+              1
+            </div>
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Identity Verification</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Identity Verification</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
                 Verify the creator handle visible in the screenshot matches the registered creator account.
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.2rem', color: 'var(--primary-light)' }}>2️⃣</span>
+
+          <div className="admin-dash-sop-card">
+            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+              2
+            </div>
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Active Timestamp</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Active Timestamp</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
                 Confirm timestamp of social engagement proof is within the valid active campaign timeframe.
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.2rem', color: 'var(--status-success)' }}>3️⃣</span>
+
+          <div className="admin-dash-sop-card">
+            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              3
+            </div>
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Legitimate Evidence</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Legitimate Evidence</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
                 Ensure screenshot has not been cropped to obscure timestamps, handles, or interaction state.
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.2rem', color: 'var(--status-error)' }}>4️⃣</span>
+
+          <div className="admin-dash-sop-card">
+            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+              4
+            </div>
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-highlight)' }}>Constructive Feedback</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Constructive Feedback</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
                 When rejecting submissions, always provide actionable, polite feedback so creators can rectify.
               </div>
             </div>

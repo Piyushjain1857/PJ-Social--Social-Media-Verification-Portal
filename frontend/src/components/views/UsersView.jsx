@@ -443,75 +443,119 @@ export default function UsersView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '1200px' }}>
       {/* ── Top Header Panel & Governance Summary ── */}
-      <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid var(--role-superadmin)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--text-highlight)' }}>
-              👥 User Governance & Access Management
-            </h2>
-            <span className="badge badge-superadmin" style={{ fontSize: '0.7rem' }}>
-              SUPER_ADMIN CLEARANCE
-            </span>
+      <div className="admin-dash-panel" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div className="admin-hero-icon-box cyan">
+              👥
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+                  User Governance & Access Management
+                </h2>
+                <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
+                  SUPER_ADMIN CLEARANCE
+                </span>
+              </div>
+              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem', maxWidth: '780px' }}>
+                Provision, monitor, and regulate platform accounts with granular RBAC privilege controls.
+              </p>
+            </div>
           </div>
-          <p style={{ margin: '0.4rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.86rem', maxWidth: '780px' }}>
-            Provision, monitor, and regulate platform accounts. Super Administrators possess root authority to manage Normal Users and Admin Moderators with granular privilege controls.
-          </p>
-        </div>
 
-        {isSuperAdmin && (
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={openCreateModal}
-            style={{
-              padding: '0.55rem 1.15rem',
-              fontSize: '0.86rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              fontWeight: 600,
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
-            }}
-          >
-            <span>➕</span>
-            <span>Create New User</span>
-          </button>
-        )}
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className="btn-portal-primary"
+              onClick={openCreateModal}
+              style={{ fontSize: '0.84rem', padding: '0.55rem 1.15rem' }}
+            >
+              <span>➕</span>
+              <span>Create New User</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Live Stats Strip ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem' }}>
-        <div className="glass-panel" style={{ padding: '1rem' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Users</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-highlight)', marginTop: '0.2rem' }}>{stats.total}</div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '1rem', borderLeft: '3px solid var(--status-success)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--status-success)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Accounts</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--status-success)', marginTop: '0.2rem' }}>{stats.active}</div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '1rem', borderLeft: '3px solid var(--status-warning)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--status-warning)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Inactive / Suspended</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--status-warning)', marginTop: '0.2rem' }}>
-            {stats.inactive + stats.suspended}
+      <div className="superadmin-kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+        <div className="superadmin-kpi-card users">
+          <div className="superadmin-kpi-icon-box users">
+            👥
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Total Users</span>
+            <span className="superadmin-kpi-value" style={{ color: '#38bdf8' }}>
+              {stats.total}
+            </span>
+            <span className="superadmin-kpi-subtext">All registered</span>
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1rem', borderLeft: '3px solid var(--role-user)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--role-user)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Creators (USER)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--role-user)', marginTop: '0.2rem' }}>{stats.usersCount}</div>
+        <div className="superadmin-kpi-card active-accts">
+          <div className="superadmin-kpi-icon-box active-accts">
+            ✓
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Active Accounts</span>
+            <span className="superadmin-kpi-value" style={{ color: '#10b981' }}>
+              {stats.active}
+            </span>
+            <span className="superadmin-kpi-subtext">In good standing</span>
+          </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1rem', borderLeft: '3px solid var(--role-admin)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--role-admin)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Admins (ADMIN)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--role-admin)', marginTop: '0.2rem' }}>{stats.adminsCount}</div>
+        <div className="superadmin-kpi-card suspended-accts">
+          <div className="superadmin-kpi-icon-box suspended-accts">
+            ⏸️
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Inactive / Suspended</span>
+            <span className="superadmin-kpi-value" style={{ color: '#f59e0b' }}>
+              {stats.inactive + stats.suspended}
+            </span>
+            <span className="superadmin-kpi-subtext">Requires attention</span>
+          </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1rem', borderLeft: '3px solid var(--role-superadmin)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--role-superadmin)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Super Admins</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--role-superadmin)', marginTop: '0.2rem' }}>{stats.superAdminsCount}</div>
+        <div className="superadmin-kpi-card creators-accts">
+          <div className="superadmin-kpi-icon-box creators-accts">
+            🚀
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Creators (USER)</span>
+            <span className="superadmin-kpi-value" style={{ color: '#818cf8' }}>
+              {stats.usersCount}
+            </span>
+            <span className="superadmin-kpi-subtext">Verified creators</span>
+          </div>
+        </div>
+
+        <div className="superadmin-kpi-card admins-accts">
+          <div className="superadmin-kpi-icon-box admins-accts">
+            🛡️
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Admins (ADMIN)</span>
+            <span className="superadmin-kpi-value" style={{ color: '#c084fc' }}>
+              {stats.adminsCount}
+            </span>
+            <span className="superadmin-kpi-subtext">Queue moderators</span>
+          </div>
+        </div>
+
+        <div className="superadmin-kpi-card superadmins-accts">
+          <div className="superadmin-kpi-icon-box superadmins-accts">
+            👑
+          </div>
+          <div className="superadmin-kpi-info">
+            <span className="superadmin-kpi-label">Super Admins</span>
+            <span className="superadmin-kpi-value" style={{ color: '#f43f5e' }}>
+              {stats.superAdminsCount}
+            </span>
+            <span className="superadmin-kpi-subtext">Root authority</span>
+          </div>
         </div>
       </div>
 
@@ -584,192 +628,186 @@ export default function UsersView() {
       />
 
       {/* ── Users Table ── */}
-      <div className="table-responsive-wrapper">
-        <table className="portal-table" style={{ width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ padding: '0.85rem 0.95rem' }}>User Profile</th>
-              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Clearance &amp; Role</th>
-              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Status</th>
-              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Activity</th>
-              <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Joined Date</th>
-              <th style={{ padding: '0.85rem 0.95rem', textAlign: 'right', whiteSpace: 'nowrap' }}>Governance Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <LoadingSkeleton rows={5} columns={6} />
-            ) : users.length === 0 ? (
+      <div className="admin-dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="table-responsive-wrapper" style={{ margin: 0, border: 'none', borderRadius: 0 }}>
+          <table className="portal-table" style={{ width: '100%' }}>
+            <thead>
               <tr>
-                <td colSpan="6" style={{ padding: '2rem 1rem' }}>
-                  <EmptyState
-                    icon="👥"
-                    title="No Users Found"
-                    description={
-                      hasActiveFilters
-                        ? `No users match your active search and filter criteria (${[
-                            searchTerm && `"${searchTerm}"`,
-                            roleFilter !== 'ALL' && `Role: ${roleFilter}`,
-                            statusFilter !== 'ALL' && `Status: ${statusFilter}`
-                          ].filter(Boolean).join(', ')}).`
-                        : "There are currently no registered users matching this directory."
-                    }
-                    actionText={hasActiveFilters ? "Clear All Filters" : null}
-                    onAction={hasActiveFilters ? handleClearFilters : null}
-                  />
-                </td>
+                <th style={{ padding: '0.85rem 0.95rem' }}>User Profile</th>
+                <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Clearance &amp; Role</th>
+                <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Activity</th>
+                <th style={{ padding: '0.85rem 0.65rem', whiteSpace: 'nowrap' }}>Joined Date</th>
+                <th style={{ padding: '0.85rem 0.95rem', textAlign: 'right', whiteSpace: 'nowrap' }}>Governance Actions</th>
               </tr>
-            ) : (
-              users.map((u) => {
-                const isCurrent = u.id === currentUser?.id;
-                const soleSuperAdmin = isSoleSuperAdmin(u);
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <LoadingSkeleton rows={5} columns={6} />
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ padding: '2rem 1rem' }}>
+                    <EmptyState
+                      icon="👥"
+                      title="No Users Found"
+                      description={
+                        hasActiveFilters
+                          ? `No users match your active search and filter criteria (${[
+                              searchTerm && `"${searchTerm}"`,
+                              roleFilter !== 'ALL' && `Role: ${roleFilter}`,
+                              statusFilter !== 'ALL' && `Status: ${statusFilter}`
+                            ].filter(Boolean).join(', ')}).`
+                          : "There are currently no registered users matching this directory."
+                      }
+                      actionText={hasActiveFilters ? "Clear All Filters" : null}
+                      onAction={hasActiveFilters ? handleClearFilters : null}
+                    />
+                  </td>
+                </tr>
+              ) : (
+                users.map((u) => {
+                  const isCurrent = u.id === currentUser?.id;
+                  const soleSuperAdmin = isSoleSuperAdmin(u);
 
-                return (
-                  <tr
-                    key={u.id}
-                    style={{
-                      borderBottom: '1px solid var(--border-subtle)',
-                      transition: 'background 0.15s ease',
-                    }}
-                  >
-                    {/* User Identity */}
-                    <td style={{ padding: '0.75rem 0.95rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                        <div
-                          style={{
-                            width: '34px',
-                            height: '34px',
-                            borderRadius: '50%',
-                            background: getAvatarBg(u.role),
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '0.82rem',
-                            color: '#ffffff',
-                            flexShrink: 0
-                          }}
-                        >
-                          {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-highlight)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
-                            {isCurrent && (
-                              <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary-light)', padding: '0.05rem 0.35rem' }}>
-                                You
-                              </span>
-                            )}
+                  return (
+                    <tr
+                      key={u.id}
+                      style={{
+                        borderBottom: '1px solid var(--border-subtle)',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      {/* User Identity */}
+                      <td style={{ padding: '0.75rem 0.95rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <div
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              borderRadius: '50%',
+                              background: getAvatarBg(u.role),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              color: '#ffffff',
+                              flexShrink: 0
+                            }}
+                          >
+                            {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                           </div>
-                          <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {u.email}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-highlight)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
+                              {isCurrent && (
+                                <span className="badge" style={{ fontSize: '0.62rem', background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary-light)', padding: '0.05rem 0.35rem' }}>
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {u.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Role */}
-                    <td style={{ padding: '0.75rem 0.65rem', whiteSpace: 'nowrap' }}>
-                      {getRoleBadge(u.role)}
-                    </td>
+                      {/* Role */}
+                      <td style={{ padding: '0.75rem 0.65rem', whiteSpace: 'nowrap' }}>
+                        {getRoleBadge(u.role)}
+                      </td>
 
-                    {/* Status */}
-                    <td style={{ padding: '0.75rem 0.65rem', whiteSpace: 'nowrap' }}>
-                      {getStatusBadge(u.status)}
-                    </td>
+                      {/* Status */}
+                      <td style={{ padding: '0.75rem 0.65rem', whiteSpace: 'nowrap' }}>
+                        {getStatusBadge(u.status)}
+                      </td>
 
-                    {/* Activity */}
-                    <td style={{ padding: '0.75rem 0.65rem', fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                      {u.role === 'USER' && (
-                        <span>{u.submissionsCount ?? 0} submission(s)</span>
-                      )}
-                      {u.role === 'ADMIN' && (
-                        <span>{u.reviewsCount ?? 0} moderation(s)</span>
-                      )}
-                      {u.role === 'SUPER_ADMIN' && (
-                        <span style={{ color: 'var(--role-superadmin)' }}>Root Admin</span>
-                      )}
-                    </td>
+                      {/* Activity */}
+                      <td style={{ padding: '0.75rem 0.65rem', fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                        {u.role === 'USER' && (
+                          <span>{u.submissionsCount ?? 0} submission(s)</span>
+                        )}
+                        {u.role === 'ADMIN' && (
+                          <span>{u.reviewsCount ?? 0} moderation(s)</span>
+                        )}
+                        {u.role === 'SUPER_ADMIN' && (
+                          <span style={{ color: 'var(--role-superadmin)' }}>Root Admin</span>
+                        )}
+                      </td>
 
-                    {/* Joined Date */}
-                    <td style={{ padding: '0.75rem 0.65rem', color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
+                      {/* Joined Date */}
+                      <td style={{ padding: '0.75rem 0.65rem', color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
 
-                    {/* Actions */}
-                    <td style={{ padding: '0.75rem 0.95rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        {/* View Details */}
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => handleViewDetails(u.id)}
-                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.76rem' }}
-                          title="View user dossier & activity"
-                        >
-                          👁️ Details
-                        </button>
-
-                        {/* Edit User (Super Admin only) */}
-                        {isSuperAdmin && (
+                      {/* Actions */}
+                      <td style={{ padding: '0.75rem 0.95rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                          {/* View Details */}
                           <button
                             type="button"
-                            className="btn-secondary"
-                            onClick={() => openEditModal(u)}
-                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.76rem' }}
-                            title="Edit user details and role"
+                            className="btn-action-chip view"
+                            onClick={() => handleViewDetails(u.id)}
+                            title="View user dossier & activity"
                           >
-                            ✏️ Edit
+                            <span>👁️</span>
+                            <span>Details</span>
                           </button>
-                        )}
 
-                        {/* Activate / Deactivate Toggle (Super Admin only) */}
-                        {isSuperAdmin && (
-                          <>
-                            {u.status === 'ACTIVE' ? (
-                              <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => openStatusConfirm(u, 'INACTIVE')}
-                                disabled={soleSuperAdmin}
-                                style={{
-                                  padding: '0.3rem 0.6rem',
-                                  fontSize: '0.76rem',
-                                  color: soleSuperAdmin ? 'var(--text-muted)' : 'var(--status-error)',
-                                  borderColor: soleSuperAdmin ? 'var(--border-subtle)' : 'rgba(239, 68, 68, 0.3)',
-                                  opacity: soleSuperAdmin ? 0.5 : 1,
-                                  cursor: soleSuperAdmin ? 'not-allowed' : 'pointer'
-                                }}
-                                title={soleSuperAdmin ? 'Cannot deactivate the sole active Super Administrator' : 'Deactivate user access'}
-                              >
-                                ⛔ Deactivate
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => openStatusConfirm(u, 'ACTIVE')}
-                                style={{
-                                  padding: '0.3rem 0.6rem',
-                                  fontSize: '0.76rem',
-                                  color: 'var(--status-success)',
-                                  borderColor: 'rgba(34, 197, 94, 0.3)'
-                                }}
-                                title="Re-activate user access"
-                              >
-                                ⚡ Activate
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                          {/* Edit User (Super Admin only) */}
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              className="btn-action-chip edit"
+                              onClick={() => openEditModal(u)}
+                              title="Edit user details and role"
+                            >
+                              <span>✏️</span>
+                              <span>Edit</span>
+                            </button>
+                          )}
+
+                          {/* Activate / Deactivate Toggle (Super Admin only) */}
+                          {isSuperAdmin && (
+                            <>
+                              {u.status === 'ACTIVE' ? (
+                                <button
+                                  type="button"
+                                  className="btn-action-chip danger"
+                                  onClick={() => openStatusConfirm(u, 'INACTIVE')}
+                                  disabled={soleSuperAdmin}
+                                  style={{
+                                    opacity: soleSuperAdmin ? 0.4 : 1,
+                                    cursor: soleSuperAdmin ? 'not-allowed' : 'pointer'
+                                  }}
+                                  title={soleSuperAdmin ? 'Cannot deactivate the sole active Super Administrator' : 'Deactivate user access'}
+                                >
+                                  <span>⛔</span>
+                                  <span>Deactivate</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="btn-action-chip success"
+                                  onClick={() => openStatusConfirm(u, 'ACTIVE')}
+                                  title="Re-activate user access"
+                                >
+                                  <span>⚡</span>
+                                  <span>Activate</span>
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ── Pagination Controls ── */}

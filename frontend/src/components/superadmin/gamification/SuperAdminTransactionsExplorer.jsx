@@ -84,7 +84,7 @@ export default function SuperAdminTransactionsExplorer() {
   return (
     <div className="superadmin-transactions-explorer">
       {/* Search & Filters Filter Bar */}
-      <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', marginBottom: '1.25rem' }}>
+      <div className="superadmin-filter-bar" style={{ marginBottom: '1.25rem' }}>
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Search Input */}
@@ -121,47 +121,95 @@ export default function SuperAdminTransactionsExplorer() {
               </select>
             </div>
 
-            <button type="submit" className="btn-portal-primary" style={{ fontSize: '0.84rem', padding: '0.5rem 1rem' }}>
-              Search
+            <button
+              type="submit"
+              className="superadmin-btn-adjust"
+              style={{ fontSize: '0.84rem', padding: '0.55rem 1.25rem' }}
+            >
+              <span>🔍</span> Search
             </button>
           </div>
 
           {/* Secondary Filters: Dates & XP Range */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Dates:</span>
+          <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Date Range Capsule */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.95rem' }}>📅</span> Dates:
+              </span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="input-portal"
-                style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }}
+                style={{
+                  padding: '0.35rem 0.65rem',
+                  fontSize: '0.82rem',
+                  colorScheme: 'dark',
+                  borderRadius: '7px',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  color: '#e2e8f0',
+                  outline: 'none'
+                }}
               />
-              <span style={{ color: 'var(--text-muted)' }}>to</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>to</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="input-portal"
-                style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }}
+                style={{
+                  padding: '0.35rem 0.65rem',
+                  fontSize: '0.82rem',
+                  colorScheme: 'dark',
+                  borderRadius: '7px',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  color: '#e2e8f0',
+                  outline: 'none'
+                }}
               />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>XP:</span>
+            {/* XP Range Capsule */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.95rem' }}>⚡</span> XP:
+              </span>
               <input
                 type="number"
                 placeholder="Min"
                 value={minXP}
                 onChange={(e) => setMinXP(e.target.value)}
                 style={{
-                  width: '80px',
-                  padding: '0.4rem 0.6rem',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(0,0,0,0.3)',
-                  color: '#fff',
-                  fontSize: '0.8rem'
+                  width: '75px',
+                  padding: '0.35rem 0.6rem',
+                  borderRadius: '7px',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  color: '#38bdf8',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontWeight: 700,
+                  fontSize: '0.84rem',
+                  textAlign: 'center',
+                  outline: 'none'
                 }}
               />
               <span style={{ color: 'var(--text-muted)' }}>–</span>
@@ -171,13 +219,17 @@ export default function SuperAdminTransactionsExplorer() {
                 value={maxXP}
                 onChange={(e) => setMaxXP(e.target.value)}
                 style={{
-                  width: '80px',
-                  padding: '0.4rem 0.6rem',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(0,0,0,0.3)',
-                  color: '#fff',
-                  fontSize: '0.8rem'
+                  width: '75px',
+                  padding: '0.35rem 0.6rem',
+                  borderRadius: '7px',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  color: '#38bdf8',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontWeight: 700,
+                  fontSize: '0.84rem',
+                  textAlign: 'center',
+                  outline: 'none'
                 }}
               />
             </div>
@@ -187,21 +239,21 @@ export default function SuperAdminTransactionsExplorer() {
                 type="button"
                 onClick={handleClearFilters}
                 style={{
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
                   color: '#f87171',
-                  padding: '0.35rem 0.75rem',
+                  padding: '0.4rem 0.8rem',
                   borderRadius: '6px',
                   fontSize: '0.78rem',
                   cursor: 'pointer',
-                  fontWeight: 600
+                  fontWeight: 700
                 }}
               >
-                Clear
+                ✕ Clear
               </button>
             )}
 
-            <div style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <div style={{ marginLeft: 'auto', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
               Total: <strong>{pagination.totalTransactions || 0}</strong> transactions recorded
             </div>
           </div>
@@ -209,7 +261,7 @@ export default function SuperAdminTransactionsExplorer() {
       </div>
 
       {/* Transactions Table Container */}
-      <div className="glass-panel" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+      <div className="admin-dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⌛</div>

@@ -38,12 +38,12 @@ export default function SuperAdminAuditLogsView() {
   return (
     <div className="superadmin-audit-logs-view">
       {/* Header and Filter Controls */}
-      <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: '1 1 200px' }}>
+      <div className="superadmin-filter-bar" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
+          <div style={{ flex: '1 1 220px' }}>
             <input
               type="text"
-              placeholder="Filter by Actor name or email…"
+              placeholder="🔍 Filter by Actor name or email…"
               className="input-portal"
               value={actorFilter}
               onChange={(e) => setActorFilter(e.target.value)}
@@ -51,7 +51,7 @@ export default function SuperAdminAuditLogsView() {
             />
           </div>
 
-          <div style={{ minWidth: '180px' }}>
+          <div style={{ minWidth: '220px' }}>
             <select
               className="input-portal"
               value={actionFilter}
@@ -74,36 +74,56 @@ export default function SuperAdminAuditLogsView() {
               type="button"
               onClick={() => { setActionFilter(''); setActorFilter(''); }}
               style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
                 color: '#f87171',
                 padding: '0.45rem 0.85rem',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 fontSize: '0.8rem',
                 cursor: 'pointer',
-                fontWeight: 600
+                fontWeight: 700
               }}
             >
-              Clear
+              ✕ Clear
             </button>
           )}
 
-          <div style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <div style={{ marginLeft: 'auto', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
             Showing <strong>{logs.length}</strong> of <strong>{pagination.totalLogs || 0}</strong> compliance audit records
           </div>
         </div>
       </div>
 
       {/* Audit Log Table */}
-      <div className="glass-panel" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+      <div className="admin-dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⌛</div>
             <div>Loading system compliance audit trail...</div>
           </div>
         ) : logs.length === 0 ? (
-          <div style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            No audit logs found matching filter criteria.
+          <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', filter: 'drop-shadow(0 2px 8px rgba(99, 102, 241, 0.3))' }}>
+              📜
+            </div>
+            <div style={{ fontWeight: 800, color: 'var(--text-highlight)', fontSize: '1.1rem', marginBottom: '0.35rem' }}>
+              No Compliance Audit Records Found
+            </div>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', maxWidth: '420px', marginInline: 'auto' }}>
+              {actionFilter || actorFilter
+                ? 'No audit log entries match your active filter criteria. Try resetting your search filters.'
+                : 'All gamification policy modifications, manual XP adjustments, and tier calibrations will be permanently logged here.'}
+            </p>
+            {(actionFilter || actorFilter) && (
+              <button
+                type="button"
+                className="btn-portal-secondary"
+                onClick={() => { setActionFilter(''); setActorFilter(''); }}
+                style={{ marginTop: '1.25rem', fontSize: '0.82rem' }}
+              >
+                ✕ Clear Filters
+              </button>
+            )}
           </div>
         ) : (
           <>

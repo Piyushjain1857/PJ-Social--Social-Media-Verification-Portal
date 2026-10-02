@@ -332,56 +332,62 @@ export default function LevelManagementView() {
 
       {/* Header & Dashboard Summary */}
       <div
-        className="glass-panel"
+        className="admin-dash-panel"
         style={{
           padding: '1.75rem',
           position: 'relative',
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(26, 32, 53, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.08)'
+          overflow: 'hidden'
         }}
       >
         <div style={{ marginBottom: '1.5rem' }}>
-          {/* Title row — icon + h2 LEFT, buttons RIGHT */}
+          {/* Title row — icon box + h2 LEFT, buttons RIGHT */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
               gap: '1rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.6rem' }}>⚡</span>
-              <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
-                Level Management Engine
-              </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div className="admin-hero-icon-box yellow">
+                ⚡
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                  <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+                    Level Management Engine
+                  </h2>
+                  <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
+                    XP PROGRESSION
+                  </span>
+                </div>
+                <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+                  Institutional governance over creator XP thresholds, level titles, icons, and progression tiers.
+                </p>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexShrink: 0 }}>
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-portal-primary"
                 onClick={handleOpenCreate}
-                style={{
-                  fontSize: '0.82rem',
-                  padding: '0.5rem 1rem',
-                  background: 'var(--role-superadmin)',
-                  color: '#fff',
-                  fontWeight: 700,
-                  gap: '0.4rem'
-                }}
+                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}
               >
-                <span>➕</span> Add Level
+                <span>➕</span>
+                <span>Add Level</span>
               </button>
 
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-portal-secondary"
                 onClick={handleOpenGenerate}
-                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem', gap: '0.4rem' }}
+                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}
               >
-                <span>⚙️</span> System Configuration
+                <span>⚙️</span>
+                <span>System Configuration</span>
               </button>
 
               <button
@@ -411,129 +417,82 @@ export default function LevelManagementView() {
               </button>
             </div>
           </div>
-
-          {/* Subtitle below the title row */}
-          <p style={{ margin: '0.35rem 0 0 1.9rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-            Complete institutional governance over creator XP thresholds, level titles, icons, and progression tiers.
-          </p>
         </div>
 
-        {/* 4 Summary Metric Cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '1rem'
-          }}
-        >
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderLeft: '4px solid #38bdf8',
-              borderRadius: '8px',
-              padding: '1rem'
-            }}
-          >
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
-              Total Levels
+        {/* 4 Summary Metric HUD Cards */}
+        <div className="superadmin-kpi-grid">
+          <div className="superadmin-kpi-card xp">
+            <div className="superadmin-kpi-icon-box xp">
+              ⚡
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#7dd3fc', marginTop: '0.25rem' }}>
-              {config.totalLevels}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-              Configured in Database
+            <div className="superadmin-kpi-info">
+              <span className="superadmin-kpi-label">Total Levels</span>
+              <span className="superadmin-kpi-value" style={{ color: '#38bdf8' }}>
+                {config.totalLevels}
+              </span>
+              <span className="superadmin-kpi-subtext">Configured in Database</span>
             </div>
           </div>
 
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderLeft: '4px solid #34d399',
-              borderRadius: '8px',
-              padding: '1rem'
-            }}
-          >
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
-              Active Levels
+          <div className="superadmin-kpi-card creators">
+            <div className="superadmin-kpi-icon-box creators">
+              ✓
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#6ee7b7', marginTop: '0.25rem' }}>
-              {config.activeLevels}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-              Currently in live engine
+            <div className="superadmin-kpi-info">
+              <span className="superadmin-kpi-label">Active Levels</span>
+              <span className="superadmin-kpi-value" style={{ color: '#10b981' }}>
+                {config.activeLevels}
+              </span>
+              <span className="superadmin-kpi-subtext">Currently in live engine</span>
             </div>
           </div>
 
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderLeft: '4px solid #a855f7',
-              borderRadius: '8px',
-              padding: '1rem'
-            }}
-          >
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
-              Highest Level
+          <div className="superadmin-kpi-card highest-lvl">
+            <div className="superadmin-kpi-icon-box highest-lvl">
+              🏆
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#d8b4fe', marginTop: '0.25rem' }}>
-              Level {config.highestLevel}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-              Current pinnacle tier
+            <div className="superadmin-kpi-info">
+              <span className="superadmin-kpi-label">Highest Level</span>
+              <span className="superadmin-kpi-value" style={{ color: '#ec4899' }}>
+                Level {config.highestLevel}
+              </span>
+              <span className="superadmin-kpi-subtext">Current pinnacle tier</span>
             </div>
           </div>
 
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderLeft: '4px solid #facc15',
-              borderRadius: '8px',
-              padding: '1rem'
-            }}
-          >
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700 }}>
-              XP to Max Level
+          <div className="superadmin-kpi-card highest-xp">
+            <div className="superadmin-kpi-icon-box highest-xp">
+              💎
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fef08a', marginTop: '0.25rem' }}>
-              {config.totalXPRequired?.toLocaleString()} <span style={{ fontSize: '0.9rem', color: '#facc15' }}>XP</span>
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-              Cumulative progression sum
+            <div className="superadmin-kpi-info">
+              <span className="superadmin-kpi-label">XP to Max Level</span>
+              <span className="superadmin-kpi-value" style={{ color: '#facc15' }}>
+                {config.totalXPRequired?.toLocaleString()} <span style={{ fontSize: '0.85rem', color: '#fde047' }}>XP</span>
+              </span>
+              <span className="superadmin-kpi-subtext">Cumulative progression sum</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter, Search & Controls Bar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.75rem'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', flex: '1', minWidth: '240px' }}>
+      <div className="superadmin-filter-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', flex: '1', minWidth: '240px' }}>
           <input
             type="text"
-            className="input-field"
+            className="input-portal"
             placeholder="🔍 Search by name or level number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ maxWidth: '320px', padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
+            style={{ maxWidth: '320px', padding: '0.5rem 0.85rem', fontSize: '0.84rem' }}
           />
 
-          <div style={{ display: 'flex', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(255, 255, 255, 0.03)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
             <button
               type="button"
               className={statusFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'}
               onClick={() => setStatusFilter('ALL')}
-              style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem' }}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderRadius: '6px' }}
             >
               All ({levels.length})
             </button>
@@ -541,7 +500,7 @@ export default function LevelManagementView() {
               type="button"
               className={statusFilter === 'ACTIVE' ? 'btn-primary' : 'btn-secondary'}
               onClick={() => setStatusFilter('ACTIVE')}
-              style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem' }}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderRadius: '6px' }}
             >
               Active ({levels.filter((l) => l.isActive).length})
             </button>
@@ -549,7 +508,7 @@ export default function LevelManagementView() {
               type="button"
               className={statusFilter === 'INACTIVE' ? 'btn-primary' : 'btn-secondary'}
               onClick={() => setStatusFilter('INACTIVE')}
-              style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem' }}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderRadius: '6px' }}
             >
               Inactive ({levels.filter((l) => !l.isActive).length})
             </button>
@@ -561,7 +520,7 @@ export default function LevelManagementView() {
             type="button"
             className="btn-secondary"
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem', gap: '0.35rem' }}
+            style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem', gap: '0.35rem' }}
           >
             <span>↕️</span> Level {sortOrder === 'asc' ? '1 → Max' : 'Max → 1'}
           </button>
@@ -570,21 +529,21 @@ export default function LevelManagementView() {
 
       {/* Main Levels Table / Responsive Cards */}
       {isLoading ? (
-        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="admin-dash-panel" style={{ padding: '2rem', textAlign: 'center' }}>
           <div className="skeleton" style={{ height: '40px', marginBottom: '0.75rem', borderRadius: '6px' }} />
           <div className="skeleton" style={{ height: '40px', marginBottom: '0.75rem', borderRadius: '6px' }} />
           <div className="skeleton" style={{ height: '40px', marginBottom: '0.75rem', borderRadius: '6px' }} />
           <div className="skeleton" style={{ height: '40px', borderRadius: '6px' }} />
         </div>
       ) : error ? (
-        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', borderLeft: '4px solid var(--status-error)' }}>
+        <div className="admin-dash-panel" style={{ padding: '2rem', textAlign: 'center', borderLeft: '4px solid var(--status-error)' }}>
           <p style={{ color: 'var(--status-error)', fontWeight: 600 }}>{error}</p>
           <button type="button" className="btn-secondary" onClick={loadData} style={{ marginTop: '0.5rem' }}>
             Try Again
           </button>
         </div>
       ) : filteredLevels.length === 0 ? (
-        <div className="glass-panel" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+        <div className="admin-dash-panel" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
           <span style={{ fontSize: '2.5rem' }}>🔍</span>
           <h3 style={{ color: 'var(--text-highlight)', margin: '0.5rem 0' }}>No Levels Found</h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
@@ -600,7 +559,7 @@ export default function LevelManagementView() {
           </button>
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+        <div className="admin-dash-panel" style={{ padding: '0', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
@@ -719,40 +678,30 @@ export default function LevelManagementView() {
 
                       {/* Actions */}
                       <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', alignItems: 'center' }}>
                           <button
                             type="button"
-                            className="btn-secondary"
+                            className="btn-action-chip edit"
                             onClick={() => handleOpenEdit(lvl)}
-                            style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-                            title="Edit level"
+                            title="Edit level configuration"
                           >
-                            ✏️ Edit
+                            <span>✏️</span>
+                            <span>Edit</span>
                           </button>
 
                           <button
                             type="button"
-                            className="btn-secondary"
+                            className={`btn-action-chip ${lvl.isActive ? 'danger' : 'success'}`}
                             onClick={() => handleToggleStatus(lvl)}
-                            style={{
-                              fontSize: '0.75rem',
-                              padding: '0.3rem 0.6rem',
-                              color: lvl.isActive ? '#f87171' : '#34d399'
-                            }}
                             title={lvl.isActive ? 'Disable level' : 'Enable level'}
                           >
-                            {lvl.isActive ? 'Disable' : 'Enable'}
+                            <span>{lvl.isActive ? 'Disable' : 'Enable'}</span>
                           </button>
 
                           <button
                             type="button"
-                            className="btn-secondary"
+                            className="btn-action-chip danger icon-only"
                             onClick={() => handleOpenDelete(lvl)}
-                            style={{
-                              fontSize: '0.75rem',
-                              padding: '0.3rem 0.6rem',
-                              color: 'var(--status-error)'
-                            }}
                             title="Delete level"
                           >
                             🗑️

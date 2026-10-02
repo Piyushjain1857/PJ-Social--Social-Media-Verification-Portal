@@ -40,17 +40,7 @@ export default function SuperAdminUsersTable({
   return (
     <div className="superadmin-users-table-container">
       {/* Search & Filters Controls */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '1.25rem',
-          borderRadius: '14px',
-          marginBottom: '1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem'
-        }}
-      >
+      <div className="superadmin-filter-bar" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search Box */}
           <div style={{ flex: '1 1 240px', position: 'relative' }}>
@@ -136,8 +126,8 @@ export default function SuperAdminUsersTable({
                 width: '95px',
                 padding: '0.45rem 0.65rem',
                 borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'rgba(0, 0, 0, 0.35)',
                 color: '#fff',
                 fontSize: '0.82rem'
               }}
@@ -152,8 +142,8 @@ export default function SuperAdminUsersTable({
                 width: '95px',
                 padding: '0.45rem 0.65rem',
                 borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'rgba(0, 0, 0, 0.35)',
                 color: '#fff',
                 fontSize: '0.82rem'
               }}
@@ -165,17 +155,17 @@ export default function SuperAdminUsersTable({
               type="button"
               onClick={onClearFilters}
               style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
                 color: '#f87171',
                 padding: '0.45rem 0.85rem',
                 borderRadius: '6px',
                 fontSize: '0.8rem',
                 cursor: 'pointer',
-                fontWeight: 600
+                fontWeight: 700
               }}
             >
-              Clear Filters
+              ✕ Clear Filters
             </button>
           )}
 
@@ -186,7 +176,7 @@ export default function SuperAdminUsersTable({
       </div>
 
       {/* Main Table Container */}
-      <div className="glass-panel" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+      <div className="admin-dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⌛</div>
@@ -365,40 +355,24 @@ export default function SuperAdminUsersTable({
 
                       {/* Actions */}
                       <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.45rem', alignItems: 'center' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.5rem', alignItems: 'center' }}>
                           <button
                             type="button"
+                            className="superadmin-btn-view"
                             onClick={() => onViewUser(u.id)}
                             title="Inspect complete gamification dossier"
-                            style={{
-                              padding: '0.35rem 0.65rem',
-                              borderRadius: '6px',
-                              background: 'rgba(255, 255, 255, 0.06)',
-                              border: '1px solid rgba(255, 255, 255, 0.12)',
-                              color: '#cbd5e1',
-                              fontSize: '0.78rem',
-                              cursor: 'pointer',
-                              fontWeight: 600
-                            }}
                           >
-                            👁 View
+                            <span>👁</span>
+                            <span>View</span>
                           </button>
                           <button
                             type="button"
+                            className="superadmin-btn-adjust"
                             onClick={() => onAdjustXP(u)}
                             title="Super Admin manual XP adjustment"
-                            style={{
-                              padding: '0.35rem 0.65rem',
-                              borderRadius: '6px',
-                              background: 'rgba(99, 102, 241, 0.15)',
-                              border: '1px solid rgba(99, 102, 241, 0.35)',
-                              color: '#a5b4fc',
-                              fontSize: '0.78rem',
-                              cursor: 'pointer',
-                              fontWeight: 600
-                            }}
                           >
-                            ✏️ Adjust XP
+                            <span>✏️</span>
+                            <span>Adjust XP</span>
                           </button>
                         </div>
                       </td>

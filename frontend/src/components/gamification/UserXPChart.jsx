@@ -143,7 +143,7 @@ export default function UserXPChart({ userId = null }) {
   };
 
   return (
-    <div className="gamepoints-chart-card glass-panel" id="user-xp-graph-section">
+    <div className="gamepoints-chart-card admin-dash-panel" id="user-xp-graph-section">
       {/* Header with Title and Timeframe Filters */}
       <div className="gamepoints-chart-header">
         <div>

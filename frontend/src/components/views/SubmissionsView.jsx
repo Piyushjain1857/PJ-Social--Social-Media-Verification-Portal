@@ -245,41 +245,54 @@ export default function SubmissionsView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Header Overview */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-highlight)' }}>
-            📁 Platform Submissions Directory
-          </h2>
-          <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            Inspect, filter, and audit creator submissions across all connected institutional social channels.
-          </p>
-        </div>
+      <div className="admin-dash-panel" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div className="admin-hero-icon-box blue">
+              📁
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+                  Platform Submissions Directory
+                </h2>
+                <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
+                  AUDIT REPOSITORY
+                </span>
+              </div>
+              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+                Inspect, filter, and audit creator submissions across all connected institutional social channels.
+              </p>
+            </div>
+          </div>
 
-        <button
-          type="button"
-          className="btn-refresh-pill"
-          onClick={loadSubmissions}
-          disabled={isLoading}
-        >
-          <svg
-            className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <button
+            type="button"
+            className="btn-refresh-pill"
+            onClick={loadSubmissions}
+            disabled={isLoading}
+            title="Refresh submissions"
           >
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-            <path d="M21 3v5h-5" />
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-            <path d="M3 21v-5h5" />
-          </svg>
-          <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
-        </button>
+            <svg
+              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Action Success Toast */}
@@ -404,88 +417,100 @@ export default function SubmissionsView() {
           clearLabel="Clear filters and reset search"
         />
       ) : (
-        <div className="table-responsive-wrapper">
-          <table className="portal-table" style={{ minWidth: '780px' }}>
-            <thead>
-              <tr>
-                <th>Creator</th>
-                <th>Platform & Action</th>
-                <th>Proof / URL</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {submissions.map((sub) => (
-                <tr key={sub.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '0.75rem' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--text-highlight)' }}>
-                      {sub.userName || sub.user?.name || 'Creator User'}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                      {sub.userEmail || sub.user?.email || 'user@portal.com'}
-                    </div>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{ fontWeight: 600 }}>{sub.platform}</span>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{sub.actionType}</div>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <a
-                      href={sub.postUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: 'var(--accent-cyan)',
-                        fontSize: '0.82rem',
-                        textDecoration: 'none',
-                        display: 'block',
-                        maxWidth: '240px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      🔗 {sub.postUrl}
-                    </a>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    {sub.status === 'APPROVED' && <span className="badge badge-success">✓ APPROVED</span>}
-                    {sub.status === 'REJECTED' && <span className="badge badge-error">✕ REJECTED</span>}
-                    {sub.status === 'PENDING' && <span className="badge badge-warning">⏳ PENDING</span>}
-                  </td>
-                  <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                    {new Date(sub.createdAt).toLocaleDateString()}
-                  </td>
-                  <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => setSelectedSub(sub)}
-                      style={{
-                        padding: '0.42rem 0.85rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        background: 'rgba(99, 102, 241, 0.1)',
-                        borderColor: 'rgba(99, 102, 241, 0.3)',
-                        color: '#c7d2fe',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <span>🔍</span>
-                      <span>Inspect</span>
-                    </button>
-                  </td>
+        <div className="admin-dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="table-responsive-wrapper" style={{ margin: 0, border: 'none', borderRadius: 0 }}>
+            <table className="portal-table" style={{ minWidth: '780px' }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: '0.85rem 1rem' }}>Creator</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>Platform &amp; Action</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>Proof / URL</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>Status</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>Submitted</th>
+                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {submissions.map((sub) => {
+                  const getPlatformChip = (platform) => {
+                    if (platform === 'INSTAGRAM') return { icon: '📸', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.28)' };
+                    if (platform === 'LINKEDIN') return { icon: '💼', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.28)' };
+                    return { icon: '👥', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.12)', border: 'rgba(96, 165, 250, 0.28)' };
+                  };
+                  const pChip = getPlatformChip(sub.platform);
+
+                  return (
+                    <tr
+                      key={sub.id}
+                      style={{
+                        borderBottom: '1px solid var(--border-subtle)',
+                        transition: 'background 0.15s ease'
+                      }}
+                    >
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-highlight)' }}>
+                          {sub.userName || sub.user?.name || 'Creator User'}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          {sub.userEmail || sub.user?.email || 'user@portal.com'}
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: pChip.bg, border: `1px solid ${pChip.border}`, color: pChip.color, padding: '0.2rem 0.55rem', borderRadius: '6px', fontSize: '0.76rem', fontWeight: 700 }}>
+                          <span>{pChip.icon}</span>
+                          <span>{sub.platform}</span>
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '4px', textTransform: 'capitalize' }}>
+                          {sub.actionType?.toLowerCase()}
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <a
+                          href={sub.postUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#38bdf8',
+                            fontSize: '0.82rem',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            maxWidth: '240px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <span>🔗</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.postUrl}</span>
+                        </a>
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        {sub.status === 'APPROVED' && <span className="badge badge-success">✓ APPROVED</span>}
+                        {sub.status === 'REJECTED' && <span className="badge badge-error">✕ REJECTED</span>}
+                        {sub.status === 'PENDING' && <span className="badge badge-warning">⏳ PENDING</span>}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                        {new Date(sub.createdAt).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="btn-action-chip view"
+                          onClick={() => setSelectedSub(sub)}
+                          title="Inspect submission proof"
+                        >
+                          <span>🔍</span>
+                          <span>Inspect</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

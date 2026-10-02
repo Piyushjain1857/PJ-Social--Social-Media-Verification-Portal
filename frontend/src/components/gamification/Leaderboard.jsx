@@ -67,12 +67,12 @@ export default function Leaderboard({ onSelectUser = null }) {
   return (
     <div className="leaderboard-container">
       {/* Top Header & Timeframe Selector */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div className="admin-dash-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)', fontWeight: 800, letterSpacing: '-0.01em' }}>
             🏆 Portal Leaderboard
           </h3>
-          <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Ranked community creators by approved institutional activity points
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function Leaderboard({ onSelectUser = null }) {
           ))}
         </div>
       ) : leaderboard.length === 0 ? (
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem', color: 'var(--text-muted)' }}>
+        <div className="admin-dash-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏅</div>
           <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
             No ranked creators for this timeframe
@@ -190,7 +190,7 @@ export default function Leaderboard({ onSelectUser = null }) {
           </p>
         </div>
       ) : (
-        <div className="leaderboard-table-wrapper">
+        <div className="leaderboard-table-wrapper admin-dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
           <table className="leaderboard-table">
             <thead>
               <tr>

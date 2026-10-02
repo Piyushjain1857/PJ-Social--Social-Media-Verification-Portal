@@ -125,15 +125,54 @@ export default function AdminsView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
       {/* Security Clearance Overview */}
-      <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--role-superadmin)' }}>
-        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', color: 'var(--text-highlight)' }}>
-          🛡️ Administrative Governance & Security Clearances
-        </h3>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-          This view monitors all personnel possessing privileged access. Strictly enforced by server-side RBAC: 
-          Admin moderators cannot promote users to Super Admin or modify other administrator roles. Only authenticated 
-          Super Administrators retain governance authority.
-        </p>
+      <div className="admin-dash-panel" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div className="admin-hero-icon-box yellow">
+              🛡️
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
+                  Administrative Governance & Security Clearances
+                </h2>
+                <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
+                  ROOT CLEARANCE TIER
+                </span>
+              </div>
+              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem', maxWidth: '820px' }}>
+                Personnel possessing privileged operational access. Strictly enforced by server-side RBAC: Admin moderators cannot promote users to Super Admin or modify privileged roles.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn-refresh-pill"
+            onClick={loadAdmins}
+            disabled={isLoading}
+            title="Refresh administrator directory"
+          >
+            <svg
+              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>Refresh Data</span>
+          </button>
+        </div>
       </div>
 
       {statusMessage && (
@@ -215,179 +254,190 @@ export default function AdminsView() {
       ) : (
         /* Admin Cards Grid - 9 or 12 boxes per page */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-          {admins.map((adm) => (
-            <div
-              key={adm.id}
-              className="glass-panel"
-              style={{
-                padding: '1.35rem 1.4rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                background: 'linear-gradient(165deg, rgba(22, 27, 44, 0.8), rgba(13, 17, 28, 0.92))',
-                border: adm.role === 'SUPER_ADMIN'
-                  ? '1px solid rgba(234, 179, 8, 0.25)'
-                  : '1px solid rgba(99, 102, 241, 0.2)',
-                boxShadow: '0 10px 28px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-                borderRadius: '16px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Header with Avatar, Name, Email, and Badge */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0, flex: 1 }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    background: adm.role === 'SUPER_ADMIN'
-                      ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(245, 158, 11, 0.1))'
-                      : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(14, 165, 233, 0.1))',
-                    border: `1px solid ${adm.role === 'SUPER_ADMIN' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(99, 102, 241, 0.4)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.25rem',
-                    flexShrink: 0,
-                    boxShadow: adm.role === 'SUPER_ADMIN'
-                      ? '0 4px 12px rgba(234, 179, 8, 0.15)'
-                      : '0 4px 12px rgba(99, 102, 241, 0.15)'
-                  }}>
-                    {adm.role === 'SUPER_ADMIN' ? '👑' : '🛡️'}
+          {admins.map((adm) => {
+            const isSuper = adm.role === 'SUPER_ADMIN';
+            return (
+              <div
+                key={adm.id}
+                className="admin-gov-card"
+                style={{
+                  borderTop: isSuper ? '3px solid #facc15' : '3px solid #6366f1',
+                  background: isSuper
+                    ? 'linear-gradient(165deg, rgba(30, 27, 45, 0.9) 0%, rgba(15, 18, 30, 0.95) 100%)'
+                    : 'linear-gradient(165deg, rgba(22, 27, 48, 0.9) 0%, rgba(13, 17, 28, 0.95) 100%)',
+                }}
+              >
+                {/* Header with Avatar, Name, Email, and Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '12px',
+                        background: isSuper
+                          ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.22), rgba(245, 158, 11, 0.1))'
+                          : 'linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(14, 165, 233, 0.1))',
+                        border: `1px solid ${isSuper ? 'rgba(234, 179, 8, 0.45)' : 'rgba(99, 102, 241, 0.45)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.3rem',
+                        flexShrink: 0,
+                        boxShadow: isSuper
+                          ? '0 4px 14px rgba(234, 179, 8, 0.2)'
+                          : '0 4px 14px rgba(99, 102, 241, 0.2)'
+                      }}
+                    >
+                      {isSuper ? '👑' : '🛡️'}
+                    </div>
+
+                    <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '1rem',
+                          color: 'var(--text-highlight)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {adm.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.78rem',
+                          color: 'var(--text-secondary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          marginTop: '2px'
+                        }}
+                      >
+                        {adm.email}
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                    <div style={{
+                  <span
+                    className={`badge ${isSuper ? 'badge-superadmin' : 'badge-admin'}`}
+                    style={{
+                      flexShrink: 0,
+                      fontSize: '0.72rem',
                       fontWeight: 700,
-                      fontSize: '0.98rem',
-                      color: 'var(--text-highlight)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {adm.name}
-                    </div>
-                    <div style={{
-                      fontSize: '0.78rem',
-                      color: 'var(--text-secondary)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      marginTop: '2px'
-                    }}>
-                      {adm.email}
-                    </div>
+                      padding: '0.25rem 0.65rem',
+                      letterSpacing: '0.04em'
+                    }}
+                  >
+                    {adm.role}
+                  </span>
+                </div>
+
+                {/* Clearance & Details */}
+                <div
+                  style={{
+                    fontSize: '0.82rem',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: '10px',
+                    padding: '0.85rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.55rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      🛡️ Clearance
+                    </span>
+                    <span style={{ fontWeight: 700, color: isSuper ? '#facc15' : '#818cf8', fontSize: '0.82rem' }}>
+                      {isSuper ? 'Tier 1 (Root Authority)' : 'Tier 2 (Queue Moderator)'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      📅 Access Granted
+                    </span>
+                    <span style={{ color: 'var(--text-highlight)', fontSize: '0.82rem' }}>
+                      {new Date(adm.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      ⚡ Status
+                    </span>
+                    <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600, fontSize: '0.78rem' }}>
+                      <span className="pulse-dot" style={{ background: '#10b981' }} />
+                      Active &amp; Verified
+                    </span>
                   </div>
                 </div>
 
-                <span
-                  className={`badge ${adm.role === 'SUPER_ADMIN' ? 'badge-superadmin' : 'badge-admin'}`}
-                  style={{
-                    flexShrink: 0,
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '0.25rem 0.65rem',
-                    letterSpacing: '0.04em'
-                  }}
-                >
-                  {adm.role}
-                </span>
+                {/* Footer action button */}
+                {!isSuper ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDemoteAdmin(adm.id)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.28)',
+                      color: '#f87171',
+                      borderRadius: '9px',
+                      padding: '0.55rem 0.85rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      marginTop: 'auto',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.18)';
+                      e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                      e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.28)';
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <span>⚠️</span>
+                    <span>Revoke Admin Privileges</span>
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      padding: '0.55rem 0.85rem',
+                      background: 'rgba(234, 179, 8, 0.08)',
+                      border: '1px solid rgba(234, 179, 8, 0.25)',
+                      borderRadius: '9px',
+                      color: '#facc15',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      marginTop: 'auto'
+                    }}
+                  >
+                    <span>👑</span>
+                    <span>Root Authority Protected</span>
+                  </div>
+                )}
               </div>
-
-              {/* Clearance & Details */}
-              <div style={{
-                fontSize: '0.82rem',
-                background: 'rgba(255, 255, 255, 0.025)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                borderRadius: '10px',
-                padding: '0.75rem 0.85rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.45rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    🛡️ Clearance
-                  </span>
-                  <span style={{ fontWeight: 600, color: adm.role === 'SUPER_ADMIN' ? '#facc15' : '#818cf8' }}>
-                    {adm.role === 'SUPER_ADMIN' ? 'Tier 1 (Root Authority)' : 'Tier 2 (Queue Moderator)'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    📅 Access Granted
-                  </span>
-                  <span style={{ color: 'var(--text-highlight)' }}>
-                    {new Date(adm.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    ⚡ Status
-                  </span>
-                  <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, fontSize: '0.78rem' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                    Active &amp; Verified
-                  </span>
-                </div>
-              </div>
-
-              {/* Footer action button */}
-              {adm.role !== 'SUPER_ADMIN' ? (
-                <button
-                  type="button"
-                  onClick={() => handleDemoteAdmin(adm.id)}
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    color: '#f87171',
-                    borderRadius: '10px',
-                    padding: '0.55rem 0.85rem',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    marginTop: 'auto',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
-                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.45)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
-                  }}
-                >
-                  <span>⚠️</span> Revoke Admin Privileges
-                </button>
-              ) : (
-                <div style={{
-                  padding: '0.45rem 0.75rem',
-                  background: 'rgba(234, 179, 8, 0.08)',
-                  border: '1px solid rgba(234, 179, 8, 0.2)',
-                  borderRadius: '10px',
-                  color: '#facc15',
-                  fontSize: '0.76rem',
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.35rem',
-                  marginTop: 'auto'
-                }}>
-                  <span>👑</span> Root Authority Protected
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
