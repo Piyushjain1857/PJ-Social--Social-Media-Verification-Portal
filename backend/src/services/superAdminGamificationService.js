@@ -1,6 +1,6 @@
 const { prisma } = require('../config/db');
-const { calculateUserLevel, setActivityPointConfig } = require('./pointsService');
-const { recalculateUserGamification, getUserLevelProgress } = require('./levelService');
+const { setActivityPointConfig } = require('./pointsService');
+const { calculateUserLevel, recalculateUserGamification, getUserLevelProgress, getActiveLevels } = require('./levelService');
 const { createNotification } = require('../repositories/notificationRepository');
 
 /**
@@ -172,7 +172,7 @@ const getSuperAdminOverview = async () => {
   let highestLevelReached = 1;
   if (highestXP > 0) {
     const highestLevelObj = calculateUserLevel(highestXP);
-    highestLevelReached = highestLevelObj.level;
+    highestLevelReached = highestLevelObj.currentLevel || highestLevelObj.level || 1;
   }
 
   return {
@@ -341,10 +341,11 @@ const getSuperAdminUsers = async ({
         status: u.status,
         totalPoints: u.totalPoints,
         totalXP: xpVal,
-        currentLevel: levelObj.level,
-        levelName: levelObj.name,
-        levelIcon: levelObj.badge,
-        levelColor: levelObj.color,
+        level: levelObj.currentLevel || levelObj.level || 1,
+        currentLevel: levelObj.currentLevel || levelObj.level || 1,
+        levelName: levelObj.levelName || levelObj.name || 'Novice',
+        levelIcon: levelObj.icon || levelObj.badge || '🌱',
+        levelColor: levelObj.color || '#38bdf8',
         rank,
         xpThisWeek: weeklyMap.get(u.id) || 0,
         xpThisMonth: monthlyMap.get(u.id) || 0,
@@ -645,7 +646,8 @@ const getSuperAdminAnalytics = async () => {
 
   const levelCounts = {};
   allUsers.forEach((u) => {
-    const lvl = calculateUserLevel(u.totalXP).level;
+    const lvlObj = calculateUserLevel(u.totalXP);
+    const lvl = lvlObj.currentLevel || lvlObj.level || 1;
     levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
   });
 
@@ -676,8 +678,10 @@ const getSuperAdminAnalytics = async () => {
       name: u.name,
       email: u.email,
       totalXP: u.totalXP,
-      level: lvl.level,
-      levelName: lvl.name,
+      level: lvl.currentLevel || lvl.level || 1,
+      currentLevel: lvl.currentLevel || lvl.level || 1,
+      levelName: lvl.levelName || lvl.name || 'Novice',
+      icon: lvl.icon || lvl.badge || '🌱',
       approvedSubmissions: u._count.submissions
     };
   });
@@ -710,7 +714,9 @@ const getSuperAdminAnalytics = async () => {
 
   return {
     xpOverTime,
+    timeline: xpOverTime,
     activityContribution,
+    categoryDistribution: activityContribution,
     xpDistribution,
     usersByLevel,
     topUsers,

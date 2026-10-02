@@ -3,19 +3,30 @@
  */
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {})
   };
 };
 
+const handleResponse = async (res, defaultErrMsg) => {
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const errorMsg = data?.message || defaultErrMsg || `Request failed with status ${res.status}`;
+    const err = new Error(errorMsg);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+};
+
 export const fetchSuperAdminOverview = async () => {
   const res = await fetch('/api/super-admin/gamification/overview', {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch overview: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch gamification overview');
 };
 
 export const fetchSuperAdminUsers = async (params = {}) => {
@@ -28,16 +39,14 @@ export const fetchSuperAdminUsers = async (params = {}) => {
   const res = await fetch(`/api/super-admin/gamification/users?${query.toString()}`, {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch users: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch users');
 };
 
 export const fetchSuperAdminAdmins = async () => {
   const res = await fetch('/api/super-admin/gamification/admins', {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch admins: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch admins');
 };
 
 export const fetchSuperAdminTransactions = async (params = {}) => {
@@ -50,24 +59,21 @@ export const fetchSuperAdminTransactions = async (params = {}) => {
   const res = await fetch(`/api/super-admin/gamification/transactions?${query.toString()}`, {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch transactions: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch transactions');
 };
 
 export const fetchSuperAdminAnalytics = async () => {
   const res = await fetch('/api/super-admin/gamification/analytics', {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch analytics: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch analytics');
 };
 
 export const fetchGamificationSettings = async () => {
   const res = await fetch('/api/super-admin/gamification/settings', {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch settings: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch settings');
 };
 
 export const updateGamificationSettings = async (updates, reason) => {
@@ -76,11 +82,7 @@ export const updateGamificationSettings = async (updates, reason) => {
     headers: getAuthHeaders(),
     body: JSON.stringify({ updates, reason })
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Failed to update settings: ${res.statusText}`);
-  }
-  return res.json();
+  return handleResponse(res, 'Failed to update settings');
 };
 
 export const submitSuperAdminAdjustXP = async (userId, { type, amount, reason }) => {
@@ -89,11 +91,7 @@ export const submitSuperAdminAdjustXP = async (userId, { type, amount, reason })
     headers: getAuthHeaders(),
     body: JSON.stringify({ type, amount, reason })
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Failed to adjust user XP: ${res.statusText}`);
-  }
-  return res.json();
+  return handleResponse(res, 'Failed to adjust user XP');
 };
 
 export const fetchSuperAdminAuditLogs = async (params = {}) => {
@@ -106,6 +104,5 @@ export const fetchSuperAdminAuditLogs = async (params = {}) => {
   const res = await fetch(`/api/super-admin/gamification/audit-logs?${query.toString()}`, {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch audit logs: ${res.statusText}`);
-  return res.json();
+  return handleResponse(res, 'Failed to fetch audit logs');
 };

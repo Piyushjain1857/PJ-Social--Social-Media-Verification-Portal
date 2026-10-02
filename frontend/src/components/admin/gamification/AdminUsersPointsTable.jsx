@@ -327,7 +327,7 @@ export default function AdminUsersPointsTable({
                             fontSize: '0.8rem'
                           }}
                         >
-                          Level {u.currentLevel}
+                          Level {u.currentLevel || u.level || 1}
                         </span>
                       </td>
 
@@ -490,7 +490,7 @@ export default function AdminUsersPointsTable({
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', background: 'rgba(255, 255, 255, 0.03)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Level: </span>
-                      <strong style={{ color: 'var(--text-highlight)' }}>{u.currentLevel} ({u.levelName})</strong>
+                      <strong style={{ color: 'var(--text-highlight)' }}>{u.currentLevel || u.level || 1} ({u.levelName || 'Novice'})</strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Rank: </span>

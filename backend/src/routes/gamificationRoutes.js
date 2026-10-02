@@ -11,7 +11,8 @@ const {
   getUserGamificationById,
   getUserXPChartById,
   getUserRankMetricsById,
-  getUserRankHistoryById
+  getUserRankHistoryById,
+  getUserLevelJourneyById
 } = require('../controllers/gamificationController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
 
@@ -40,10 +41,15 @@ router.get('/me/journey', authenticate, getMyLevelJourney);
 // Active dynamic level configurations
 router.get('/levels', authenticate, getLevelsList);
 
+// Leaderboard endpoint on /api/gamification/leaderboard
+const { getLeaderboardList } = require('../controllers/pointsController');
+router.get('/leaderboard', authenticate, getLeaderboardList);
+
 // Admin / Super Admin inspect user's XP & level
 router.get('/user/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserGamificationById);
 router.get('/user/:id/chart', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserXPChartById);
 router.get('/user/:id/rank', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserRankMetricsById);
 router.get('/user/:id/rank-history', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserRankHistoryById);
+router.get('/user/:id/journey', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserLevelJourneyById);
 
 module.exports = router;

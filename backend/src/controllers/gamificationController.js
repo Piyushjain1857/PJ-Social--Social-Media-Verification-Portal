@@ -385,6 +385,62 @@ const getUserRankHistoryById = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/gamification/user/:id/journey
+ * Protected: Admin / Super Admin
+ * Returns full level journey for specified user
+ */
+const getUserLevelJourneyById = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required.' });
+    }
+
+    const [activeLevels, userProfile] = await Promise.all([
+      getActiveLevels(),
+      getUserGamificationProfile(userId)
+    ]);
+
+    const thresholds = buildLevelThresholds(activeLevels);
+    const currentLevelNumber = userProfile.currentLevel;
+
+    const journey = thresholds.map((level, index) => {
+      let status = 'locked';
+      if (level.levelNumber < currentLevelNumber) {
+        status = 'completed';
+      } else if (level.levelNumber === currentLevelNumber) {
+        status = 'current';
+      }
+
+      return {
+        levelNumber: level.levelNumber,
+        name: level.name,
+        icon: level.icon || '⭐',
+        description: level.description || `Level ${level.levelNumber} achievement`,
+        xpRequired: level.xpRequired,
+        cumulativeStartXP: level.cumulativeStartXP,
+        cumulativeEndXP: level.cumulativeEndXP,
+        status,
+        isLast: level.isLast || index === thresholds.length - 1
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        journey,
+        totalLevels: journey.length,
+        currentLevel: currentLevelNumber,
+        totalXP: userProfile.totalXP,
+        isMaxLevel: userProfile.isMaxLevel
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMyGamification,
   getMyXPChart,
@@ -396,5 +452,6 @@ module.exports = {
   getUserGamificationById,
   getUserXPChartById,
   getUserRankMetricsById,
-  getUserRankHistoryById
+  getUserRankHistoryById,
+  getUserLevelJourneyById
 };

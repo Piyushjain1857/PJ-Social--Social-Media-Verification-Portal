@@ -50,6 +50,12 @@ const AUTHENTICATED_SUB_VIEWS = [
   'role-space'
 ];
 
+const isAuthSubView = (target) => {
+  if (!target) return false;
+  const clean = target.replace(/^#/, '').split('?')[0];
+  return AUTHENTICATED_SUB_VIEWS.some(item => clean === item || clean.startsWith(item + '/'));
+};
+
 export default function App() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -72,13 +78,13 @@ export default function App() {
     }
 
     // Any authenticated workspace views map to 'dashboard' container layout
-    if (AUTHENTICATED_SUB_VIEWS.includes(hash)) {
+    if (isAuthSubView(hash)) {
       return hasToken ? 'dashboard' : 'login';
     }
 
     if (hasToken && (hash === 'login' || hash === '')) {
       const savedNav = localStorage.getItem('active_portal_nav');
-      if (savedNav && AUTHENTICATED_SUB_VIEWS.includes(savedNav)) {
+      if (savedNav && isAuthSubView(savedNav)) {
         window.location.hash = savedNav;
       } else {
         window.location.hash = 'dashboard';
@@ -170,11 +176,11 @@ export default function App() {
     if (isAuthenticated && (currentView === 'login' || currentView === 'portal')) {
       const hash = window.location.hash.replace('#', '');
       let targetNav = 'dashboard';
-      if (AUTHENTICATED_SUB_VIEWS.includes(hash)) {
+      if (isAuthSubView(hash)) {
         targetNav = hash;
       } else {
         const savedNav = localStorage.getItem('active_portal_nav');
-        if (savedNav && AUTHENTICATED_SUB_VIEWS.includes(savedNav)) {
+        if (savedNav && isAuthSubView(savedNav)) {
           targetNav = savedNav;
         }
       }
@@ -185,13 +191,15 @@ export default function App() {
 
   const handleNavigate = (view) => {
     const isAuthed = isAuthenticated || !!localStorage.getItem('auth_token');
-    if (AUTHENTICATED_SUB_VIEWS.includes(view)) {
-      const normalizedNav = (view === 'role-space' || view.endsWith('-space')) ? 'dashboard' : view;
+    if (isAuthSubView(view)) {
+      const cleanView = view.replace(/^#/, '').split('?')[0];
+      const normalizedNav = (cleanView === 'role-space' || cleanView.endsWith('-space')) ? 'dashboard' : view;
       if (isAuthed) {
         setCurrentView('dashboard');
         window.location.hash = normalizedNav;
         try {
-          localStorage.setItem('active_portal_nav', normalizedNav);
+          const navKey = cleanView.includes('game-points') ? 'game-points' : cleanView;
+          localStorage.setItem('active_portal_nav', navKey);
         } catch (e) {}
       } else {
         setCurrentView('login');

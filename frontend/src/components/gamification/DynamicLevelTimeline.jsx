@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchMyLevelJourney } from '../../services/gamificationApi';
+import { fetchMyLevelJourney, fetchUserLevelJourney } from '../../services/gamificationApi';
 
 export default function DynamicLevelTimeline({ userId = null }) {
   const [journeyData, setJourneyData] = useState(null);
@@ -14,7 +14,9 @@ export default function DynamicLevelTimeline({ userId = null }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetchMyLevelJourney();
+        const res = userId
+          ? await fetchUserLevelJourney(userId)
+          : await fetchMyLevelJourney();
         if (isMounted) {
           if (res && res.success) {
             setJourneyData(res.data);

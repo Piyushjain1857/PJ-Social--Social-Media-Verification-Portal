@@ -175,9 +175,12 @@ const calculateUserLevel = (xp = 0, customLevels = null) => {
 
   return {
     totalXP,
+    level: currentLevelObj.levelNumber,
     currentLevel: currentLevelObj.levelNumber,
     levelName: currentLevelObj.name,
+    name: currentLevelObj.name,
     icon: currentLevelObj.icon || '⭐',
+    badge: currentLevelObj.icon || '⭐',
     description: currentLevelObj.description,
     currentLevelStartXP,
     nextLevel: nextLevelObj ? nextLevelObj.levelNumber : null,

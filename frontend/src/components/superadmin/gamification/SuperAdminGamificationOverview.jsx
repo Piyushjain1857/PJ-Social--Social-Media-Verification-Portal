@@ -182,99 +182,141 @@ export default function SuperAdminGamificationOverview({
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigateTab('users')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('users'); } }}
+            className="table-row-hover"
             style={{
               padding: '1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👥</div>
             <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>All Users Directory</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Inspect creator levels, weekly XP velocity, and apply manual balances.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Inspect creator levels, weekly XP velocity, and apply manual balances.</div>
+            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Open Directory →</div>
           </div>
 
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigateTab('transactions')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('transactions'); } }}
+            className="table-row-hover"
             style={{
               padding: '1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🧾</div>
             <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Transaction Explorer</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Audit every Like, Comment, Story, and Admin Adjustment transaction.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Audit every Like, Comment, Story, and Admin Adjustment transaction.</div>
+            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Explore Ledgers →</div>
           </div>
 
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigateTab('settings')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('settings'); } }}
+            className="table-row-hover"
             style={{
               padding: '1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚙️</div>
             <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Gamification Settings</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Configure dynamic point rules for Like, Comment, and Story verifications.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Configure dynamic point rules for Like, Comment, and Story verifications.</div>
+            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Configure Rules →</div>
           </div>
 
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigateTab('levels')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('levels'); } }}
+            className="table-row-hover"
             style={{
               padding: '1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚡</div>
             <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Level Engine Manager</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Create, edit, or regenerate progression tiers and cumulative thresholds.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Create, edit, or regenerate progression tiers and cumulative thresholds.</div>
+            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Manage Levels →</div>
           </div>
 
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigateTab('admins')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('admins'); } }}
+            className="table-row-hover"
             style={{
               padding: '1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🛡️</div>
             <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>Admin Activity Oversight</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Inspect moderator reviews, manual adjustments, and moderation volume.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Inspect moderator reviews, manual adjustments, and moderation volume.</div>
+            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>Audit Admins →</div>
           </div>
 
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => onNavigateTab('audit-logs')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigateTab('audit-logs'); } }}
+            className="table-row-hover"
             style={{
               padding: '1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📜</div>
             <div style={{ fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>System Audit Logs</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Trace all policy adjustments, rule changes, and Super Admin actions.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Trace all policy adjustments, rule changes, and Super Admin actions.</div>
+            <div style={{ marginTop: 'auto', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 600 }}>View Logs →</div>
           </div>
         </div>
       </div>

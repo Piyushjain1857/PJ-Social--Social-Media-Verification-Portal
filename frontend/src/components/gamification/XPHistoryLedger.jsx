@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchMyXPHistory } from '../../services/gamificationApi';
+import { fetchAdminUserXPHistory } from '../../services/adminGamificationApi';
 
 const ACTION_TABS = [
   { id: 'ALL', label: 'All Activities' },
@@ -9,7 +10,8 @@ const ACTION_TABS = [
   { id: 'BONUS', label: '🎁 Bonuses' }
 ];
 
-export default function XPHistoryLedger() {
+export default function XPHistoryLedger({ targetUserId = null, userId = null }) {
+  const activeUserId = targetUserId || userId;
   const [history, setHistory] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalCount: 0, totalPages: 1 });
   const [actionType, setActionType] = useState('ALL');
@@ -30,7 +32,10 @@ export default function XPHistoryLedger() {
         params.actionType = filterType;
       }
 
-      const res = await fetchMyXPHistory(params);
+      const res = activeUserId
+        ? await fetchAdminUserXPHistory(activeUserId, params)
+        : await fetchMyXPHistory(params);
+
       if (res && res.success) {
         setHistory(res.data || []);
         if (res.pagination) {
@@ -44,7 +49,7 @@ export default function XPHistoryLedger() {
     } finally {
       setIsLoading(false);
     }
-  }, [actionType]);
+  }, [actionType, activeUserId]);
 
   useEffect(() => {
     loadHistory(1, actionType);

@@ -23,7 +23,8 @@ const testFiles = [
   'game_points_verification.test.js',
   'swagger.test.js',
   'admin_gamification.test.js',
-  'superadmin_gamification.test.js'
+  'superadmin_gamification.test.js',
+  'complete_gamification_audit.test.js'
 ];
 
 console.log('========================================================');

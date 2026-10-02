@@ -274,7 +274,11 @@ const getAdminGamificationUserDetails = async (userId) => {
       email: user.email,
       role: user.role,
       status: user.status,
-      memberSince: user.createdAt
+      memberSince: user.createdAt,
+      totalXP: profile.totalXP || 0,
+      totalPoints: profile.totalPoints || profile.totalXP || 0,
+      currentLevel: profile.currentLevel || 1,
+      levelName: profile.levelName || 'Novice'
     },
     profile,
     chartData: chartData.points || [],
@@ -560,9 +564,13 @@ const adjustUserXP = async ({
       userId,
       userName: targetUser.name,
       previousXP,
+      previousBalance: previousXP,
       newXP,
+      newBalance: newXP,
       actualDelta,
+      deltaXP: actualDelta,
       level: newLevelInfo.currentLevel,
+      currentLevel: newLevelInfo.currentLevel,
       levelName: newLevelInfo.levelName,
       transactionId: transaction.id
     }

@@ -128,6 +128,13 @@ export const fetchUserRankHistory = async (userId) => {
 };
 
 /**
+ * Admin / Super Admin: Fetch target user's level progression journey
+ */
+export const fetchUserLevelJourney = async (userId) => {
+  return await authFetch(`/gamification/user/${userId}/journey`);
+};
+
+/**
  * Super Admin Level Management API Methods (/api/admin/levels)
  */
 export const fetchAdminLevels = async () => {

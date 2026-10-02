@@ -114,39 +114,37 @@ export default function MainLayout({
 
   // Helper to determine initial nav for MainLayout on load / reload
   const getInitialNav = () => {
-    let hash = window.location.hash.replace('#', '');
+    let hash = window.location.hash.replace('#', '').split('?')[0];
     const pathname = window.location.pathname;
+    const role = user?.role || 'USER';
+
     if (hash === 'super-admin/levels' || pathname === '/super-admin/levels') {
       hash = 'levels';
     }
+
+    // Handle any game-points route
     if (
       hash === 'game-points' || pathname === '/game-points' ||
       hash === 'admin/game-points' || pathname === '/admin/game-points' ||
       hash.startsWith('admin/game-points') || pathname.startsWith('/admin/game-points') ||
       hash === 'super-admin/game-points' || pathname === '/super-admin/game-points' ||
-      hash.startsWith('super-admin/game-points') || pathname.startsWith('/super-admin/game-points')
+      hash.startsWith('super-admin/game-points') || pathname.startsWith('/super-admin/game-points') ||
+      hash === 'gamification'
     ) {
       return 'game-points';
     }
-    if (hash === 'gamification') {
-      return 'game-points';
-    }
-    const role = user?.role || 'USER';
+
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
 
     // 1. If URL hash matches permitted navigation item for this role, prioritize it
-    if (hash && (
-      roleItems.some(item => item.id === hash) ||
-      (hash.startsWith('super-admin/game-points') && role === 'SUPER_ADMIN') ||
-      (hash.startsWith('admin/game-points') && role !== 'USER')
-    )) {
-      return (hash.startsWith('super-admin/game-points') || hash.startsWith('admin/game-points')) ? 'game-points' : hash;
+    if (hash && roleItems.some(item => item.id === hash)) {
+      return hash;
     }
 
     // 2. Otherwise check localStorage for previously active navigation
     try {
       const savedNav = localStorage.getItem('active_portal_nav');
-      if (savedNav && savedNav !== 'gamification' && roleItems.some(item => item.id === savedNav)) {
+      if (savedNav && savedNav !== 'gamification' && (roleItems.some(item => item.id === savedNav) || savedNav === 'game-points')) {
         return savedNav;
       }
     } catch (e) {}
@@ -181,8 +179,8 @@ export default function MainLayout({
       else if (role === 'ADMIN') targetHash = 'admin/game-points';
     }
 
-    if (window.location.hash.replace('#', '') !== targetHash &&
-        !window.location.hash.includes('game-points/user/')) {
+    const currentHash = window.location.hash.replace('#', '');
+    if (currentHash !== targetHash && !currentHash.includes('game-points/user/')) {
       window.location.hash = targetHash;
     }
     try {
@@ -195,21 +193,35 @@ export default function MainLayout({
 
   // Keep URL hash and localStorage updated with activeNav
   useEffect(() => {
+    const role = user?.role || 'USER';
     const currentHash = window.location.hash.replace('#', '');
-    if (activeNav === 'game-points' && (
-      currentHash === 'super-admin/game-points' ||
-      currentHash.startsWith('super-admin/game-points') ||
-      currentHash === 'admin/game-points' ||
-      currentHash.startsWith('admin/game-points')
-    )) {
+    const cleanHash = currentHash.split('?')[0];
+
+    if (activeNav === 'game-points') {
+      if (role === 'SUPER_ADMIN') {
+        if (cleanHash === 'super-admin/game-points' || cleanHash.startsWith('super-admin/game-points/')) {
+          return;
+        }
+        window.location.hash = 'super-admin/game-points';
+      } else if (role === 'ADMIN') {
+        if (cleanHash === 'admin/game-points' || cleanHash.startsWith('admin/game-points/')) {
+          return;
+        }
+        window.location.hash = 'admin/game-points';
+      } else {
+        if (cleanHash === 'game-points') {
+          return;
+        }
+        window.location.hash = 'game-points';
+      }
+      try {
+        localStorage.setItem('active_portal_nav', 'game-points');
+      } catch (e) {}
       return;
     }
+
     let targetHash = activeNav;
-    if (activeNav === 'game-points') {
-      if (user?.role === 'SUPER_ADMIN') targetHash = 'super-admin/game-points';
-      else if (user?.role === 'ADMIN') targetHash = 'admin/game-points';
-    }
-    if (currentHash !== targetHash && !currentHash.includes('game-points/user/')) {
+    if (currentHash !== targetHash) {
       window.location.hash = targetHash;
     }
     try {
@@ -220,26 +232,72 @@ export default function MainLayout({
   // Synchronize view on browser back / forward navigation (hashchange)
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
+      const fullHash = window.location.hash.replace('#', '');
+      const hash = fullHash.split('?')[0];
+
       if (hash === 'gamification') {
         window.location.hash = 'dashboard';
         return;
       }
+
       const role = user?.role || 'USER';
       const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
-      if (hash && (
-        roleItems.some(item => item.id === hash) ||
-        (hash.startsWith('super-admin/game-points') && role === 'SUPER_ADMIN') ||
-        (hash.startsWith('admin/game-points') && role !== 'USER')
-      )) {
-        const effectiveNav = (hash.startsWith('super-admin/game-points') || hash.startsWith('admin/game-points')) ? 'game-points' : hash;
-        if (controlledOnNavChange) {
-          controlledOnNavChange(effectiveNav);
+
+      // Handle game points navigation for all roles
+      if (
+        hash === 'game-points' ||
+        hash.startsWith('game-points/') ||
+        hash === 'admin/game-points' ||
+        hash.startsWith('admin/game-points/') ||
+        hash === 'super-admin/game-points' ||
+        hash.startsWith('super-admin/game-points/')
+      ) {
+        // Enforce role consistency
+        if (role === 'SUPER_ADMIN') {
+          if (!fullHash.startsWith('super-admin/game-points')) {
+            window.location.hash = 'super-admin/game-points';
+            return;
+          }
+        } else if (role === 'ADMIN') {
+          if (!fullHash.startsWith('admin/game-points')) {
+            window.location.hash = 'admin/game-points';
+            return;
+          }
         } else {
-          setInternalNav(effectiveNav);
+          if (fullHash !== 'game-points') {
+            window.location.hash = 'game-points';
+            return;
+          }
+        }
+
+        if (controlledOnNavChange) {
+          controlledOnNavChange('game-points');
+        } else {
+          setInternalNav('game-points');
         }
         try {
-          localStorage.setItem('active_portal_nav', effectiveNav);
+          localStorage.setItem('active_portal_nav', 'game-points');
+        } catch (e) {}
+        return;
+      }
+
+      if (hash === 'super-admin/levels') {
+        if (controlledOnNavChange) {
+          controlledOnNavChange('levels');
+        } else {
+          setInternalNav('levels');
+        }
+        return;
+      }
+
+      if (hash && roleItems.some(item => item.id === hash)) {
+        if (controlledOnNavChange) {
+          controlledOnNavChange(hash);
+        } else {
+          setInternalNav(hash);
+        }
+        try {
+          localStorage.setItem('active_portal_nav', hash);
         } catch (e) {}
       }
     };
@@ -949,12 +1007,30 @@ export default function MainLayout({
 
             {/* Breadcrumb Navigation */}
             <div className="navbar-breadcrumb">
-              <span className="breadcrumb-root">
+              <span
+                className="breadcrumb-root"
+                onClick={() => handleNavChange('dashboard')}
+                title="Go to Dashboard"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange('dashboard'); }}
+                style={{ cursor: 'pointer' }}
+              >
                 <span>{getRoleBadgeIcon(currentRole)}</span>
                 <span>{getRoleLabel(currentRole)}</span>
               </span>
               <span className="breadcrumb-separator">/</span>
-              <span className="breadcrumb-current">{currentItem?.label}</span>
+              <span
+                className="breadcrumb-current"
+                onClick={() => handleNavChange(activeNav)}
+                title={`Current: ${currentItem?.label || activeNav}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange(activeNav); }}
+                style={{ cursor: 'pointer' }}
+              >
+                {currentItem?.label}
+              </span>
             </div>
           </div>
 

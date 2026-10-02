@@ -65,6 +65,8 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
       if (userMatch && userMatch[1]) {
         setSelectedUserId(userMatch[1]);
         return;
+      } else {
+        setSelectedUserId(null);
       }
 
       // Check if direct subtab requested: #super-admin/game-points?tab=... or similar

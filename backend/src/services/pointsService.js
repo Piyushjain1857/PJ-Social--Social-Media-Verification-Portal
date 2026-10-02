@@ -96,15 +96,20 @@ const calculateUserLevel = (totalPoints = 0) => {
 
   return {
     level: currentTier.level,
+    currentLevel: currentTier.level,
+    levelName: currentTier.name,
     name: currentTier.name,
     badge: currentTier.badge,
+    icon: currentTier.badge,
     color: currentTier.color,
     currentPoints: points,
+    totalXP: points,
     nextLevel: nextTier ? nextTier.level : null,
     nextLevelName: nextTier ? nextTier.name : null,
     nextLevelBadge: nextTier ? nextTier.badge : null,
     nextLevelMinPoints: nextTier ? nextTier.minPoints : null,
     pointsToNextLevel,
+    xpRemaining: pointsToNextLevel,
     progressPercentage,
     description: `Level ${currentTier.level} — ${currentTier.name}`,
     isMaxLevel: !nextTier
