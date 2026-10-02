@@ -15,5 +15,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^6.2.0"
-  }
+  },
+  "author": "Piyush Jain (https://linkedin.com/in/piyushjain1857)",
+  "license": "MIT"
 }

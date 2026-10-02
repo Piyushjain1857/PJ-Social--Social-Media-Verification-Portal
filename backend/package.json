@@ -31,5 +31,7 @@
   "devDependencies": {
     "nodemon": "^3.1.9",
     "prisma": "^6.4.1"
-  }
+  },
+  "author": "Piyush Jain (https://linkedin.com/in/piyushjain1857)",
+  "license": "MIT"
 }

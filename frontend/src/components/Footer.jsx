@@ -15,7 +15,7 @@ export default function Footer() {
           </div>
 
           <div className="footer-copyright">
-            © {new Date().getFullYear()} Social Media Verification Portal. Make By <a href="https://linkedin.com/in/piyushjain1857" target="_blank" style={{color: '#3b82f6', textDecoration: 'none'}} >Piyush Jain</a>
+            © {new Date().getFullYear()} PJ Social : Social Media Activity Verification Portal. All rights reserved. Created by <a href="https://linkedin.com/in/piyushjain1857" target="_blank" rel="noopener noreferrer" style={{color: '#38bdf8', textDecoration: 'none', fontWeight: 600}}>Piyush Jain</a>
           </div>
 
           <div className="footer-badges">
