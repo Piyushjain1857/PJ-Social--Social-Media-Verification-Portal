@@ -1283,6 +1283,9 @@ function AdminDashboard({ onNavigateToNav }) {
   const reviewedToday = stats.reviewedToday ?? 0;
   const approvedCount = stats.approved ?? 0;
   const rejectedCount = stats.rejected ?? 0;
+  const totalUsers = stats.totalUsers ?? 0;
+  const creatorsCount = stats.creatorsCount ?? 0;
+  const totalAdmins = stats.totalAdmins ?? 0;
   const adminName = user?.name || 'Admin Moderator';
 
   return (
@@ -1317,7 +1320,7 @@ function AdminDashboard({ onNavigateToNav }) {
             Welcome back, {adminName}
           </h2>
           <p className="admin-dash-hero-subtitle">
-            Review pending creator proofs, track daily moderation throughput, and enforce compliance guidelines with real-time audit trails.
+            Review pending creator proofs, monitor {totalUsers} platform users, track daily moderation throughput, and enforce compliance guidelines with real-time audit trails.
           </p>
         </div>
 
@@ -1334,7 +1337,7 @@ function AdminDashboard({ onNavigateToNav }) {
         </div>
       </div>
 
-      {/* ── Statistics Cards (4 KPI HUD Cards) ── */}
+      {/* ── Statistics Cards (5 KPI HUD Cards) ── */}
       <div className="admin-dash-kpi-grid">
         {isLoading ? (
           <>
@@ -1342,9 +1345,29 @@ function AdminDashboard({ onNavigateToNav }) {
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
+            <SkeletonCard />
           </>
         ) : (
           <>
+            <div
+              className="admin-dash-kpi-card users"
+              onClick={() => onNavigateToNav('users')}
+              role="button"
+              tabIndex={0}
+              title="Click to inspect user directory"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateToNav('users'); }}
+            >
+              <div className="admin-dash-kpi-icon-box users">
+                👥
+              </div>
+              <div className="admin-dash-kpi-info">
+                <span className="admin-dash-kpi-label">Platform Users</span>
+                <span className="admin-dash-kpi-value" style={{ color: '#38bdf8' }}>
+                  {totalUsers}
+                </span>
+                <span className="admin-dash-kpi-subtext">{creatorsCount} Creators · {totalAdmins} Staff →</span>
+              </div>
+            </div>
             <div
               className="admin-dash-kpi-card pending"
               onClick={() => onNavigateToNav('review-submissions')}

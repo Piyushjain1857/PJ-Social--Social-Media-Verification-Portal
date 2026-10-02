@@ -15,6 +15,7 @@ const testFiles = [
   'notification.test.js',
   'official_social_accounts.test.js',
   'profile_management.test.js',
+  'admin_user_visibility.test.js',
   'superadmin_dashboard.test.js',
   'superadmin_users.test.js',
   'points_system.test.js',

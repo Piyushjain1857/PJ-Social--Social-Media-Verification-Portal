@@ -315,6 +315,10 @@ export const fetchUsers = async (params = {}) => {
   return await apiFetch(qs ? `/users?${qs}` : '/users');
 };
 
+export const fetchUserDetails = async (userId) => {
+  return await apiFetch(`/users/${userId}`);
+};
+
 export const updateUserRole = async (userId, role) => {
   return await apiFetch(`/users/${userId}/role`, {
     method: 'PATCH',

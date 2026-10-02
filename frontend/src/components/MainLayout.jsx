@@ -91,6 +91,7 @@ export const ROLE_NAVIGATION = {
     { id: 'game-points', label: 'Game Points', icon: '🎮', description: 'Gamification engine, XP progression & leaderboard' },
     { id: 'review-submissions', label: 'Review Submissions', icon: '⚖️', description: 'Moderation review queue', isUrgentBadge: true },
     { id: 'submissions', label: 'Submissions', icon: '📋', description: 'Browse and inspect platform submissions' },
+    { id: 'users', label: 'Users', icon: '👥', description: 'User directory & platform creators' },
     { id: 'profile', label: 'Profile', icon: '👤', description: 'Moderator profile & credentials' },
   ],
   USER: [
@@ -1448,7 +1449,7 @@ export default function MainLayout({
               'levels', 'super-admin/levels',
               'users', 'admins', 'submissions', 'social-accounts'
             ].includes(activeNav)) ||
-            (currentRole === 'ADMIN' && ['submissions'].includes(activeNav))
+            (currentRole === 'ADMIN' && ['submissions', 'users'].includes(activeNav))
           ) && (
             <div className="layout-page-header">
               <div className="layout-header-title-wrap">

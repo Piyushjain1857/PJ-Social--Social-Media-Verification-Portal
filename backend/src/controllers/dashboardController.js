@@ -1,6 +1,7 @@
 const { prisma, checkDatabaseConnection } = require('../config/db');
 const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
 const { getUserNotifications } = require('../repositories/notificationRepository');
+const { getAllUsers } = require('../repositories/userRepository');
 
 /**
  * GET /api/dashboard/user
@@ -123,7 +124,7 @@ const getUserDashboard = async (req, res) => {
  * GET /api/dashboard/admin
  * Protected: ADMIN, SUPER_ADMIN only
  *
- * Returns operational review metrics and recent pending submissions for moderators.
+ * Returns operational review metrics, user statistics, and recent pending submissions for moderators.
  * Uses efficient PostgreSQL queries (groupBy, count, indexed order/take).
  */
 const getAdminDashboard = async (req, res) => {
@@ -144,7 +145,7 @@ const getAdminDashboard = async (req, res) => {
 
     if (dbStatus.isConnected && prisma) {
       try {
-        const [statusCounts, reviewedTodayCount, recentPending] = await Promise.all([
+        const [statusCounts, reviewedTodayCount, recentPending, userRoleCounts] = await Promise.all([
           // Efficient single-query groupBy for status aggregates
           prisma.submission.groupBy({
             by: ['status'],
@@ -172,12 +173,28 @@ const getAdminDashboard = async (req, res) => {
               },
             },
           }),
+          // User counts grouped by role
+          prisma.user.groupBy({
+            by: ['role'],
+            _count: { role: true },
+          }),
         ]);
 
         const counts = statusCounts.reduce((acc, row) => {
           acc[row.status] = row._count.status;
           return acc;
         }, {});
+
+        const roleMap = userRoleCounts.reduce((acc, r) => {
+          acc[r.role] = r._count.role;
+          return acc;
+        }, {});
+
+        const creatorsCount = roleMap.USER || 0;
+        const adminsCount = roleMap.ADMIN || 0;
+        const superAdminsCount = roleMap.SUPER_ADMIN || 0;
+        const totalAdmins = adminsCount + superAdminsCount;
+        const totalUsers = creatorsCount + totalAdmins;
 
         const pending = counts.PENDING || 0;
         const approved = counts.APPROVED || 0;
@@ -188,6 +205,11 @@ const getAdminDashboard = async (req, res) => {
           success: true,
           data: {
             stats: {
+              totalUsers,
+              creatorsCount,
+              totalAdmins,
+              adminsCount,
+              superAdminsCount,
               pending,
               reviewedToday: reviewedTodayCount,
               approved,
@@ -213,7 +235,17 @@ const getAdminDashboard = async (req, res) => {
     }
 
     // In-memory fallback
-    const allSubs = await getAllSubmissions();
+    const [allSubs, allUsers] = await Promise.all([
+      getAllSubmissions(),
+      getAllUsers(),
+    ]);
+
+    const creatorsCount = allUsers.filter(u => u.role === 'USER').length;
+    const adminsCount = allUsers.filter(u => u.role === 'ADMIN').length;
+    const superAdminsCount = allUsers.filter(u => u.role === 'SUPER_ADMIN').length;
+    const totalAdmins = adminsCount + superAdminsCount;
+    const totalUsers = allUsers.length;
+
     const pending = allSubs.filter(s => s.status === 'PENDING').length;
     const approved = allSubs.filter(s => s.status === 'APPROVED').length;
     const rejected = allSubs.filter(s => s.status === 'REJECTED').length;
@@ -234,6 +266,11 @@ const getAdminDashboard = async (req, res) => {
       success: true,
       data: {
         stats: {
+          totalUsers,
+          creatorsCount,
+          totalAdmins,
+          adminsCount,
+          superAdminsCount,
           pending,
           reviewedToday,
           approved,

@@ -1,4 +1,4 @@
-const { getAllUsers, getUsersPaginated, updateUserRole, findUserById, updateUser } = require('../repositories/userRepository');
+const { getAllUsers, getUsersPaginated, updateUserRole, findUserById, updateUser, getUserDetails: getUserDetailsRepo } = require('../repositories/userRepository');
 const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
@@ -33,7 +33,11 @@ const getCurrentUserProfile = async (req, res, next) => {
         };
       } else if (user.role === 'ADMIN') {
         const allSubs = await getAllSubmissions();
+        const allUsers = await getAllUsers();
         stats = {
+          totalUsers: allUsers.length,
+          totalCreators: allUsers.filter(u => u.role === 'USER').length,
+          totalAdmins: allUsers.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN').length,
           pendingReview: allSubs.filter(s => s.status === 'PENDING').length,
           totalSubmissions: allSubs.length,
           approved: allSubs.filter(s => s.status === 'APPROVED').length
@@ -285,7 +289,11 @@ const getUserProfile = async (req, res, next) => {
         };
       } else if (user.role === 'ADMIN') {
         const allSubs = await getAllSubmissions();
+        const allUsers = await getAllUsers();
         stats = {
+          totalUsers: allUsers.length,
+          totalCreators: allUsers.filter(u => u.role === 'USER').length,
+          totalAdmins: allUsers.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN').length,
           pendingReview: allSubs.filter(s => s.status === 'PENDING').length,
           totalSubmissions: allSubs.length,
           approved: allSubs.filter(s => s.status === 'APPROVED').length
@@ -373,10 +381,47 @@ const listUsers = async (req, res, next) => {
     }
 
     const users = await getAllUsers();
+    const stats = {
+      total: users.length,
+      active: users.filter(u => u.status === 'ACTIVE').length,
+      inactive: users.filter(u => u.status === 'INACTIVE').length,
+      suspended: users.filter(u => u.status === 'SUSPENDED').length,
+      usersCount: users.filter(u => u.role === 'USER').length,
+      adminsCount: users.filter(u => u.role === 'ADMIN').length,
+      superAdminsCount: users.filter(u => u.role === 'SUPER_ADMIN').length
+    };
     return res.status(200).json({
       success: true,
       count: users.length,
-      data: users
+      data: users,
+      stats
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/users/:id
+ * Protected: ADMIN, SUPER_ADMIN
+ * Retrieves detailed user profile and activity counts without exposing password hash.
+ */
+const getUserDetailsController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await getUserDetailsRepo(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'User does not exist or has been removed.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user
     });
   } catch (error) {
     next(error);
@@ -450,6 +495,7 @@ module.exports = {
   changeUserPassword,
   getUserProfile,
   listUsers,
+  getUserDetails: getUserDetailsController,
   changeRole
 };
 

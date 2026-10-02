@@ -5,6 +5,7 @@ const {
   updateCurrentUserProfile,
   changeUserPassword,
   listUsers,
+  getUserDetails,
   changeRole,
   getUserProfile
 } = require('../controllers/userController');
@@ -27,6 +28,11 @@ router.get('/profile', authenticate, getUserProfile);
  * Strict RBAC: USER receives HTTP 403 Forbidden!
  */
 router.get('/', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), listUsers);
+
+/**
+ * ADMIN & SUPER_ADMIN Permission: View user details dossier
+ */
+router.get('/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserDetails);
 
 /**
  * SUPER_ADMIN Permission: Manage user roles and system privileges

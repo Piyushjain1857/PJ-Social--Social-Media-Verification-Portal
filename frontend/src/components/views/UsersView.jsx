@@ -6,7 +6,8 @@ import {
   createSuperAdminUser,
   updateSuperAdminUser,
   updateSuperAdminUserStatus,
-  fetchUsers
+  fetchUsers,
+  fetchUserDetails
 } from '../../services/api';
 import FilterBar from '../common/FilterBar';
 import Pagination from '../common/Pagination';
@@ -172,8 +173,8 @@ export default function UsersView() {
               totalPages: res.pagination.totalPages ?? 1,
               currentPage: res.pagination.currentPage ?? currentPage,
               limit: res.pagination.limit ?? pageSize,
-              hasNextPage: Boolean(res.pagination.hasNext),
-              hasPrevPage: Boolean(res.pagination.hasPrev)
+              hasNextPage: Boolean(res.pagination.hasNextPage ?? res.pagination.hasNext),
+              hasPrevPage: Boolean(res.pagination.hasPrevPage ?? res.pagination.hasPrev)
             });
           }
           if (res.stats) setStats(res.stats);
@@ -192,8 +193,8 @@ export default function UsersView() {
               totalPages: res.pagination.totalPages ?? 1,
               currentPage: res.pagination.currentPage ?? currentPage,
               limit: res.pagination.limit ?? pageSize,
-              hasNextPage: Boolean(res.pagination.hasNext),
-              hasPrevPage: Boolean(res.pagination.hasPrev)
+              hasNextPage: Boolean(res.pagination.hasNextPage ?? res.pagination.hasNext),
+              hasPrevPage: Boolean(res.pagination.hasPrevPage ?? res.pagination.hasPrev)
             });
           } else {
             setPagination({
@@ -364,7 +365,9 @@ export default function UsersView() {
     setSelectedUserDetails(null);
 
     try {
-      const res = await fetchSuperAdminUserDetails(userId);
+      const res = isSuperAdmin
+        ? await fetchSuperAdminUserDetails(userId)
+        : await fetchUserDetails(userId);
       if (res.success && res.data) {
         setSelectedUserDetails(res.data);
       } else {
@@ -454,12 +457,20 @@ export default function UsersView() {
                 <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
                   User Governance & Access Management
                 </h2>
-                <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
-                  SUPER_ADMIN CLEARANCE
-                </span>
+                {isSuperAdmin ? (
+                  <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
+                    SUPER_ADMIN CLEARANCE
+                  </span>
+                ) : (
+                  <span className="badge badge-admin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
+                    ADMIN DIRECTORY ACCESS
+                  </span>
+                )}
               </div>
               <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem', maxWidth: '780px' }}>
-                Provision, monitor, and regulate platform accounts with granular RBAC privilege controls.
+                {isSuperAdmin
+                  ? 'Provision, monitor, and regulate platform accounts with granular RBAC privilege controls.'
+                  : 'View and inspect platform creators and administrator directories with active count telemetry.'}
               </p>
             </div>
           </div>

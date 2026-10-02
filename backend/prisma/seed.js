@@ -112,7 +112,7 @@ async function main() {
   console.log('\n👤 Seeding essential core accounts...');
   const users = [
     {
-      name: 'Eleanor Vance',
+      name: 'Jain sahab',
       email: 'superadmin@portal.com',
       password: await hashPassword('SuperAdmin123!'),
       role: 'SUPER_ADMIN',
@@ -130,7 +130,7 @@ async function main() {
       totalXP: 0
     },
     {
-      name: 'Sarah Connor',
+      name: 'Piyush Jain',
       email: 'user@portal.com',
       password: await hashPassword('User123!'),
       role: 'USER',
