@@ -343,24 +343,56 @@ export default function GamePointsView({ onNavigateToNav = null }) {
       )}
 
       {/* Header Banner */}
-      <div className="gamepoints-dashboard-banner glass-panel">
-        <div className="gamepoints-banner-content">
-          <div className="gamepoints-banner-badge admin">
-            <span className="gamepoints-banner-dot" />
-            <span>{isSuperAdmin ? '👑 Super Administrator Governance' : '🛡️ Admin Points Oversight'}</span>
+      <div className="gamepoints-dashboard-banner glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'relative' }}>
+        {/* Top Row: Title & Badges on left, Refresh Data button at top right */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
+          <div className="gamepoints-banner-content" style={{ maxWidth: '720px' }}>
+            <div className="gamepoints-banner-badge admin">
+              <span className="gamepoints-banner-dot" />
+              <span>{isSuperAdmin ? '👑 Super Administrator Governance' : '🛡️ Admin Points Oversight'}</span>
+            </div>
+            <h1 className="gamepoints-banner-title" style={{ margin: '0.35rem 0' }}>
+              <span className="gamepoints-banner-icon">🎮</span> Game Points Governance &amp; Administration
+            </h1>
+            <p className="gamepoints-banner-description" style={{ margin: 0 }}>
+              {isSuperAdmin
+                ? 'Manage creator XP balances, audit adjustments, configure dynamic level tiers, and monitor global gamification analytics.'
+                : 'Monitor community rankings, adjust creator XP with verified compliance audits, and inspect participant progression curves.'}
+            </p>
           </div>
-          <h1 className="gamepoints-banner-title">
-            <span className="gamepoints-banner-icon">🎮</span> Game Points Governance &amp; Administration
-          </h1>
-          <p className="gamepoints-banner-description">
-            {isSuperAdmin
-              ? 'Manage creator XP balances, audit adjustments, configure dynamic level tiers, and monitor global gamification analytics.'
-              : 'Monitor community rankings, adjust creator XP with verified compliance audits, and inspect participant progression curves.'}
-          </p>
+
+          {/* Top Right Refresh Button */}
+          <button
+            type="button"
+            className="btn-refresh-pill"
+            onClick={() => { loadUsers(pagination.page); loadAnalytics(); }}
+            disabled={isUsersLoading || isAnalyticsLoading}
+            title="Refresh XP metrics, user rankings, and analytics"
+            style={{ flexShrink: 0, marginTop: '0.25rem' }}
+          >
+            <svg
+              className={`refresh-icon-svg ${(isUsersLoading || isAnalyticsLoading) ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>{(isUsersLoading || isAnalyticsLoading) ? 'Refreshing…' : 'Refresh Data'}</span>
+          </button>
         </div>
 
-        {/* Role Sub-Navigation Tabs */}
-        <div className="gamepoints-banner-actions">
+        {/* Bottom Row: Role Sub-Navigation Tabs */}
+        <div className="gamepoints-banner-actions" style={{ display: 'flex', alignItems: 'center', width: '100%', marginTop: '0.25rem' }}>
           <div className="gamepoints-subnav-tabs" role="tablist">
             <button
               type="button"
@@ -427,49 +459,48 @@ export default function GamePointsView({ onNavigateToNav = null }) {
         <div style={{ marginTop: '1.5rem' }}>
           {/* Top 6 KPI summary cards on users page for fast telemetry */}
           {analytics?.metrics && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                gap: '1rem',
-                marginBottom: '1.5rem'
-              }}
-            >
-              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Users</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-highlight)', marginTop: '0.2rem' }}>
+            <div className="admin-gamification-kpi-grid">
+              <div className="admin-gamification-kpi-card users">
+                <span className="admin-gamification-kpi-label">Total Users</span>
+                <span className="admin-gamification-kpi-value" style={{ color: '#38bdf8' }}>
                   {(analytics.metrics.totalUsers || 0).toLocaleString()}
-                </div>
+                </span>
+                <span className="admin-gamification-kpi-sub">Registered accounts</span>
               </div>
-              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total XP Distributed</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.2rem' }}>
+              <div className="admin-gamification-kpi-card xp">
+                <span className="admin-gamification-kpi-label">Total XP Distributed</span>
+                <span className="admin-gamification-kpi-value" style={{ color: '#818cf8' }}>
                   {(analytics.metrics.totalXPDistributed || 0).toLocaleString()}
-                </div>
+                </span>
+                <span className="admin-gamification-kpi-sub">Ecosystem XP sum</span>
               </div>
-              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Average User XP</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#a855f7', marginTop: '0.2rem' }}>
+              <div className="admin-gamification-kpi-card avg">
+                <span className="admin-gamification-kpi-label">Average User XP</span>
+                <span className="admin-gamification-kpi-value" style={{ color: '#a855f7' }}>
                   {(analytics.metrics.averageUserXP || 0).toLocaleString()}
-                </div>
+                </span>
+                <span className="admin-gamification-kpi-sub">Mean XP per creator</span>
               </div>
-              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Highest XP</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#facc15', marginTop: '0.2rem' }}>
+              <div className="admin-gamification-kpi-card high-xp">
+                <span className="admin-gamification-kpi-label">Highest XP</span>
+                <span className="admin-gamification-kpi-value" style={{ color: '#facc15' }}>
                   {(analytics.metrics.highestXP || 0).toLocaleString()}
-                </div>
+                </span>
+                <span className="admin-gamification-kpi-sub">Top earner record</span>
               </div>
-              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Highest Level</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ec4899', marginTop: '0.2rem' }}>
+              <div className="admin-gamification-kpi-card level">
+                <span className="admin-gamification-kpi-label">Highest Level</span>
+                <span className="admin-gamification-kpi-value" style={{ color: '#ec4899' }}>
                   Level {analytics.metrics.highestLevel || 1}
-                </div>
+                </span>
+                <span className="admin-gamification-kpi-sub">Platform tier peak</span>
               </div>
-              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Creators</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>
+              <div className="admin-gamification-kpi-card active-users">
+                <span className="admin-gamification-kpi-label">Active Creators</span>
+                <span className="admin-gamification-kpi-value" style={{ color: '#10b981' }}>
                   {(analytics.metrics.activeUsers || 0).toLocaleString()}
-                </div>
+                </span>
+                <span className="admin-gamification-kpi-sub">Engaged participants</span>
               </div>
             </div>
           )}

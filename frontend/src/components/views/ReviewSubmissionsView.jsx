@@ -506,24 +506,37 @@ export default function ReviewSubmissionsView() {
         <div className="glass-panel queue-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
           {/* Queue Header & Counter */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-highlight)' }}>Queue</span>
-              <span className="badge badge-outline" style={{ fontSize: '0.72rem' }}>
-                {pagination.totalCount} items
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
+                Queue
+              </span>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                padding: '0.15rem 0.6rem',
+                borderRadius: '9999px',
+                background: pagination.totalCount > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                color: pagination.totalCount > 0 ? '#fbbf24' : 'var(--text-muted)',
+                border: `1px solid ${pagination.totalCount > 0 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
+                fontFamily: 'var(--font-mono, monospace)'
+              }}>
+                {pagination.totalCount} {pagination.totalCount === 1 ? 'item' : 'items'}
               </span>
             </div>
+
             <button
               type="button"
               className="btn-refresh-pill"
               onClick={loadQueue}
               disabled={isQueueLoading}
-              title="Refresh queue"
+              title="Refresh moderation queue"
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.76rem' }}
             >
               <svg
                 className={`refresh-icon-svg ${isQueueLoading ? 'spinning' : ''}`}
                 viewBox="0 0 24 24"
-                width="14"
-                height="14"
+                width="13"
+                height="13"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.4"
@@ -541,68 +554,184 @@ export default function ReviewSubmissionsView() {
           </div>
 
           {/* Search Box */}
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', width: '100%' }}>
             <input
               type="search"
               placeholder="Search creator, URL, note..."
-              className="input-field"
               value={search}
               onChange={handleSearchChange}
-              style={{ width: '100%', paddingLeft: '2rem', fontSize: '0.84rem', minHeight: '38px' }}
+              style={{
+                width: '100%',
+                padding: '0.55rem 2.2rem 0.55rem 2.25rem',
+                fontSize: '0.82rem',
+                color: 'var(--text-highlight, #f8fafc)',
+                background: 'rgba(15, 23, 42, 0.65)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                outline: 'none',
+                transition: 'all 0.2s ease',
+                boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.2)'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(99, 102, 241, 0.55)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.18)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.boxShadow = 'inset 0 1px 2px rgba(0, 0, 0, 0.2)';
+              }}
             />
-            <span style={{ position: 'absolute', left: '0.7rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.85rem' }}>🔍</span>
+            <svg
+              style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.45, pointerEvents: 'none' }}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             {search && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                style={{ position: 'absolute', right: '0.65rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                title="Clear search query"
+                style={{
+                  position: 'absolute',
+                  right: '0.65rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '18px',
+                  height: '18px',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.7rem'
+                }}
               >
                 ✕
               </button>
             )}
           </div>
 
-          {/* Status Filter Tabs */}
-          <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-            {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((s) => {
-              const isActive = status === s;
+          {/* Status Filter Tabs (Sleek Segmented Bar) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '3px',
+            background: 'rgba(15, 23, 42, 0.65)',
+            padding: '3px',
+            borderRadius: '10px',
+            border: '1px solid rgba(255, 255, 255, 0.08)'
+          }}>
+            {[
+              { id: 'PENDING', label: 'Pending', color: '#fbbf24', bg: 'rgba(245, 158, 11, 0.18)', border: 'rgba(245, 158, 11, 0.4)' },
+              { id: 'APPROVED', label: 'Approved', color: '#34d399', bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.4)' },
+              { id: 'REJECTED', label: 'Rejected', color: '#f87171', bg: 'rgba(239, 68, 68, 0.18)', border: 'rgba(239, 68, 68, 0.4)' },
+              { id: 'ALL', label: 'All', color: '#a5b4fc', bg: 'rgba(99, 102, 241, 0.22)', border: 'rgba(99, 102, 241, 0.45)' },
+            ].map((s) => {
+              const isActive = status === s.id;
               return (
                 <button
-                  key={s}
+                  key={s.id}
                   type="button"
-                  onClick={() => { setStatus(s); setPage(1); }}
+                  onClick={() => { setStatus(s.id); setPage(1); }}
                   style={{
-                    flex: 1,
-                    padding: '0.35rem 0.25rem',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    border: 'none',
-                    borderRadius: 'var(--radius-sm)',
+                    padding: '0.42rem 0.2rem',
+                    fontSize: '0.73rem',
+                    fontWeight: isActive ? 700 : 500,
+                    borderRadius: '7px',
+                    border: `1px solid ${isActive ? s.border : 'transparent'}`,
                     cursor: 'pointer',
-                    background: isActive ? (s === 'PENDING' ? 'var(--status-warning)' : s === 'APPROVED' ? 'var(--status-success)' : s === 'REJECTED' ? 'var(--status-error)' : 'var(--primary)') : 'transparent',
-                    color: isActive ? '#0d1117' : 'var(--text-secondary)',
-                    transition: 'all 0.2s ease',
+                    background: isActive ? s.bg : 'transparent',
+                    color: isActive ? s.color : 'var(--text-secondary, #94a3b8)',
+                    boxShadow: isActive ? `0 2px 8px ${s.border}` : 'none',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.color = '#f8fafc';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)';
+                    }
                   }}
                 >
-                  {s}
+                  {s.label}
                 </button>
               );
             })}
           </div>
 
-          {/* Platform Filters */}
-          <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
-            {['ALL', 'INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map((p) => {
-              const isSelected = platform === p;
+          {/* Platform Filters (Sleek Segmented Bar) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '3px',
+            background: 'rgba(15, 23, 42, 0.45)',
+            padding: '3px',
+            borderRadius: '10px',
+            border: '1px solid rgba(255, 255, 255, 0.06)'
+          }}>
+            {[
+              { id: 'ALL', label: 'All', icon: '🌐', color: '#c7d2fe', bg: 'rgba(99, 102, 241, 0.22)', border: 'rgba(99, 102, 241, 0.45)' },
+              { id: 'INSTAGRAM', label: 'Insta', icon: '📸', color: '#f472b6', bg: 'rgba(236, 72, 153, 0.18)', border: 'rgba(236, 72, 153, 0.4)' },
+              { id: 'LINKEDIN', label: 'LinkedIn', icon: '💼', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.18)', border: 'rgba(56, 189, 248, 0.4)' },
+              { id: 'FACEBOOK', label: 'FB', icon: '👥', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.18)', border: 'rgba(96, 165, 250, 0.4)' },
+            ].map((p) => {
+              const isSelected = platform === p.id;
               return (
                 <button
-                  key={p}
+                  key={p.id}
                   type="button"
-                  onClick={() => { setPlatform(p); setPage(1); }}
-                  className={`badge ${isSelected ? 'badge-primary' : 'badge-outline'}`}
-                  style={{ cursor: 'pointer', fontSize: '0.72rem', padding: '0.25rem 0.55rem', border: isSelected ? 'none' : '1px solid var(--border-subtle)' }}
+                  onClick={() => { setPlatform(p.id); setPage(1); }}
+                  style={{
+                    padding: '0.42rem 0.2rem',
+                    fontSize: '0.73rem',
+                    fontWeight: isSelected ? 700 : 500,
+                    borderRadius: '7px',
+                    border: `1px solid ${isSelected ? p.border : 'transparent'}`,
+                    cursor: 'pointer',
+                    background: isSelected ? p.bg : 'transparent',
+                    color: isSelected ? p.color : 'var(--text-secondary, #94a3b8)',
+                    boxShadow: isSelected ? `0 2px 8px ${p.border}` : 'none',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.28rem'
+                  }}
+                  title={`Filter by ${p.label}`}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.color = '#f8fafc';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-secondary, #94a3b8)';
+                    }
+                  }}
                 >
-                  {p === 'ALL' ? 'All Networks' : p}
+                  <span style={{ fontSize: '0.8rem' }}>{p.icon}</span>
+                  <span>{p.label}</span>
                 </button>
               );
             })}
@@ -713,12 +842,69 @@ export default function ReviewSubmissionsView() {
             ================================================================== */}
         <div className="review-stage-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {!selectedSubId ? (
-            <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ fontSize: '3rem', opacity: 0.4 }}>👈</span>
-              <h3 style={{ margin: 0, color: 'var(--text-highlight)' }}>Select a Submission to Review</h3>
-              <p style={{ margin: 0, color: 'var(--text-secondary)', maxWidth: '40ch', fontSize: '0.9rem' }}>
-                Pick an activity submission from the queue on the left to inspect evidence, check creator history, and record your verification verdict.
-              </p>
+            <div className="glass-panel" style={{
+              padding: '3.5rem 2rem',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1.25rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
+                background: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                boxShadow: '0 8px 24px rgba(99, 102, 241, 0.25)'
+              }}>
+                ⚖️
+              </div>
+
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
+                  Verification Review Workspace
+                </h3>
+                <p style={{ margin: '0.45rem auto 0', color: 'var(--text-secondary)', maxWidth: '44ch', fontSize: '0.88rem', lineHeight: 1.55 }}>
+                  {submissions.length > 0
+                    ? 'Select an activity proof from the moderation queue on the left to inspect evidence, cross-reference creator credentials, and record your verification verdict.'
+                    : 'The moderation queue is currently clear! When new creator submissions are submitted, they will appear in your queue for real-time review.'}
+                </p>
+              </div>
+
+              {submissions.length === 0 ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 1.15rem',
+                  borderRadius: '9999px',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: '#34d399',
+                  fontSize: '0.82rem',
+                  fontWeight: 700
+                }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                  <span>Queue Status: All Caught Up 🎉</span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
+                  <div style={{ padding: '0.5rem 0.85rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    <kbd style={{ padding: '0.15rem 0.4rem', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: '#38bdf8', fontWeight: 700, marginRight: '0.35rem' }}>A</kbd> Approve & Award XP
+                  </div>
+                  <div style={{ padding: '0.5rem 0.85rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    <kbd style={{ padding: '0.15rem 0.4rem', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: '#f87171', fontWeight: 700, marginRight: '0.35rem' }}>R</kbd> Reject with Reason
+                  </div>
+                </div>
+              )}
             </div>
           ) : isDossierLoading && !activeSub ? (
             <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>

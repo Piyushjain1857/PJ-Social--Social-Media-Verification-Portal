@@ -1324,7 +1324,34 @@ function AdminDashboard({ onNavigateToNav }) {
           </p>
         </div>
 
-        <div className="admin-dash-hero-actions">
+        <div className="admin-dash-hero-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', alignSelf: 'flex-start' }}>
+          <button
+            type="button"
+            className="btn-refresh-pill"
+            onClick={load}
+            disabled={status === 'loading'}
+            title="Refresh moderation metrics, queue count, and user directory telemetry"
+          >
+            <svg
+              className={`refresh-icon-svg ${status === 'loading' ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>{status === 'loading' ? 'Refreshing…' : 'Refresh Data'}</span>
+          </button>
+
           <button
             type="button"
             className="admin-dash-btn-queue"

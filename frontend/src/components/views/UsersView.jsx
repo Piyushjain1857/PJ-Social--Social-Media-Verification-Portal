@@ -475,17 +475,46 @@ export default function UsersView() {
             </div>
           </div>
 
-          {isSuperAdmin && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button
               type="button"
-              className="btn-portal-primary"
-              onClick={openCreateModal}
-              style={{ fontSize: '0.84rem', padding: '0.55rem 1.15rem' }}
+              className="btn-refresh-pill"
+              onClick={loadUsers}
+              disabled={isLoading}
+              title="Refresh user directory and telemetry"
             >
-              <span>➕</span>
-              <span>Create New User</span>
+              <svg
+                className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
             </button>
-          )}
+
+            {isSuperAdmin && (
+              <button
+                type="button"
+                className="btn-portal-primary"
+                onClick={openCreateModal}
+                style={{ fontSize: '0.84rem', padding: '0.55rem 1.15rem' }}
+              >
+                <span>➕</span>
+                <span>Create New User</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

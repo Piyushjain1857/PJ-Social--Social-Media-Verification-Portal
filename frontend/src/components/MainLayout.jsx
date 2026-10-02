@@ -1445,11 +1445,17 @@ export default function MainLayout({
           {/* Page Header (hidden when view has its own dedicated hero banner) */}
           {!(
             (currentRole === 'SUPER_ADMIN' && [
-              'game-points', 'points', 'gamification',
+              'dashboard', 'game-points', 'points', 'gamification',
               'levels', 'super-admin/levels',
               'users', 'admins', 'submissions', 'social-accounts'
             ].includes(activeNav)) ||
-            (currentRole === 'ADMIN' && ['submissions', 'users'].includes(activeNav))
+            (currentRole === 'ADMIN' && [
+              'dashboard', 'game-points', 'points', 'gamification',
+              'review-submissions', 'submissions', 'users'
+            ].includes(activeNav)) ||
+            (currentRole === 'USER' && [
+              'user-space', 'game-points', 'points', 'gamification'
+            ].includes(activeNav))
           ) && (
             <div className="layout-page-header">
               <div className="layout-header-title-wrap">
