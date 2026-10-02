@@ -24,7 +24,8 @@ const testFiles = [
   'swagger.test.js',
   'admin_gamification.test.js',
   'superadmin_gamification.test.js',
-  'complete_gamification_audit.test.js'
+  'complete_gamification_audit.test.js',
+  'submission_xp_awarding.test.js'
 ];
 
 console.log('========================================================');

@@ -599,13 +599,7 @@ const reviewSubmission = async (id, { status, feedback, adminId, adminName }) =>
         message: 'Submission is already rejected. Cannot re-reject a rejected submission.'
       };
     }
-    if (newStatus === 'APPROVED') {
-      return {
-        error: 'CANNOT_APPROVE_REJECTED',
-        code: 'INVALID_STATE_TRANSITION',
-        message: 'Cannot approve an already rejected submission. The creator must submit new evidence.'
-      };
-    }
+    // Note: Transition from REJECTED -> APPROVED is permitted according to business rules
   }
 
   // 3. Rejection requires non-empty reason
@@ -930,6 +924,17 @@ const getQueueNavigation = async (currentId, filters = {}) => {
   };
 };
 
+const syncInMemorySubmissionReview = (id, newStatus, reviewEntry) => {
+  let memSub = inMemorySubmissions.get(id);
+  if (memSub) {
+    memSub.status = newStatus;
+    memSub.updatedAt = new Date();
+    if (!Array.isArray(memSub.reviews)) memSub.reviews = [];
+    if (reviewEntry) memSub.reviews.unshift(reviewEntry);
+    inMemorySubmissions.set(id, memSub);
+  }
+};
+
 module.exports = {
   getAllSubmissions,
   getSubmissionsPaginated,
@@ -938,6 +943,7 @@ module.exports = {
   getSubmissionByScreenshotRef,
   createSubmission,
   reviewSubmission,
+  syncInMemorySubmissionReview,
   addInternalNote,
   createClarificationRequest,
   getQueueNavigation

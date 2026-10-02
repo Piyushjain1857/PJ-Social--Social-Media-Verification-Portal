@@ -9,6 +9,7 @@ const {
 } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 const { awardPoints } = require('../services/pointsService');
+const { processSubmissionVerdict } = require('../services/submissionApprovalService');
 
 /**
  * GET /api/reviews/pending
@@ -409,97 +410,39 @@ const submitReviewVerdict = async (req, res, next) => {
     const { id } = req.params;
     const { status, feedback } = req.body;
 
-    // Validate verdict status
-    const validStatuses = ['APPROVED', 'REJECTED'];
-    if (!status || !validStatuses.includes(status.toUpperCase())) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_STATUS',
-        message: 'Review decision status must be either APPROVED or REJECTED.',
-      });
-    }
-
-    const cleanStatus = status.toUpperCase();
-
-    // Feedback is strongly required for rejections to guide creator
-    if (cleanStatus === 'REJECTED' && (!feedback || !feedback.trim())) {
-      return res.status(400).json({
-        success: false,
-        code: 'FEEDBACK_REQUIRED',
-        message: 'A rejection reason/feedback is mandatory so the creator understands what was missing.',
-      });
-    }
-
-    const cleanFeedback = feedback && typeof feedback === 'string'
-      ? feedback.trim().substring(0, 1000)
-      : null;
-
-    const result = await reviewSubmission(id, {
-      status: cleanStatus,
-      feedback: cleanFeedback,
-      adminId: req.user.id,
-      adminName: req.user.name,
+    const result = await processSubmissionVerdict({
+      submissionId: id,
+      status,
+      feedback,
+      adminUser: req.user
     });
 
-    if (result.error) {
-      const statusCode = result.code === 'SUBMISSION_NOT_FOUND' ? 404 : 400;
-      return res.status(statusCode).json({
-        success: false,
-        code: result.code,
-        message: result.message,
-      });
-    }
-
-    // If approved, award gamification points (preventing duplicate awards)
-    let pointsAwarded = null;
-    const isApproved = cleanStatus === 'APPROVED';
-    if (isApproved) {
-      try {
-        pointsAwarded = await awardPoints({
-          userId: result.submission.userId,
-          submissionId: result.submission.id,
-          actionType: result.submission.actionType,
-          description: `Approved ${result.submission.platform} ${result.submission.actionType} verification proof`,
-          reviewerId: req.user.id,
-          reviewerName: req.user.name,
-        });
-      } catch (ptErr) {
-        console.warn('[ReviewController] Error awarding points on approval:', ptErr.message);
-      }
-    }
-
-    // Create creator notification
-    let notifMessage = isApproved
-      ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${cleanFeedback ? ` Feedback: "${cleanFeedback}"` : ''}`
-      : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${cleanFeedback}"`;
-
-    if (isApproved && pointsAwarded && pointsAwarded.awarded) {
-      notifMessage += ` You earned +${pointsAwarded.points} point${pointsAwarded.points > 1 ? 's' : ''}!`;
-    }
-
-    await createNotification({
-      userId: result.submission.userId,
-      type: 'REVIEW_FEEDBACK',
-      title: `Submission ${cleanStatus}`,
-      message: notifMessage,
-      metadata: {
-        pointsAwarded: pointsAwarded?.points || 0,
-        submissionId: result.submission.id,
-        actionType: result.submission.actionType,
-      },
-    });
+    const isApproved = result.submission.status === 'APPROVED';
+    const pointsAwarded = result.pointsAwarded;
 
     return res.status(200).json({
       success: true,
-      message: `Submission ${id} has been marked as ${cleanStatus}.${pointsAwarded && pointsAwarded.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
+      message: result.message || `Submission ${id} has been marked as ${result.submission.status}.${pointsAwarded?.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
       data: {
-        ...result,
+        success: true,
+        submission: result.submission,
+        review: result.review,
         pointsAwarded: pointsAwarded || null,
+        xpAwarded: pointsAwarded?.xp || 0,
+        userLevel: pointsAwarded?.level || null
       },
       verificationNote:
-        'Human moderator determination applied. Social media engagement proof logged.',
+        'Human moderator determination applied. Social media engagement proof logged.'
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        code: err.code || 'BAD_REQUEST',
+        message: err.message,
+        data: err.data || null
+      });
+    }
     next(err);
   }
 };

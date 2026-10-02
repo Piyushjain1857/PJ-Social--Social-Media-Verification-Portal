@@ -13,6 +13,7 @@ const {
 const { validateSubmissionPostUrl } = require('../utils/urlValidator');
 const { createNotification } = require('../repositories/notificationRepository');
 const { awardPoints } = require('../services/pointsService');
+const { processSubmissionVerdict } = require('../services/submissionApprovalService');
 
 /**
  * POST /api/submissions
@@ -326,89 +327,35 @@ const review = async (req, res, next) => {
     const { id } = req.params;
     const { status, feedback } = req.body;
 
-    const validStatuses = ['APPROVED', 'REJECTED'];
-    if (!status || !validStatuses.includes(status.toUpperCase())) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_STATUS',
-        message: `Review decision status must be one of: ${validStatuses.join(', ')}`
-      });
-    }
-
-    const cleanStatus = status.toUpperCase();
-
-    if (cleanStatus === 'REJECTED' && (!feedback || !feedback.trim())) {
-      return res.status(400).json({
-        success: false,
-        code: 'FEEDBACK_REQUIRED',
-        message: 'A rejection reason/feedback is mandatory so the creator understands what was missing.'
-      });
-    }
-
-    const result = await updateReview(id, {
-      status: cleanStatus,
-      feedback: feedback ? feedback.trim() : null,
-      adminId: req.user.id,
-      adminName: req.user.name
+    const result = await processSubmissionVerdict({
+      submissionId: id,
+      status,
+      feedback,
+      adminUser: req.user
     });
 
-    if (result.error) {
-      const statusCode = result.code === 'SUBMISSION_NOT_FOUND' ? 404 : 400;
-      return res.status(statusCode).json({
-        success: false,
-        code: result.code,
-        message: result.message
-      });
-    }
-
-    // If approved, award gamification points (preventing duplicates)
-    let pointsAwarded = null;
-    const isApproved = cleanStatus === 'APPROVED';
-    if (isApproved) {
-      try {
-        pointsAwarded = await awardPoints({
-          userId: result.submission.userId,
-          submissionId: result.submission.id,
-          actionType: result.submission.actionType,
-          description: `Approved ${result.submission.platform} ${result.submission.actionType} verification proof`,
-          reviewerId: req.user.id,
-          reviewerName: req.user.name
-        });
-      } catch (ptErr) {
-        console.warn('[SubmissionController] Error awarding points on approval:', ptErr.message);
-      }
-    }
-
-    // Notify the submission owner of the verdict
-    let notifMessage = isApproved
-      ? `Your ${result.submission.platform} activity submission was approved by ${req.user.name}.${result.review.feedback ? ` Feedback: "${result.review.feedback}"` : ''}`
-      : `Your ${result.submission.platform} activity submission was rejected by ${req.user.name}. Reason: "${result.review.feedback}"`;
-
-    if (isApproved && pointsAwarded && pointsAwarded.awarded) {
-      notifMessage += ` You earned +${pointsAwarded.points} point${pointsAwarded.points > 1 ? 's' : ''}!`;
-    }
-
-    await createNotification({
-      userId: result.submission.userId,
-      type: 'REVIEW_FEEDBACK',
-      title: `Submission ${cleanStatus}`,
-      message: notifMessage,
-      metadata: {
-        pointsAwarded: pointsAwarded?.points || 0,
-        submissionId: result.submission.id,
-        actionType: result.submission.actionType
-      }
-    });
+    const isApproved = result.submission.status === 'APPROVED';
+    const pointsAwarded = result.pointsAwarded;
 
     return res.status(200).json({
       success: true,
-      message: `Submission successfully marked as ${cleanStatus}.${pointsAwarded && pointsAwarded.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
+      message: result.message || `Submission successfully marked as ${result.submission.status}.${pointsAwarded?.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
       data: {
-        ...result,
+        success: true,
+        submission: result.submission,
+        review: result.review,
         pointsAwarded: pointsAwarded || null
       }
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        code: error.code || 'BAD_REQUEST',
+        message: error.message,
+        data: error.data || null
+      });
+    }
     next(error);
   }
 };

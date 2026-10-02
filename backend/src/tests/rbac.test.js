@@ -335,13 +335,14 @@ async function runTests() {
     });
     assert(reRejectRes.status === 400, 'Invalid transition: Cannot re-reject already rejected submission (400)');
 
-    // State transition test: Approving an already rejected submission must be blocked (400)
+    // State transition test: Approving a previously rejected submission (Overturn) awards XP once according to business rules
     const approveRejectedRes = await makeRequest(`/reviews/${sub2Id}/approve`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${adminToken}` },
-      body: { feedback: 'Overturn' }
+      body: { feedback: 'Overturn rejection and award XP' }
     });
-    assert(approveRejectedRes.status === 400, 'Invalid transition: Cannot approve an already rejected submission (400)');
+    assert(approveRejectedRes.status === 200, 'Transition: Can approve an already rejected submission (200)');
+    assert(approveRejectedRes.body?.data?.xpAwarded > 0, 'Rejected -> Approved awards XP to user');
 
     // USER received notification after review decisions
     const userNotifsAfterReviews = await makeRequest('/notifications/my', {
