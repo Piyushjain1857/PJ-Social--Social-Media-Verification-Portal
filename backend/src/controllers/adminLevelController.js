@@ -37,17 +37,51 @@ const listLevels = async (req, res, next) => {
     }
 
     const levels = await getAllLevelsFromDb();
-    const thresholds = buildLevelThresholds(levels);
+
+    // Sort all levels (active + inactive) by levelNumber for display
+    const sorted = [...levels].sort(
+      (a, b) => (parseInt(a.levelNumber, 10) || 0) - (parseInt(b.levelNumber, 10) || 0)
+    );
+
+    // Compute cumulative XP thresholds using ONLY active levels (for XP range display)
+    let runningXP = 0;
+    const activeThresholds = {};
+    sorted
+      .filter((l) => l.isActive !== false)
+      .forEach((l) => {
+        const reqXP = Math.max(1, parseInt(l.xpRequired, 10) || 100);
+        activeThresholds[l.id] = {
+          cumulativeStartXP: runningXP,
+          cumulativeEndXP: runningXP + reqXP - 1
+        };
+        runningXP += reqXP;
+      });
+
+    // Enrich ALL levels (including inactive) with cumulative XP where available
+    const enriched = sorted.map((l) => {
+      const reqXP = Math.max(1, parseInt(l.xpRequired, 10) || 100);
+      const thresholdInfo = activeThresholds[l.id] || {
+        cumulativeStartXP: null,
+        cumulativeEndXP: null
+      };
+      return {
+        ...l,
+        levelNumber: parseInt(l.levelNumber, 10),
+        xpRequired: reqXP,
+        ...thresholdInfo
+      };
+    });
 
     return res.status(200).json({
       success: true,
-      count: thresholds.length,
-      data: thresholds
+      count: enriched.length,
+      data: enriched
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 /**
  * GET /api/admin/levels/configuration

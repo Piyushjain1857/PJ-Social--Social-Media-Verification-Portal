@@ -696,7 +696,8 @@ textarea:disabled {
    Unified Modal System
    ========================================================================== */
 .portal-modal-backdrop,
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.78);
@@ -708,7 +709,51 @@ textarea:disabled {
   z-index: 1000;
   padding: 1.25rem;
   animation: modal-fade-in 0.2s ease-out;
+  overflow-y: auto;
 }
+
+.modal-container {
+  width: 100%;
+  max-height: calc(100vh - 2.5rem);
+  background: #0d121f;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8), 0 0 40px var(--primary-glow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: modal-scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.modal-close-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
 
 .portal-modal-card,
 .modal-content {
