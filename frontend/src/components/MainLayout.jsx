@@ -956,10 +956,23 @@ export default function MainLayout({
           <div className="layout-navbar-right">
             {/* API Health & Latency indicator - Hidden for normal USER, visible for ADMIN and SUPER_ADMIN */}
             {currentRole !== 'USER' && (
-              <div className="api-status-pill" title="API Gateway Status">
-                <span className={`status-dot ${isApiHealthy ? 'online' : 'offline'}`} />
-                <span>{isApiHealthy ? `API :5001 (${apiLatency || 12}ms)` : 'Offline'}</span>
-              </div>
+              <>
+                <div className="api-status-pill" title="API Gateway Status">
+                  <span className={`status-dot ${isApiHealthy ? 'online' : 'offline'}`} />
+                  <span>{isApiHealthy ? `API :5001 (${apiLatency || 12}ms)` : 'Offline'}</span>
+                </div>
+                <a
+                  href="http://localhost:5001/api/docs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="api-status-pill"
+                  style={{ textDecoration: 'none', color: '#93c5fd', cursor: 'pointer' }}
+                  title="Open Interactive Swagger UI & OpenAPI Specification"
+                >
+                  <span>📖</span>
+                  <span>Swagger Docs</span>
+                </a>
+              </>
             )}
 
             {/* Creator Verified Points Pill */}

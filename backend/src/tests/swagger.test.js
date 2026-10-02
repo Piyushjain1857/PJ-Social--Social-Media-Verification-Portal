@@ -12,7 +12,7 @@ async function testSwagger() {
   const docsRes = await fetch(`${API_BASE}/docs/`);
   assert.strictEqual(docsRes.status, 200, 'Swagger UI should return 200 OK');
   const html = await docsRes.text();
-  assert.ok(html.includes('SwaggerUIBundle'), 'Swagger UI HTML must contain SwaggerUIBundle');
+  assert.ok(html.includes('swagger-ui'), 'Swagger UI HTML must contain swagger-ui');
   assert.ok(html.includes('VeriSocial'), 'Swagger UI must contain custom title/branding');
   console.log('✓ /api/docs/ successfully serves interactive Swagger UI HTML');
 
