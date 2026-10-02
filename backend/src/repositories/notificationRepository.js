@@ -5,35 +5,7 @@ const inMemoryNotifications = new Map();
 const initializeInMemoryNotifications = () => {
   if (inMemoryNotifications.size > 0) return;
 
-  const defaultNotifications = [
-    {
-      id: 'notif-001',
-      userId: 'usr-user-003',
-      type: 'REVIEW_FEEDBACK',
-      title: 'LinkedIn Verification Approved',
-      message: 'Your LinkedIn post submission #sub-002 was verified and approved by Admin Moderator.',
-      isRead: false,
-      createdAt: new Date('2026-02-09T14:20:00Z')
-    },
-    {
-      id: 'notif-002',
-      userId: 'usr-user-003',
-      type: 'REVIEW_FEEDBACK',
-      title: 'Facebook Submission Requires Attention',
-      message: 'Your Facebook story submission #sub-003 was rejected. Reason: Timestamp missing from proof.',
-      isRead: true,
-      createdAt: new Date('2026-02-06T10:10:00Z')
-    },
-    {
-      id: 'notif-003',
-      userId: 'usr-user-003',
-      type: 'SYSTEM',
-      title: 'Welcome to PJ Social Creator Portal',
-      message: 'Your creator account is active. Connect your social channels and start verifying activities.',
-      isRead: true,
-      createdAt: new Date('2026-02-01T00:00:00Z')
-    }
-  ];
+  const defaultNotifications = [];
 
   defaultNotifications.forEach(n => inMemoryNotifications.set(n.id, n));
 };
@@ -50,7 +22,7 @@ const getUserNotifications = async (userId) => {
         where: { userId },
         orderBy: { createdAt: 'desc' }
       });
-      if (records && records.length > 0) return records;
+      return records;
     } catch (err) {
       console.warn('[NotifRepo] Prisma lookup failed, falling back to memory store:', err.message);
     }

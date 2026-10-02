@@ -18,24 +18,12 @@ const DEFAULT_RULES = [
 const initDefaultGamificationSettings = async () => {
   try {
     if (!prisma?.gamificationSetting) return;
-    const count = await prisma.gamificationSetting.count();
-    if (count === 0) {
-      for (const rule of DEFAULT_RULES) {
-        await prisma.gamificationSetting.upsert({
-          where: { activity: rule.activity },
-          update: {},
-          create: rule
-        });
-        setActivityPointConfig(rule.activity, rule.xp);
-      }
-    } else {
-      const activeSettings = await prisma.gamificationSetting.findMany({ where: { isActive: true } });
-      for (const s of activeSettings) {
-        setActivityPointConfig(s.activity, s.xp);
-      }
+    const activeSettings = await prisma.gamificationSetting.findMany({ where: { isActive: true } });
+    for (const s of activeSettings) {
+      setActivityPointConfig(s.activity, s.xp);
     }
   } catch (err) {
-    console.warn('[SuperAdminGamification] Warning syncing default rules:', err.message);
+    console.warn('[SuperAdminGamification] Warning syncing rules:', err.message);
   }
 };
 

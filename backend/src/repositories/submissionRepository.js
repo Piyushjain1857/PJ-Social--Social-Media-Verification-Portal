@@ -6,73 +6,7 @@ const inMemorySubmissions = new Map();
 const initializeInMemorySubmissions = () => {
   if (inMemorySubmissions.size > 0) return;
 
-  const defaultSubmissions = [
-    {
-      id: 'sub-001',
-      userId: 'usr-user-003',
-      userName: 'Sarah Connor (Creator)',
-      userEmail: 'user@portal.com',
-      platform: 'INSTAGRAM',
-      actionType: 'LIKE',
-      postUrl: 'https://instagram.com/p/DF123abc456',
-      screenshotUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop&q=60',
-      description: 'Liked the official product announcement post on @PJSocialApp',
-      status: 'PENDING',
-      createdAt: new Date('2026-02-10T11:30:00Z'),
-      updatedAt: new Date('2026-02-10T11:30:00Z'),
-      reviews: []
-    },
-    {
-      id: 'sub-002',
-      userId: 'usr-user-003',
-      userName: 'Sarah Connor (Creator)',
-      userEmail: 'user@portal.com',
-      platform: 'LINKEDIN',
-      actionType: 'COMMENT',
-      postUrl: 'https://linkedin.com/feed/update/urn:li:activity:71625344901',
-      screenshotUrl: 'https://images.unsplash.com/photo-1616469829941-c7200edec809?w=800&auto=format&fit=crop&q=60',
-      description: 'Engaged with thoughtful feedback on the decentralized identity article.',
-      status: 'APPROVED',
-      createdAt: new Date('2026-02-08T09:15:00Z'),
-      updatedAt: new Date('2026-02-09T14:20:00Z'),
-      reviews: [
-        {
-          id: 'rev-001',
-          submissionId: 'sub-002',
-          adminId: 'usr-admin-002',
-          adminName: 'Marcus Brody (Admin Moderator)',
-          status: 'APPROVED',
-          feedback: 'Clear proof provided and handle matches registered LinkedIn profile.',
-          createdAt: new Date('2026-02-09T14:20:00Z')
-        }
-      ]
-    },
-    {
-      id: 'sub-003',
-      userId: 'usr-user-003',
-      userName: 'Sarah Connor (Creator)',
-      userEmail: 'user@portal.com',
-      platform: 'FACEBOOK',
-      actionType: 'STORY',
-      postUrl: 'https://facebook.com/stories/109283749219',
-      screenshotUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=60',
-      description: 'Shared summer community campaign to Facebook 24-hr story.',
-      status: 'REJECTED',
-      createdAt: new Date('2026-02-05T16:45:00Z'),
-      updatedAt: new Date('2026-02-06T10:10:00Z'),
-      reviews: [
-        {
-          id: 'rev-002',
-          submissionId: 'sub-003',
-          adminId: 'usr-admin-002',
-          adminName: 'Marcus Brody (Admin Moderator)',
-          status: 'REJECTED',
-          feedback: 'Screenshot does not show timestamp within 24 hours of campaign launch.',
-          createdAt: new Date('2026-02-06T10:10:00Z')
-        }
-      ]
-    }
-  ];
+  const defaultSubmissions = [];
 
   defaultSubmissions.forEach(sub => inMemorySubmissions.set(sub.id, sub));
 };
@@ -93,7 +27,7 @@ const getAllSubmissions = async () => {
         },
         orderBy: { createdAt: 'desc' }
       });
-      if (records && records.length > 0) return records;
+      return records;
     } catch (err) {
       console.warn('[SubRepo] Prisma lookup failed, falling back to memory store:', err.message);
     }
@@ -486,7 +420,7 @@ const getSubmissionById = async (id) => {
           }
         }
       });
-      if (record) return record;
+      return record;
     } catch (err) {
       console.warn('[SubRepo] Prisma lookup failed, falling back to memory store:', err.message);
     }

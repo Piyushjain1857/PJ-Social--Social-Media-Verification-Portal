@@ -47,31 +47,7 @@ const initializeInMemoryAccounts = async () => {
     }
   ];
 
-  const dbStatus = await checkDatabaseConnection();
-  if (dbStatus.isConnected && prisma) {
-    try {
-      const existing = await prisma.socialAccount.findMany();
-      if (existing.length === 0) {
-        for (const acc of defaultAccounts) {
-          await prisma.socialAccount.create({
-            data: {
-              id: acc.id,
-              platform: acc.platform,
-              name: acc.name,
-              handle: acc.handle,
-              accountUrl: acc.accountUrl,
-              profileUrl: acc.profileUrl,
-              description: acc.description,
-              isActive: acc.isActive,
-              isVerified: acc.isVerified
-            }
-          });
-        }
-      }
-    } catch (err) {
-      console.warn('[SocialRepo] Failed to seed default official accounts in DB:', err.message);
-    }
-  }
+
 
   defaultAccounts.forEach(a => inMemoryAccounts.set(a.id, a));
 };

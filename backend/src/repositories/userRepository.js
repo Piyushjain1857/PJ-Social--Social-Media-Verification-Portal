@@ -160,7 +160,7 @@ const getAllUsers = async () => {
         },
         orderBy: { createdAt: 'desc' }
       });
-      if (users && users.length > 0) return users;
+      return users;
     } catch (err) {
       console.warn('[UserRepo] Prisma getAllUsers failed, falling back to memory store:', err.message);
     }
