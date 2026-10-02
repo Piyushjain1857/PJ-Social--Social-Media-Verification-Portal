@@ -577,97 +577,99 @@ const getLeaderboardData = async ({
 
   if (dbStatus.isConnected && prisma) {
     try {
+      let aggregates = [];
+      
       if (cleanTimeframe === 'all_time') {
-        const [totalUsers, users] = await Promise.all([
-          prisma.user.count({ where: { role: 'USER' } }),
-          prisma.user.findMany({
-            where: { role: 'USER' },
-            orderBy: [{ totalPoints: 'desc' }, { createdAt: 'asc' }],
-            skip,
-            take: pageSize,
-            select: {
-              id: true,
-              name: true,
-              role: true,
-              totalPoints: true,
-              _count: {
-                select: {
-                  submissions: { where: { status: 'APPROVED' } }
-                }
-              }
-            }
-          })
-        ]);
+        const users = await prisma.user.findMany({
+          where: { role: 'USER', status: 'ACTIVE' },
+          select: {
+            id: true,
+            totalXP: true,
+            createdAt: true,
+            name: true,
+            role: true,
+            _count: { select: { submissions: { where: { status: 'APPROVED' } } } }
+          }
+        });
 
-        const totalPages = Math.ceil(totalUsers / pageSize) || 1;
-        const leaderboard = users.map((u, idx) => ({
-          rank: skip + idx + 1,
+        const maxPts = await prisma.pointTransaction.groupBy({
+          by: ['userId'],
+          where: { user: { role: 'USER', status: 'ACTIVE' } },
+          _max: { createdAt: true }
+        });
+        const maxPtMap = new Map(maxPts.map(pt => [pt.userId, pt._max.createdAt]));
+
+        aggregates = users.map(u => ({
           userId: u.id,
-          name: u.name,
-          role: u.role,
-          totalPoints: u.totalPoints,
-          periodPoints: u.totalPoints,
-          approvedSubmissionsCount: u._count?.submissions || 0
+          xp: u.totalXP || 0,
+          achievementTime: maxPtMap.get(u.id) ? maxPtMap.get(u.id).getTime() : u.createdAt.getTime(),
+          userRecord: u
         }));
-
-        return {
-          leaderboard,
-          pagination: {
-            page: pageNum,
-            limit: pageSize,
-            totalUsers,
-            totalPages,
-            hasNext: pageNum < totalPages,
-            hasPrev: pageNum > 1
+      } else {
+        const startDate = cleanTimeframe === 'this_week' ? getStartOfWeek() : getStartOfMonth();
+        const ptAggregates = await prisma.pointTransaction.groupBy({
+          by: ['userId'],
+          where: {
+            createdAt: { gte: startDate },
+            user: { role: 'USER', status: 'ACTIVE' }
           },
-          timeframe: cleanTimeframe
-        };
+          _sum: { xp: true },
+          _max: { createdAt: true }
+        });
+        
+        // Also fetch active users with 0 xp this period if we want them on the board? 
+        // Typically timeframe leaderboards only show active users in that period.
+        // We will include all users but those without txs have 0 period XP.
+        const users = await prisma.user.findMany({
+          where: { role: 'USER', status: 'ACTIVE' },
+          select: {
+            id: true,
+            totalXP: true,
+            createdAt: true,
+            name: true,
+            role: true,
+            _count: { select: { submissions: { where: { status: 'APPROVED' } } } }
+          }
+        });
+        
+        const ptMap = new Map(ptAggregates.map(pt => [pt.userId, pt]));
+        
+        aggregates = users.map(u => {
+          const pt = ptMap.get(u.id);
+          return {
+            userId: u.id,
+            xp: pt ? (pt._sum.xp || 0) : 0,
+            achievementTime: pt && pt._max.createdAt ? pt._max.createdAt.getTime() : u.createdAt.getTime(),
+            userRecord: u
+          };
+        });
       }
 
-      // Timeframe is 'this_week' or 'this_month'
-      const startDate = cleanTimeframe === 'this_week' ? getStartOfWeek() : getStartOfMonth();
-
-      const aggregates = await prisma.pointTransaction.groupBy({
-        by: ['userId'],
-        where: {
-          createdAt: { gte: startDate },
-          user: { role: 'USER' }
-        },
-        _sum: { points: true },
-        orderBy: { _sum: { points: 'desc' } }
+      // Tie-breaking rule:
+      // 1. Higher XP
+      // 2. Earlier achievement of that XP (smaller achievementTime)
+      // 3. Stable user ID fallback
+      aggregates.sort((a, b) => {
+        if (b.xp !== a.xp) return b.xp - a.xp;
+        if (a.achievementTime !== b.achievementTime) return a.achievementTime - b.achievementTime;
+        return a.userId.localeCompare(b.userId);
       });
 
       const totalUsers = aggregates.length;
       const totalPages = Math.ceil(totalUsers / pageSize) || 1;
       const pagedAggregates = aggregates.slice(skip, skip + pageSize);
 
-      const userIds = pagedAggregates.map(a => a.userId);
-      const userRecords = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: {
-          id: true,
-          name: true,
-          role: true,
-          totalPoints: true,
-          _count: {
-            select: {
-              submissions: { where: { status: 'APPROVED' } }
-            }
-          }
-        }
-      });
-
-      const userMap = new Map(userRecords.map(u => [u.id, u]));
-
       const leaderboard = pagedAggregates.map((agg, idx) => {
-        const u = userMap.get(agg.userId) || { name: 'Creator', role: 'USER', totalPoints: 0, _count: {} };
+        const u = agg.userRecord;
         return {
           rank: skip + idx + 1,
-          userId: agg.userId,
+          userId: u.id,
+          displayName: u.name,
           name: u.name,
           role: u.role,
-          totalPoints: u.totalPoints,
-          periodPoints: agg._sum.points || 0,
+          totalXP: cleanTimeframe === 'all_time' ? u.totalXP : agg.xp, 
+          totalPoints: cleanTimeframe === 'all_time' ? u.totalXP : agg.xp, // compatibility
+          periodPoints: agg.xp,
           approvedSubmissionsCount: u._count?.submissions || 0
         };
       });

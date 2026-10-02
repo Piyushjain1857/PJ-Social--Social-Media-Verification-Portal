@@ -505,7 +505,8 @@ const getUserGamificationProfile = async (userId) => {
     totalParticipants: rankMetrics?.totalParticipants || 1,
     percentileAhead: rankMetrics?.percentileAhead ?? 100,
     pointsToNextRank: rankMetrics?.pointsToNextRank || 0,
-    usersBehind: rankMetrics?.usersBehind || 0
+    usersBehind: rankMetrics?.usersBehind || 0,
+    isParticipant: rankMetrics?.isParticipant ?? true
   };
 };
 
@@ -517,143 +518,95 @@ const getUserGamificationProfile = async (userId) => {
  * @param {string} userId
  * @returns {Promise<Object>}
  */
-const getUserRankMetrics = async (userId) => {
+const getUserRankMetrics = async (userId, timeframe = 'all_time') => {
   if (!userId) {
     throw new Error('User ID is required to calculate rank metrics.');
   }
 
+  const { prisma, checkDatabaseConnection } = require('../config/db');
   const dbStatus = await checkDatabaseConnection();
   if (dbStatus.isConnected && prisma) {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, totalXP: true, totalPoints: true, createdAt: true, role: true, status: true }
-      });
-
-      if (!user) {
-        throw new Error('User not found.');
-      }
-
-      // Total eligible participants
-      const totalParticipants = await prisma.user.count({
-        where: { role: 'USER', status: 'ACTIVE' }
-      });
-
-      // Administrators and Super Administrators do not have a player rank
-      if (user.role !== 'USER') {
-        return {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true }});
+    if (user && user.role !== 'USER') {
+      return {
           rank: null,
-          totalParticipants,
+          currentRank: null,
+          totalParticipants: 0,
           usersBehind: 0,
           usersAhead: 0,
           percentileAhead: null,
           totalXP: 0,
           pointsToNextRank: 0,
           nextRank: null,
+          previousRank: null,
+          rankChange: '0 positions',
           isParticipant: false,
           role: user.role,
           message: 'Administrative roles manage game points and do not participate in rankings'
-        };
-      }
-
-      const userXP = Math.max(0, user.totalXP ?? user.totalPoints ?? 0);
-
-      // Users ahead: higher totalXP, or same XP but created earlier (tie-breaker)
-      const usersAhead = await prisma.user.count({
-        where: {
-          role: 'USER',
-          status: 'ACTIVE',
-          OR: [
-            { totalXP: { gt: userXP } },
-            {
-              totalXP: userXP,
-              createdAt: { lt: user.createdAt }
-            }
-          ]
-        }
-      });
-
-      const rank = usersAhead + 1;
-
-      // Users behind
-      const usersBehind = await prisma.user.count({
-        where: {
-          role: 'USER',
-          status: 'ACTIVE',
-          OR: [
-            { totalXP: { lt: userXP } },
-            {
-              totalXP: userXP,
-              createdAt: { gt: user.createdAt }
-            }
-          ]
-        }
-      });
-
-      // Calculate real percentile ahead of participants
-      // e.g. Rank 24 of 486 -> ahead of 95% of participants
-      const effectiveTotal = Math.max(1, totalParticipants);
-      const percentileAhead = effectiveTotal > 1
-        ? Math.min(100, Math.max(0, Math.round((usersBehind / (effectiveTotal - 1)) * 100)))
-        : 100;
-
-      // Find user directly ahead in rank to calculate XP needed to overtake
-      const userAbove = await prisma.user.findFirst({
-        where: {
-          role: 'USER',
-          status: 'ACTIVE',
-          OR: [
-            { totalXP: { gt: userXP } },
-            {
-              totalXP: userXP,
-              createdAt: { lt: user.createdAt }
-            }
-          ]
-        },
-        orderBy: [
-          { totalXP: 'asc' },
-          { createdAt: 'desc' }
-        ],
-        select: { totalXP: true }
-      });
-
-      const pointsToNextRank = userAbove ? Math.max(1, (userAbove.totalXP - userXP) + 1) : 0;
-
-      return {
-        rank,
-        totalParticipants,
-        usersBehind,
-        usersAhead,
-        percentileAhead,
-        totalXP: userXP,
-        pointsToNextRank,
-        nextRank: rank > 1 ? rank - 1 : null
       };
-    } catch (err) {
-      console.warn('[LevelService] Error calculating user rank metrics from DB:', err.message);
     }
   }
 
+  const { getLeaderboardData } = require('../repositories/pointTransactionRepository');
+  const fullData = await getLeaderboardData({ timeframe, page: 1, limit: 1000000 });
+  
+  const list = fullData.leaderboard || [];
+  const userIndex = list.findIndex(item => item.userId === userId);
+  const totalParticipants = list.length;
+  
+  let previousRank = null;
+  let rankChange = 0;
+  
+  if (timeframe === 'this_month' || timeframe === 'all_time') {
+    const { getUserRankHistory } = module.exports;
+    try {
+       const history = await getUserRankHistory(userId);
+       if (history.timeline && history.timeline.length >= 2) {
+           previousRank = history.timeline[history.timeline.length - 2].rank;
+       }
+    } catch(e) {}
+  }
+
+  if (userIndex !== -1) {
+    const userRank = userIndex + 1;
+    if (previousRank) {
+       rankChange = previousRank - userRank; 
+    }
+    const totalXP = list[userIndex].totalXP || 0;
+    const usersBehind = totalParticipants - userRank;
+    const percentileAhead = totalParticipants > 1 ? Math.min(100, Math.max(0, Math.round((usersBehind / (totalParticipants - 1)) * 100))) : 100;
+    const pointsToNextRank = userIndex > 0 ? Math.max(1, list[userIndex - 1].totalXP - totalXP + 1) : 0;
+    
+    return {
+      currentRank: userRank,
+      totalParticipants,
+      totalXP,
+      previousRank: previousRank || null,
+      rankChange: rankChange > 0 ? `+${rankChange} positions` : (rankChange < 0 ? `${rankChange} positions` : '0 positions'),
+      rank: userRank,
+      percentileAhead,
+      pointsToNextRank,
+      usersBehind,
+      isParticipant: true
+    };
+  }
+
   return {
-    rank: 1,
-    totalParticipants: 1,
-    usersBehind: 0,
-    usersAhead: 0,
-    percentileAhead: 100,
+    currentRank: totalParticipants > 0 ? totalParticipants : 1,
+    totalParticipants,
     totalXP: 0,
+    previousRank: previousRank || null,
+    rankChange: '0 positions',
+    rank: 1,
+    percentileAhead: 100,
     pointsToNextRank: 0,
-    nextRank: null
+    usersBehind: 0,
+    isParticipant: true
   };
 };
 
 /**
- * Retrieve user's XP progression over time with configurable timeframes:
- * '7d', '30d', '3m' (or '90d'), '6m' (or '180d'), 'all'.
- * Returns an array of chronological data points with Date, cumulative XP, and Level at that point.
- * 
- * @param {string} userId
- * @param {string} [timeframe='30d']
- * @returns {Promise<Object>}
+ * Retrieve user's XP progression over time
  */
 const getUserXPChartData = async (userId, timeframe = '30d') => {
   if (!userId) {
@@ -832,30 +785,16 @@ const getUserRankHistory = async (userId) => {
     try {
       const currentUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, createdAt: true, role: true, totalXP: true, totalPoints: true }
+        select: { id: true, createdAt: true, role: true }
       });
 
-      if (!currentUser) {
-        throw new Error('User not found.');
-      }
-
-      if (currentUser.role !== 'USER') {
-        return {
-          isParticipant: false,
-          role: currentUser.role,
-          trend: 'not_applicable',
-          initialRank: null,
-          currentRank: null,
-          rankDiff: 0,
-          timeline: [],
-          message: 'Administrators and Super Administrators manage game points and do not participate in rankings.'
-        };
+      if (!currentUser || currentUser.role !== 'USER') {
+        return { timeline: [], currentRank: null, initialRank: null, rankChange: 0, trend: 'stable', summary: 'N/A' };
       }
 
       const now = new Date();
-      // Generate the last 4 to 6 months
       const months = [];
-      const numMonths = 5; // e.g. 5 months back to current
+      const numMonths = 5;
       for (let i = numMonths; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -868,70 +807,80 @@ const getUserRankHistory = async (userId) => {
         });
       }
 
-      // Query rank at each monthly cutoff
-      const timeline = await Promise.all(months.map(async (m) => {
-        // User cumulative XP at cutoff
-        const userTxSum = await prisma.pointTransaction.aggregate({
-          where: { userId, createdAt: { lte: m.cutoff } },
-          _sum: { xp: true }
-        });
-        const uXP = userTxSum._sum.xp || 0;
+      // Fetch all eligible users
+      const allUsers = await prisma.user.findMany({
+        where: { role: 'USER', status: 'ACTIVE' },
+        select: { id: true, createdAt: true }
+      });
 
-        // Group total XP for all eligible users at that cutoff
-        const group = await prisma.pointTransaction.groupBy({
-          by: ['userId'],
-          where: {
-            createdAt: { lte: m.cutoff },
-            user: { role: 'USER', status: 'ACTIVE' }
-          },
-          _sum: { xp: true }
-        });
+      // Instead of looping, we could get all transactions and calculate
+      const allTxs = await prisma.pointTransaction.findMany({
+        where: { user: { role: 'USER', status: 'ACTIVE' } },
+        select: { userId: true, xp: true, createdAt: true }
+      });
 
-        // Total eligible users who existed on platform by that date
-        const totalEligible = await prisma.user.count({
-          where: {
-            role: 'USER',
-            status: 'ACTIVE',
-            createdAt: { lte: m.cutoff }
-          }
-        });
-
-        const effectiveTotal = Math.max(1, Math.max(totalEligible, group.length));
-
-        // Users ahead of current user at cutoff
-        const ahead = group.filter(g => (g._sum.xp || 0) > uXP).length;
-        const rank = ahead + 1;
-        const behind = Math.max(0, effectiveTotal - rank);
-        const percentileAhead = effectiveTotal > 1
-          ? Math.min(100, Math.max(0, Math.round((behind / (effectiveTotal - 1)) * 100)))
-          : 100;
-
-        return {
-          month: m.month,
-          monthLong: m.monthLong,
-          year: m.year,
-          period: `${m.monthLong} ${m.year}`,
-          rank,
-          xp: uXP,
-          totalParticipants: effectiveTotal,
-          percentileAhead
-        };
-      }));
-
-      // Calculate trend and position change
+      const timeline = [];
+      
+      for (const m of months) {
+         // Filter txs up to cutoff
+         const validTxs = allTxs.filter(tx => tx.createdAt <= m.cutoff);
+         
+         // Aggregate
+         const userMap = new Map();
+         allUsers.forEach(u => {
+            if (u.createdAt <= m.cutoff) {
+               userMap.set(u.id, { xp: 0, maxTime: u.createdAt.getTime() });
+            }
+         });
+         
+         for (const tx of validTxs) {
+            if (userMap.has(tx.userId)) {
+               const udata = userMap.get(tx.userId);
+               udata.xp += tx.xp;
+               if (tx.createdAt.getTime() > udata.maxTime) {
+                  udata.maxTime = tx.createdAt.getTime();
+               }
+            }
+         }
+         
+         const aggregates = [];
+         for (const [uid, data] of userMap.entries()) {
+            aggregates.push({ userId: uid, xp: data.xp, maxTime: data.maxTime });
+         }
+         
+         // Tie breaking
+         aggregates.sort((a, b) => {
+           if (b.xp !== a.xp) return b.xp - a.xp;
+           if (a.maxTime !== b.maxTime) return a.maxTime - b.maxTime;
+           return a.userId.localeCompare(b.userId);
+         });
+         
+         const idx = aggregates.findIndex(a => a.userId === userId);
+         if (idx !== -1) {
+            const rank = idx + 1;
+            const effectiveTotal = aggregates.length;
+            timeline.push({
+              month: m.month,
+              monthLong: m.monthLong,
+              year: m.year,
+              period: `${m.monthLong} ${m.year}`,
+              rank,
+              xp: aggregates[idx].xp,
+              totalParticipants: effectiveTotal
+            });
+         }
+      }
+      
+      // Calculate trend
       const firstSnapshot = timeline[0];
       const latestSnapshot = timeline[timeline.length - 1];
 
       let trend = 'stable';
       let rankChange = 0;
       if (firstSnapshot && latestSnapshot) {
-        // Note: Lower rank number means higher position! (e.g. rank 24 is better than rank 87)
-        rankChange = firstSnapshot.rank - latestSnapshot.rank;
-        if (rankChange > 0) {
-          trend = 'upward';
-        } else if (rankChange < 0) {
-          trend = 'downward';
-        }
+        rankChange = firstSnapshot.rank - latestSnapshot.rank; // >0 means moved up
+        if (rankChange > 0) trend = 'upward';
+        else if (rankChange < 0) trend = 'downward';
       }
 
       return {

@@ -94,7 +94,8 @@ const getMyXPChart = async (req, res, next) => {
 const getMyRankMetrics = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const rankData = await getUserRankMetrics(userId);
+    const { timeframe = 'all_time' } = req.query;
+    const rankData = await getUserRankMetrics(userId, timeframe);
 
     return res.status(200).json({
       success: true,
