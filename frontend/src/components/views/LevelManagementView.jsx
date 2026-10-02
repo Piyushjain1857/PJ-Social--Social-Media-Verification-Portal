@@ -341,64 +341,81 @@ export default function LevelManagementView() {
           border: '1px solid rgba(255, 255, 255, 0.08)'
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            flexWrap: 'wrap',
-            gap: '1rem',
-            marginBottom: '1.5rem'
-          }}
-        >
-          <div>
+        <div style={{ marginBottom: '1.5rem' }}>
+          {/* Title row — icon + h2 LEFT, buttons RIGHT */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '1.6rem' }}>⚡</span>
               <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
                 Level Management Engine
               </h2>
             </div>
-            <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-              Complete institutional governance over creator XP thresholds, level titles, icons, and progression tiers.
-            </p>
+
+            <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleOpenCreate}
+                style={{
+                  fontSize: '0.82rem',
+                  padding: '0.5rem 1rem',
+                  background: 'var(--role-superadmin)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  gap: '0.4rem'
+                }}
+              >
+                <span>➕</span> Add Level
+              </button>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleOpenGenerate}
+                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem', gap: '0.4rem' }}
+              >
+                <span>⚙️</span> System Configuration
+              </button>
+
+              <button
+                type="button"
+                className="btn-refresh-pill"
+                onClick={loadData}
+                title="Refresh levels"
+              >
+                <svg
+                  className="refresh-icon-svg"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                  <path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                  <path d="M3 21v-5h5" />
+                </svg>
+                <span>Refresh Data</span>
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleOpenCreate}
-              style={{
-                fontSize: '0.82rem',
-                padding: '0.5rem 1rem',
-                background: 'var(--role-superadmin)',
-                color: '#fff',
-                fontWeight: 700,
-                gap: '0.4rem'
-              }}
-            >
-              <span>➕</span> Add Level
-            </button>
-
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleOpenGenerate}
-              style={{ fontSize: '0.82rem', padding: '0.5rem 1rem', gap: '0.4rem' }}
-            >
-              <span>⚙️</span> System Configuration
-            </button>
-
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={loadData}
-              title="Refresh levels"
-              style={{ fontSize: '0.82rem', padding: '0.5rem 0.8rem' }}
-            >
-              🔄
-            </button>
-          </div>
+          {/* Subtitle below the title row */}
+          <p style={{ margin: '0.35rem 0 0 1.9rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+            Complete institutional governance over creator XP thresholds, level titles, icons, and progression tiers.
+          </p>
         </div>
 
         {/* 4 Summary Metric Cards */}
@@ -674,7 +691,9 @@ export default function LevelManagementView() {
                             padding: '0.2rem 0.5rem',
                             borderRadius: '4px',
                             color: '#94a3b8',
-                            border: '1px solid rgba(255, 255, 255, 0.05)'
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block'
                           }}
                         >
                           {lvl.cumulativeStartXP?.toLocaleString()} – {lvl.cumulativeEndXP?.toLocaleString()} XP

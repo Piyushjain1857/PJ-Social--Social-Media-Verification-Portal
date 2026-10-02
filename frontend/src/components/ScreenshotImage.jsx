@@ -19,11 +19,15 @@ import { fetchScreenshotObjectUrl } from '../services/api';
  *   showLightbox   {boolean} Whether clicking opens a full-screen lightbox (default true)
  */
 export default function ScreenshotImage({
-  screenshotUrl,
+  screenshotUrl: rawUrl,
+  src,
   alt = 'Screenshot evidence',
   thumbnailStyle = {},
+  style = {},
   showLightbox = true,
 }) {
+  const screenshotUrl = rawUrl || src;
+  const combinedThumbStyle = { ...thumbnailStyle, ...style };
   const [objectUrl, setObjectUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -142,7 +146,7 @@ export default function ScreenshotImage({
           border: '1px solid var(--border-subtle)',
           cursor: showLightbox ? 'zoom-in' : 'default',
           position: 'relative',
-          ...thumbnailStyle,
+          ...combinedThumbStyle,
         }}
       >
         <img

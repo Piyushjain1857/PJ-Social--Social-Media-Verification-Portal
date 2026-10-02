@@ -59,6 +59,7 @@ import GamePointsView from './views/GamePointsView';
 import SuperAdminGamificationCenter from './views/SuperAdminGamificationCenter';
 import { fetchMyGamification } from '../services/gamificationApi';
 import { gamificationRealtimeClient } from '../services/gamificationRealtimeClient';
+import UserSpace from '../pages/UserSpace';
 
 
 /**
@@ -94,6 +95,7 @@ export const ROLE_NAVIGATION = {
   ],
   USER: [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Creator dashboard & activity score' },
+    { id: 'user-space', label: 'Creator Studio', icon: '🚀', description: 'All-in-one submission studio & RBAC defense probe' },
     { id: 'game-points', label: 'Game Points', icon: '🎮', description: 'My XP level, progression graph & ranking' },
     { id: 'submit-activity', label: 'Submit Activity', icon: '➕', description: 'Submit social media activity proof' },
     { id: 'my-submissions', label: 'My Submissions', icon: '📋', description: 'Track your submission verification statuses' },
@@ -607,6 +609,8 @@ export default function MainLayout({
     switch (activeNav) {
       case 'dashboard':
         return <DashboardView onNavigateToNav={handleNavChange} />;
+      case 'user-space':
+        return <UserSpace onNavigate={onNavigate} onNavigateToNav={handleNavChange} />;
       case 'game-points':
       case 'points':
       case 'gamification':

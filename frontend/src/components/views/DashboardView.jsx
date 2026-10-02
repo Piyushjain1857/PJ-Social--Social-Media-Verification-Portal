@@ -243,34 +243,115 @@ function UserDashboard({ onNavigateToNav }) {
         />
       )}
 
-      {/* ── Welcome header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
-            👋 Welcome back, {firstName}
-          </h2>
-          <p style={{ margin: '0.3rem 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Here's your social verification activity at a glance.
-          </p>
+      {/* ── Welcome Creator Hero Header ── */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '1.75rem 2rem',
+          borderRadius: 'var(--radius-lg, 16px)',
+          background: 'linear-gradient(135deg, rgba(16, 24, 39, 0.85) 0%, rgba(13, 27, 42, 0.75) 100%)',
+          border: '1px solid rgba(52, 211, 153, 0.25)',
+          boxShadow: '0 16px 40px -12px rgba(0, 0, 0, 0.5), 0 0 25px -8px rgba(52, 211, 153, 0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <div
+            style={{
+              width: '58px',
+              height: '58px',
+              borderRadius: '50%',
+              padding: '2.5px',
+              background: 'linear-gradient(135deg, var(--role-user, #34d399), #06b6d4)',
+              boxShadow: '0 0 18px rgba(52, 211, 153, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                background: '#0f172a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.4rem',
+                fontWeight: 800,
+                color: '#fff'
+              }}
+            >
+              {firstName.charAt(0).toUpperCase()}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+              <span className="badge badge-user" style={{ fontSize: '0.72rem', padding: '0.15rem 0.6rem', fontWeight: 700 }}>
+                🚀 ROLE: CREATOR USER
+              </span>
+              <span className="badge badge-success" style={{ fontSize: '0.72rem', padding: '0.15rem 0.6rem' }}>
+                ✓ VERIFIED
+              </span>
+            </div>
+            <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.01em' }}>
+              Welcome back, {firstName} 👋
+            </h2>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)' }}>
+              Track your social media engagement verification status, earn creator XP, and climb the ranks.
+            </p>
+          </div>
         </div>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => onNavigateToNav('submit-activity')}
-          style={{
-            padding: '0.6rem 1.4rem',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            background: 'var(--role-user)',
-            color: '#07090e',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          ➕ Submit Activity
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onNavigateToNav('user-space')}
+            style={{
+              padding: '0.6rem 1.15rem',
+              fontSize: '0.86rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: 'rgba(52, 211, 153, 0.1)',
+              borderColor: 'rgba(52, 211, 153, 0.3)',
+              color: '#34d399'
+            }}
+          >
+            🚀 Creator Studio
+          </button>
+
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => onNavigateToNav('submit-activity')}
+            style={{
+              padding: '0.6rem 1.35rem',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              background: 'var(--role-user, #34d399)',
+              color: '#07090e',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 16px rgba(52, 211, 153, 0.3)'
+            }}
+          >
+            ➕ Submit Activity
+          </button>
+        </div>
       </div>
 
       {/* ── KPI stat cards ── */}
@@ -729,13 +810,29 @@ function SuperAdminDashboard({ onNavigateToNav }) {
 
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-refresh-pill"
               onClick={() => load(true)}
               disabled={isLoading || isRefreshing}
-              style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              title="Refresh data"
             >
-              <span>{isRefreshing ? '⏳' : '🔄'}</span>
-              <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+              <svg
+                className={`refresh-icon-svg ${isRefreshing ? 'spinning' : ''}`}
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              <span>{isRefreshing ? 'Refreshing…' : 'Refresh Data'}</span>
             </button>
           </div>
         </div>
@@ -1221,13 +1318,29 @@ function AdminDashboard({ onNavigateToNav }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-refresh-pill"
             onClick={load}
             disabled={isLoading}
-            style={{ fontSize: '0.85rem', padding: '0.55rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             title="Refresh dashboard metrics"
           >
-            <span>↺</span> {isLoading ? 'Refreshing…' : 'Refresh'}
+            <svg
+              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
           </button>
 
           <button

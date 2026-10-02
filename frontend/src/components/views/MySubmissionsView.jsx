@@ -115,12 +115,28 @@ export default function MySubmissionsView({ onNavigateToNav }) {
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-refresh-pill"
             onClick={loadSubmissions}
             disabled={isLoading}
-            style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
           >
-            {isLoading ? 'Loading...' : '🔄 Refresh'}
+            <svg
+              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
           </button>
           {onNavigateToNav && (
             <button
@@ -368,7 +384,7 @@ export default function MySubmissionsView({ onNavigateToNav }) {
                   Your Screenshot Evidence
                 </span>
                 <ScreenshotImage
-                  src={selectedSub.screenshotUrl}
+                  screenshotUrl={selectedSub.screenshotUrl}
                   alt="Submission Proof Screenshot"
                   style={{ maxHeight: '280px', borderRadius: '8px', border: '1px solid var(--border-subtle)', width: '100%', objectFit: 'contain', background: '#000' }}
                 />

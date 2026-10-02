@@ -199,7 +199,7 @@ export default function App() {
     const isAuthed = isAuthenticated || !!localStorage.getItem('auth_token');
     if (isAuthSubView(view)) {
       const cleanView = view.replace(/^#/, '').split('?')[0];
-      const normalizedNav = (cleanView === 'role-space' || cleanView.endsWith('-space')) ? 'dashboard' : view;
+      const normalizedNav = (cleanView === 'role-space' || (cleanView.endsWith('-space') && cleanView !== 'user-space')) ? 'dashboard' : view;
       if (isAuthed) {
         setCurrentView('dashboard');
         window.location.hash = normalizedNav;

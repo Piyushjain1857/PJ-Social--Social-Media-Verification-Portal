@@ -2,6 +2,7 @@
    Component Layouts & Page Styles: PJ Social Verification Portal
    ========================================================================== */
 @import './layout.css';
+@import './user-space.css';
 
 
 .app-container {

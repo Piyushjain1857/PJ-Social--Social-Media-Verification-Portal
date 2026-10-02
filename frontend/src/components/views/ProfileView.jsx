@@ -741,7 +741,7 @@ export default function ProfileView({ onNavigateToNav }) {
           </button>
           <button
             type="button"
-            className="btn-secondary profile-action-btn"
+            className="btn-refresh-pill"
             onClick={loadProfile}
             disabled={isLoading}
             title="Refresh profile data"
@@ -763,7 +763,7 @@ export default function ProfileView({ onNavigateToNav }) {
               <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
               <path d="M3 21v-5h5" />
             </svg>
-            <span>{isLoading ? 'Refreshing…' : 'Refresh'}</span>
+            <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
           </button>
           <button
             type="button"
