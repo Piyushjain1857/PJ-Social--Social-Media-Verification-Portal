@@ -43,6 +43,7 @@ export default function GamePointsView({ onNavigateToNav = null }) {
   // XP Adjustment Modal State
   const [adjustModalUser, setAdjustModalUser] = useState(null);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [dossierRefreshKey, setDossierRefreshKey] = useState(0);
 
   // ============================================================================
   // URL Hash/Path Synchronization for /admin/game-points/user/:id
@@ -214,15 +215,16 @@ export default function GamePointsView({ onNavigateToNav = null }) {
   const handleAdjustmentSuccess = (result) => {
     const deltaStr = (result.deltaXP > 0 ? '+' : '') + result.deltaXP + ' XP';
     const userName = adjustModalUser?.name || 'Creator';
-    const newBal = result.newBalance !== undefined ? result.newBalance.toLocaleString() : '';
+    const newBal = result.newBalance !== undefined ? result.newBalance.toLocaleString() : (result.newXP !== undefined ? result.newXP.toLocaleString() : '');
 
     setToast({
       type: 'success',
-      text: `✅ Successfully applied ${deltaStr} adjustment to ${userName}. New Balance: ${newBal} XP.`
+      text: `✅ Successfully applied ${deltaStr} adjustment to ${userName}. New Balance: ${newBal} XP.${result.leveledUp ? ' 🏆 User LEVELED UP!' : ''}${result.levelDemoted ? ' ⚠️ User level adjusted.' : ''}`
     });
     setTimeout(() => setToast(null), 4500);
 
-    // Refresh active data
+    // Refresh active data, graphs, rankings, and user dossier
+    setDossierRefreshKey((prev) => prev + 1);
     loadUsers(pagination.page);
     loadAnalytics();
   };
@@ -257,6 +259,7 @@ export default function GamePointsView({ onNavigateToNav = null }) {
         )}
 
         <AdminUserGamificationDossier
+          key={dossierRefreshKey}
           userId={selectedUserId}
           onBack={handleBackFromDossier}
           onAdjustXP={(userData) => handleOpenAdjustModal(userData)}

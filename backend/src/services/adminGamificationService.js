@@ -16,7 +16,9 @@ const ACTION_NAMES = {
   COMMENT: 'Comment',
   STORY: 'Story',
   BONUS: 'Manual Bonus',
-  ADJUSTMENT: 'Admin Adjustment'
+  ADJUSTMENT: 'Adjustment',
+  ADMIN_ADJUSTMENT: 'Admin Adjustment',
+  SUPER_ADMIN_ADJUSTMENT: 'Super Admin Adjustment'
 };
 
 const ACTION_ICONS = {
@@ -24,16 +26,21 @@ const ACTION_ICONS = {
   COMMENT: '💬',
   STORY: '📱',
   BONUS: '🎁',
-  ADJUSTMENT: '⚖️'
+  ADJUSTMENT: '⚖️',
+  ADMIN_ADJUSTMENT: '⚖️',
+  SUPER_ADMIN_ADJUSTMENT: '👑'
 };
 
 function getSourceFromTx(tx) {
   if (tx.submission?.platform) return tx.submission.platform;
   if (tx.metadata?.platform) return tx.metadata.platform;
-  if (tx.actionType === 'BONUS' || tx.actionType === 'ADJUSTMENT') {
-    return tx.metadata?.actorName || tx.metadata?.adminName || 'Admin Adjustment';
-  }
-  return 'Platform Activity';
+  if (tx.metadata?.actor) return tx.metadata.actor;
+  if (tx.metadata?.actorName) return tx.metadata.actorName;
+  if (tx.metadata?.adminName) return tx.metadata.adminName;
+  if (tx.actionType === 'SUPER_ADMIN_ADJUSTMENT') return 'Super Admin';
+  if (tx.actionType === 'ADMIN_ADJUSTMENT' || tx.actionType === 'ADJUSTMENT') return 'Admin';
+  if (tx.actionType === 'BONUS') return 'Admin Bonus';
+  return 'Verification Portal';
 }
 
 /**
@@ -422,6 +429,15 @@ const adjustUserXP = async ({
   reason,
   adminUser
 }) => {
+  // 1. Validate Actor
+  if (!adminUser || !adminUser.id || !['ADMIN', 'SUPER_ADMIN'].includes(adminUser.role)) {
+    const err = new Error('Unauthorized actor: Valid Admin or Super Admin credentials required.');
+    err.code = 'UNAUTHORIZED_ACTOR';
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // 2. Validate Target User ID
   if (!userId) {
     const err = new Error('Target user ID is mandatory.');
     err.code = 'USER_REQUIRED';
@@ -429,14 +445,24 @@ const adjustUserXP = async ({
     throw err;
   }
 
-  const parsedAmount = parseInt(amount, 10);
-  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+  // 3. Validate Amount (positive numeric integer > 0)
+  if (amount === undefined || amount === null || typeof amount === 'boolean') {
     const err = new Error('Adjustment amount must be a positive integer greater than zero.');
     err.code = 'INVALID_AMOUNT';
     err.statusCode = 400;
     throw err;
   }
 
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0 || !Number.isInteger(numAmount)) {
+    const err = new Error('Adjustment amount must be a positive integer greater than zero.');
+    err.code = 'INVALID_AMOUNT';
+    err.statusCode = 400;
+    throw err;
+  }
+  const parsedAmount = numAmount;
+
+  // 4. Validate Reason (mandatory, string >= 3 characters)
   if (!reason || typeof reason !== 'string' || !reason.trim() || reason.trim().length < 3) {
     const err = new Error('A detailed reason (at least 3 characters) is mandatory for XP adjustments.');
     err.code = 'REASON_REQUIRED';
@@ -446,9 +472,8 @@ const adjustUserXP = async ({
 
   const cleanReason = reason.trim();
   const cleanType = String(type).toUpperCase() === 'REMOVE' ? 'REMOVE' : 'ADD';
-  const delta = cleanType === 'REMOVE' ? -parsedAmount : parsedAmount;
 
-  // Verify target user exists and is a normal creator
+  // 5. Verify Target User exists and is a normal creator
   const targetUser = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, name: true, email: true, role: true, totalXP: true, totalPoints: true }
@@ -469,30 +494,56 @@ const adjustUserXP = async ({
   }
 
   const previousXP = targetUser.totalXP ?? targetUser.totalPoints ?? 0;
-  // Floor at 0 so user XP never goes negative
-  const newXP = Math.max(0, previousXP + delta);
-  const actualDelta = newXP - previousXP;
 
-  // Execute database transaction
+  // 6. Validate Removal Balance Safety
+  if (cleanType === 'REMOVE') {
+    if (previousXP <= 0) {
+      const err = new Error('Creator currently has 0 XP and cannot have XP deducted.');
+      err.code = 'INSUFFICIENT_XP';
+      err.statusCode = 400;
+      throw err;
+    }
+    if (parsedAmount > previousXP) {
+      const err = new Error(`Cannot deduct ${parsedAmount} XP. Creator currently only has ${previousXP.toLocaleString()} XP balance.`);
+      err.code = 'INSUFFICIENT_XP';
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  const delta = cleanType === 'REMOVE' ? -parsedAmount : parsedAmount;
+  const newXP = previousXP + delta;
+  const actualDelta = delta;
+
+  const activeLevels = await getActiveLevels();
+  const previousLevelInfo = calculateUserLevel(previousXP, activeLevels);
+
+  const actionType = adminUser.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN_ADJUSTMENT' : 'ADMIN_ADJUSTMENT';
+  const roleLabel = adminUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin';
+  const timestamp = new Date().toISOString();
+
+  // 7. Execute Atomic Database Transaction (PointTransaction + User Total XP)
   const [transaction, updatedUser] = await prisma.$transaction([
     prisma.pointTransaction.create({
       data: {
         userId,
-        points: delta,
-        xp: delta,
-        actionType: 'ADJUSTMENT',
-        description: `Admin Adjustment: ${delta > 0 ? '+' : ''}${delta} XP (${cleanReason})`,
+        points: actualDelta,
+        xp: actualDelta,
+        actionType,
+        description: `${roleLabel} Adjustment: ${actualDelta > 0 ? '+' : ''}${actualDelta} XP (${cleanReason})`,
         metadata: {
+          reason: cleanReason,
+          actor: roleLabel,
           actorId: adminUser.id,
           actorName: adminUser.name,
           actorRole: adminUser.role,
-          reason: cleanReason,
+          date: timestamp,
+          timestamp,
           adjustmentType: cleanType,
+          amount: actualDelta,
           requestedAmount: parsedAmount,
-          actualDelta,
           previousXP,
-          newXP,
-          timestamp: new Date().toISOString()
+          newXP
         }
       }
     }),
@@ -506,51 +557,100 @@ const adjustUserXP = async ({
     })
   ]);
 
-  // Recalculate level
-  const activeLevels = await getActiveLevels();
+  // 8. Recalculate level progression
   const newLevelInfo = calculateUserLevel(newXP, activeLevels);
+  const leveledUp = newLevelInfo.currentLevel > previousLevelInfo.currentLevel;
+  const levelDemoted = newLevelInfo.currentLevel < previousLevelInfo.currentLevel;
 
-  // Send in-app notification to target user
+  // 9. Send notifications to target user
   try {
+    // A. Level change notification (if level shifted)
+    if (leveledUp) {
+      await createNotification({
+        userId,
+        type: 'ACCOUNT_ALERT',
+        title: 'Level Up!',
+        message: `🏆 Congratulations! Your level increased from Level ${previousLevelInfo.currentLevel} (${previousLevelInfo.levelName}) to Level ${newLevelInfo.currentLevel} (${newLevelInfo.levelName})! Current balance: ${newXP.toLocaleString()} XP.`,
+        metadata: {
+          type: 'LEVEL_UP',
+          previousLevel: previousLevelInfo.currentLevel,
+          newLevel: newLevelInfo.currentLevel,
+          previousLevelName: previousLevelInfo.levelName,
+          newLevelName: newLevelInfo.levelName,
+          previousXP,
+          newXP,
+          adjustedBy: adminUser.name,
+          actorRole: adminUser.role,
+          date: timestamp
+        }
+      });
+    } else if (levelDemoted) {
+      await createNotification({
+        userId,
+        type: 'ACCOUNT_ALERT',
+        title: 'Level Adjustment Notice',
+        message: `ℹ️ Following an XP adjustment (${actualDelta > 0 ? '+' : ''}${actualDelta} XP), your level adjusted from Level ${previousLevelInfo.currentLevel} (${previousLevelInfo.levelName}) to Level ${newLevelInfo.currentLevel} (${newLevelInfo.levelName}). Current balance: ${newXP.toLocaleString()} XP.`,
+        metadata: {
+          type: 'LEVEL_DEMOTION',
+          previousLevel: previousLevelInfo.currentLevel,
+          newLevel: newLevelInfo.currentLevel,
+          previousLevelName: previousLevelInfo.levelName,
+          newLevelName: newLevelInfo.levelName,
+          previousXP,
+          newXP,
+          adjustedBy: adminUser.name,
+          actorRole: adminUser.role,
+          date: timestamp
+        }
+      });
+    }
+
+    // B. Standard adjustment notification
     await createNotification({
       userId,
       type: 'ACCOUNT_ALERT',
-      title: delta > 0 ? 'XP Bonus Awarded!' : 'XP Adjustment Notice',
-      message: `Admin ${adminUser.name} adjusted your XP by ${delta > 0 ? '+' : ''}${delta} XP. Reason: ${cleanReason}`,
+      title: actualDelta > 0 ? 'XP Bonus Awarded!' : 'XP Deduction Notice',
+      message: `${roleLabel} ${adminUser.name} adjusted your XP by ${actualDelta > 0 ? '+' : ''}${actualDelta} XP. Reason: ${cleanReason}`,
       metadata: {
         adjustmentType: cleanType,
-        amount: delta,
+        amount: actualDelta,
         reason: cleanReason,
+        actor: roleLabel,
+        actorId: adminUser.id,
+        actorName: adminUser.name,
         previousXP,
         newXP,
+        previousLevel: previousLevelInfo.currentLevel,
         newLevel: newLevelInfo.currentLevel,
-        adjustedBy: adminUser.name
+        date: timestamp
       }
     });
   } catch (notifErr) {
     console.warn('[AdminGamificationService] Failed to send notification:', notifErr.message);
   }
 
-  // Create immutable AuditLog entry
+  // 10. Create immutable AuditLog entry
   try {
     await recordAuditLog({
       actor: adminUser.email || adminUser.name,
-      action: 'XP_ADJUSTMENT',
+      action: adminUser.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN_XP_ADJUSTMENT' : 'XP_ADJUSTMENT',
       entity: 'User',
       entityId: userId,
-      details: `Admin ${adminUser.name} adjusted user ${targetUser.name} (${targetUser.email}) XP by ${delta > 0 ? '+' : ''}${delta} XP. Reason: ${cleanReason}`,
+      details: `${roleLabel} ${adminUser.name} adjusted user ${targetUser.name} (${targetUser.email}) XP by ${actualDelta > 0 ? '+' : ''}${actualDelta} XP. Reason: ${cleanReason}`,
       metadata: {
         actorId: adminUser.id,
         actorRole: adminUser.role,
         targetUserId: userId,
         targetUserName: targetUser.name,
         targetUserEmail: targetUser.email,
-        amount: delta,
+        amount: actualDelta,
         reason: cleanReason,
         previousXP,
         newXP,
+        previousLevel: previousLevelInfo.currentLevel,
         newLevel: newLevelInfo.currentLevel,
-        levelName: newLevelInfo.levelName
+        levelName: newLevelInfo.levelName,
+        date: timestamp
       }
     });
   } catch (auditErr) {
@@ -559,7 +659,7 @@ const adjustUserXP = async ({
 
   return {
     success: true,
-    message: `Successfully adjusted XP for ${targetUser.name} by ${delta > 0 ? '+' : ''}${delta} XP.`,
+    message: `Successfully adjusted XP for ${targetUser.name} by ${actualDelta > 0 ? '+' : ''}${actualDelta} XP.`,
     data: {
       userId,
       userName: targetUser.name,
@@ -569,9 +669,13 @@ const adjustUserXP = async ({
       newBalance: newXP,
       actualDelta,
       deltaXP: actualDelta,
-      level: newLevelInfo.currentLevel,
+      previousLevel: previousLevelInfo.currentLevel,
       currentLevel: newLevelInfo.currentLevel,
+      level: newLevelInfo.currentLevel,
       levelName: newLevelInfo.levelName,
+      leveledUp,
+      levelDemoted,
+      levelInfo: newLevelInfo,
       transactionId: transaction.id
     }
   };

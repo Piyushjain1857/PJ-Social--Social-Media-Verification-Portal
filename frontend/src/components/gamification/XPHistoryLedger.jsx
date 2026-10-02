@@ -7,7 +7,8 @@ const ACTION_TABS = [
   { id: 'LIKE', label: '❤️ Likes (+1 XP)' },
   { id: 'COMMENT', label: '💬 Comments (+2 XP)' },
   { id: 'STORY', label: '📱 Stories (+2 XP)' },
-  { id: 'BONUS', label: '🎁 Bonuses' }
+  { id: 'BONUS', label: '🎁 Bonuses' },
+  { id: 'ADJUSTMENT', label: '⚖️ Adjustments' }
 ];
 
 export default function XPHistoryLedger({ targetUserId = null, userId = null }) {
@@ -149,6 +150,10 @@ export default function XPHistoryLedger({ targetUserId = null, userId = null }) 
               const actionName = tx.actionName || tx.actionType;
               const source = tx.source || tx.submission?.platform || 'Social Portal';
               const xpVal = tx.xp != null ? tx.xp : tx.points;
+              const isNegative = xpVal < 0;
+              const sign = xpVal > 0 ? '+' : '';
+              const reason = tx.metadata?.reason;
+              const actor = tx.metadata?.actor || tx.metadata?.actorName;
 
               return (
                 <div key={tx.id} className="gamepoints-history-row">
@@ -157,6 +162,11 @@ export default function XPHistoryLedger({ targetUserId = null, userId = null }) 
                     <div className="action-text-group">
                       <span className="action-title">{actionName}</span>
                       <span className="action-desc">{tx.description}</span>
+                      {reason && (
+                        <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                          Reason: <em>"{reason}"</em>{actor ? ` · Actor: ${actor}` : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -169,8 +179,15 @@ export default function XPHistoryLedger({ targetUserId = null, userId = null }) 
                   </div>
 
                   <div className="td-xp text-right">
-                    <span className={`xp-badge-pill ${tx.actionType?.toLowerCase() || 'bonus'}`}>
-                      +{xpVal} XP
+                    <span
+                      className={`xp-badge-pill ${tx.actionType?.toLowerCase() || 'bonus'}`}
+                      style={{
+                        background: isNegative ? 'rgba(239, 68, 68, 0.18)' : undefined,
+                        borderColor: isNegative ? 'rgba(239, 68, 68, 0.4)' : undefined,
+                        color: isNegative ? '#fca5a5' : undefined
+                      }}
+                    >
+                      {sign}{xpVal} XP
                     </span>
                   </div>
                 </div>

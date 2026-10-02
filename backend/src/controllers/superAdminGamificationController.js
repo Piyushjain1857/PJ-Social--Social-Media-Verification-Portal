@@ -210,7 +210,8 @@ const adjustUserXP = async (req, res) => {
       });
     }
 
-    if (amount === undefined || amount === null || parseInt(amount, 10) <= 0) {
+    const parsedAmountSA = parseInt(amount, 10);
+    if (amount === undefined || amount === null || isNaN(parsedAmountSA) || parsedAmountSA <= 0) {
       return res.status(400).json({
         success: false,
         message: 'Adjustment amount must be a positive integer greater than zero.'
@@ -227,7 +228,7 @@ const adjustUserXP = async (req, res) => {
     const result = await adjustUserXPAsSuperAdmin({
       targetUserId,
       type: type === 'REMOVE' ? 'REMOVE' : 'ADD',
-      amount: parseInt(amount, 10),
+      amount: parsedAmountSA,
       reason: reason.trim(),
       adminUser: req.user
     });

@@ -7,6 +7,7 @@ export default function AdminXPAdjustmentModal({
   onClose,
   onSuccess
 }) {
+  const [step, setStep] = useState('input'); // 'input' | 'confirm'
   const [type, setType] = useState('ADD'); // 'ADD' | 'REMOVE'
   const [amount, setAmount] = useState(50);
   const [reason, setReason] = useState('Event participation');
@@ -16,21 +17,37 @@ export default function AdminXPAdjustmentModal({
   if (!isOpen || !user) return null;
 
   const currentXP = user.totalXP ?? user.totalPoints ?? 0;
-  const parsedAmount = Math.max(1, parseInt(amount, 10) || 0);
+  const numAmount = Number(amount);
+  const isValidInteger = !isNaN(numAmount) && numAmount > 0 && Number.isInteger(numAmount);
+  const parsedAmount = isValidInteger ? numAmount : 0;
   const delta = type === 'REMOVE' ? -parsedAmount : parsedAmount;
   const projectedXP = Math.max(0, currentXP + delta);
 
-  const handleSubmit = async (e) => {
+  const handleProceedToConfirm = (e) => {
     e.preventDefault();
+    if (!isValidInteger || parsedAmount <= 0) {
+      setError('Adjustment amount must be a positive integer greater than zero.');
+      return;
+    }
     if (!reason || !reason.trim() || reason.trim().length < 3) {
       setError('Please provide a meaningful justification reason (at least 3 characters).');
       return;
     }
-    if (!parsedAmount || parsedAmount <= 0) {
-      setError('Adjustment amount must be a positive integer greater than zero.');
-      return;
+    if (type === 'REMOVE') {
+      if (currentXP <= 0) {
+        setError('Creator currently has 0 XP and cannot have XP deducted.');
+        return;
+      }
+      if (parsedAmount > currentXP) {
+        setError(`Cannot deduct ${parsedAmount} XP. Creator currently only has ${currentXP.toLocaleString()} XP balance.`);
+        return;
+      }
     }
+    setError(null);
+    setStep('confirm');
+  };
 
+  const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
 
@@ -49,6 +66,7 @@ export default function AdminXPAdjustmentModal({
       }
     } catch (err) {
       setError(err.message || 'An error occurred while adjusting XP.');
+      setStep('input');
     } finally {
       setIsSubmitting(false);
     }
@@ -157,178 +175,256 @@ export default function AdminXPAdjustmentModal({
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {/* Adjustment Type Selector */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-              Adjustment Type
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <button
-                type="button"
-                onClick={() => setType('ADD')}
-                style={{
-                  padding: '0.65rem 1rem',
-                  borderRadius: '8px',
-                  border: type === 'ADD' ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
-                  background: type === 'ADD' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                  color: type === 'ADD' ? '#34d399' : 'var(--text-secondary)',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <span>➕</span> Add XP Bonus
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('REMOVE')}
-                style={{
-                  padding: '0.65rem 1rem',
-                  borderRadius: '8px',
-                  border: type === 'REMOVE' ? '2px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.1)',
-                  background: type === 'REMOVE' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                  color: type === 'REMOVE' ? '#f87171' : 'var(--text-secondary)',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <span>➖</span> Remove XP
-              </button>
+        {step === 'confirm' ? (
+          /* Confirmation Dialog Step */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div
+              style={{
+                padding: '1rem',
+                borderRadius: '10px',
+                background: type === 'ADD' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                border: `1px solid ${type === 'ADD' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                color: 'var(--text-highlight)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '1rem', marginBottom: '0.5rem' }}>
+                <span>⚠️</span> Please Confirm Adjustment
+              </div>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                You are about to execute an audited <strong>ADMIN_ADJUSTMENT</strong>. This will create an immutable transaction record, update the creator's total balance, and trigger level or rank recalculations.
+              </p>
             </div>
-          </div>
 
-          {/* Amount Input */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                Amount (XP)
-              </label>
-              <div style={{ display: 'flex', gap: '0.35rem' }}>
-                {QUICK_AMOUNTS.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setAmount(amt)}
-                    style={{
-                      background: amount === amt ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.06)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: amount === amt ? '#818cf8' : 'var(--text-muted)',
-                      padding: '0.15rem 0.45rem',
-                      borderRadius: '4px',
-                      fontSize: '0.72rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {amt}
-                  </button>
-                ))}
+            <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', padding: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.88rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Target Creator:</span>
+                <strong style={{ color: 'var(--text-highlight)' }}>{user.name}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.88rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Action Type:</span>
+                <strong style={{ color: type === 'ADD' ? '#34d399' : '#f87171' }}>
+                  {type === 'ADD' ? `➕ Add +${parsedAmount} XP Bonus` : `➖ Deduct -${parsedAmount} XP`}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.88rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Reason:</span>
+                <span style={{ color: 'var(--text-secondary)', maxWidth: '65%', textAlign: 'right' }}>"{reason.trim()}"</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.88rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Actor:</span>
+                <span style={{ color: 'var(--text-highlight)' }}>Admin</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.88rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Date &amp; Time:</span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>{new Date().toLocaleString()}</span>
+              </div>
+              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Balance Impact:</span>
+                <span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{currentXP.toLocaleString()} XP</span>
+                  {' ➔ '}
+                  <strong style={{ color: type === 'ADD' ? '#34d399' : '#f87171' }}>{projectedXP.toLocaleString()} XP</strong>
+                </span>
               </div>
             </div>
-            <input
-              type="number"
-              min="1"
-              max="50000"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn-portal-secondary"
+                onClick={() => setStep('input')}
+                disabled={isSubmitting}
+              >
+                ← Back to Edit
+              </button>
+              <button
+                type="button"
+                className="btn-portal-primary"
+                onClick={handleFinalSubmit}
+                disabled={isSubmitting}
+                style={{
+                  background: type === 'ADD' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                  borderColor: type === 'ADD' ? '#10b981' : '#ef4444'
+                }}
+              >
+                {isSubmitting ? 'Applying Adjustment...' : `✓ Yes, Confirm ${type === 'ADD' ? 'Bonus' : 'Deduction'}`}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleProceedToConfirm}>
+            {/* Adjustment Type Selector */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Adjustment Type
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setType('ADD')}
+                  style={{
+                    padding: '0.65rem 1rem',
+                    borderRadius: '8px',
+                    border: type === 'ADD' ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
+                    background: type === 'ADD' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    color: type === 'ADD' ? '#34d399' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span>➕</span> Add XP Bonus
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('REMOVE')}
+                  style={{
+                    padding: '0.65rem 1rem',
+                    borderRadius: '8px',
+                    border: type === 'REMOVE' ? '2px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.1)',
+                    background: type === 'REMOVE' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    color: type === 'REMOVE' ? '#f87171' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span>➖</span> Remove XP
+                </button>
+              </div>
+            </div>
+
+            {/* Amount Input */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Amount (XP)
+                </label>
+                <div style={{ display: 'flex', gap: '0.35rem' }}>
+                  {QUICK_AMOUNTS.map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setAmount(amt)}
+                      style={{
+                        background: amount === amt ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: amount === amt ? '#818cf8' : 'var(--text-muted)',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '4px',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {amt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <input
+                type="number"
+                min="1"
+                max="50000"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  color: '#fff',
+                  fontSize: '1rem',
+                  fontWeight: 600
+                }}
+              />
+            </div>
+
+            {/* Reason Input */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Justification Reason <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Event participation, Hackathon winner, Duplicate activity correction"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                required
+                minLength={3}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  color: '#fff',
+                  fontSize: '0.9rem'
+                }}
+              />
+            </div>
+
+            {/* Balance Preview */}
+            <div
               style={{
-                width: '100%',
                 padding: '0.75rem 1rem',
                 borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(0, 0, 0, 0.4)',
-                color: '#fff',
-                fontSize: '1rem',
-                fontWeight: 600
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px dashed rgba(99, 102, 241, 0.3)',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.88rem'
               }}
-            />
-          </div>
-
-          {/* Reason Input */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-              Justification Reason <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Event participation, Hackathon winner, Duplicate activity correction"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-              minLength={3}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(0, 0, 0, 0.4)',
-                color: '#fff',
-                fontSize: '0.9rem'
-              }}
-            />
-          </div>
-
-          {/* Balance Preview */}
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              background: 'rgba(99, 102, 241, 0.08)',
-              border: '1px dashed rgba(99, 102, 241, 0.3)',
-              marginBottom: '1.5rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '0.88rem'
-            }}
-          >
-            <span style={{ color: 'var(--text-secondary)' }}>Projected Balance:</span>
-            <span>
-              <strong style={{ color: 'var(--text-muted)' }}>{currentXP.toLocaleString()} XP</strong>
-              {' ➔ '}
-              <strong style={{ color: type === 'ADD' ? '#34d399' : '#f87171' }}>
-                {projectedXP.toLocaleString()} XP
-              </strong>
-              {' '}
-              <span style={{ fontSize: '0.8rem', color: type === 'ADD' ? '#34d399' : '#f87171' }}>
-                ({delta > 0 ? '+' : ''}{delta} XP)
+            >
+              <span style={{ color: 'var(--text-secondary)' }}>Projected Balance:</span>
+              <span>
+                <strong style={{ color: 'var(--text-muted)' }}>{currentXP.toLocaleString()} XP</strong>
+                {' ➔ '}
+                <strong style={{ color: type === 'ADD' ? '#34d399' : '#f87171' }}>
+                  {projectedXP.toLocaleString()} XP
+                </strong>
+                {' '}
+                <span style={{ fontSize: '0.8rem', color: type === 'ADD' ? '#34d399' : '#f87171' }}>
+                  ({delta > 0 ? '+' : ''}{delta} XP)
+                </span>
               </span>
-            </span>
-          </div>
+            </div>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button
-              type="button"
-              className="btn-portal-secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-portal-primary"
-              disabled={isSubmitting}
-              style={{
-                background: type === 'ADD' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-                borderColor: type === 'ADD' ? '#10b981' : '#ef4444'
-              }}
-            >
-              {isSubmitting ? 'Adjusting XP...' : `Confirm ${type === 'ADD' ? 'Bonus' : 'Deduction'}`}
-            </button>
-          </div>
-        </form>
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn-portal-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-portal-primary"
+                disabled={isSubmitting}
+                style={{
+                  background: type === 'ADD' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                  borderColor: type === 'ADD' ? '#10b981' : '#ef4444'
+                }}
+              >
+                Review & Confirm →
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

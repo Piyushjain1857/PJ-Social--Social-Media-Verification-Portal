@@ -215,7 +215,10 @@ async function runAdminGamificationTests() {
   const historyJson = await historyRes.json();
   assert.strictEqual(historyJson.success, true);
   const latestHistory = historyJson.data[0];
-  assert.strictEqual(latestHistory.actionType, 'ADJUSTMENT');
+  assert.ok(
+    latestHistory.actionType === 'ADMIN_ADJUSTMENT' || latestHistory.actionType === 'ADJUSTMENT',
+    `Expected ADMIN_ADJUSTMENT or ADJUSTMENT, got: ${latestHistory.actionType}`
+  );
   console.log(`✓ XP History ledger verified: Latest entry is "${latestHistory.actionName}" (${latestHistory.xp > 0 ? '+' : ''}${latestHistory.xp} XP) - "${latestHistory.description}"`);
 
   console.log('\n======================================================');

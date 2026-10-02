@@ -220,7 +220,7 @@ const getUserNotificationsPaginated = async (userId, filters = {}) => {
   };
 };
 
-const createNotification = async ({ userId, type = 'SYSTEM', title, message }) => {
+const createNotification = async ({ userId, type = 'SYSTEM', title, message, metadata = null }) => {
   initializeInMemoryNotifications();
   const id = `notif-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -230,6 +230,7 @@ const createNotification = async ({ userId, type = 'SYSTEM', title, message }) =
     type,
     title,
     message,
+    metadata: metadata || null,
     isRead: false,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -244,6 +245,7 @@ const createNotification = async ({ userId, type = 'SYSTEM', title, message }) =
           type,
           title,
           message,
+          metadata: metadata || null,
           isRead: false
         }
       });

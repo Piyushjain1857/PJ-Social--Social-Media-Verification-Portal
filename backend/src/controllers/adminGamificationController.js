@@ -11,7 +11,9 @@ const ACTION_NAMES = {
   COMMENT: 'Comment',
   STORY: 'Story',
   BONUS: 'Manual Bonus',
-  ADJUSTMENT: 'Admin Adjustment'
+  ADJUSTMENT: 'Adjustment',
+  ADMIN_ADJUSTMENT: 'Admin Adjustment',
+  SUPER_ADMIN_ADJUSTMENT: 'Super Admin Adjustment'
 };
 
 const ACTION_ICONS = {
@@ -19,7 +21,9 @@ const ACTION_ICONS = {
   COMMENT: '💬',
   STORY: '📱',
   BONUS: '🎁',
-  ADJUSTMENT: '⚖️'
+  ADJUSTMENT: '⚖️',
+  ADMIN_ADJUSTMENT: '⚖️',
+  SUPER_ADMIN_ADJUSTMENT: '👑'
 };
 
 /**
@@ -151,6 +155,7 @@ const getUserHistory = async (req, res, next) => {
     const formatted = rawRecords.map(tx => {
       const xpVal = tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points;
       const act = tx.actionType || 'BONUS';
+      const source = tx.metadata?.actor || tx.metadata?.actorName || tx.metadata?.adminName || (act === 'SUPER_ADMIN_ADJUSTMENT' ? 'Super Admin' : (act === 'ADMIN_ADJUSTMENT' || act === 'ADJUSTMENT' ? 'Admin' : (tx.metadata?.platform || tx.submission?.platform || 'Platform Activity')));
       return {
         id: tx.id,
         actionType: act,
@@ -159,7 +164,8 @@ const getUserHistory = async (req, res, next) => {
         xp: xpVal,
         points: tx.points,
         description: tx.description,
-        source: tx.metadata?.platform || tx.submission?.platform || 'Platform Activity',
+        source,
+        metadata: tx.metadata || null,
         date: tx.createdAt,
         createdAt: tx.createdAt
       };

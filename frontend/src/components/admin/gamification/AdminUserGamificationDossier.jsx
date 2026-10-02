@@ -287,12 +287,12 @@ export default function AdminUserGamificationDossier({
 
       {/* Tab 1: XP Progression Graph */}
       {activeDossierTab === 'overview' && (
-        <UserXPChart targetUserId={user.id} />
+        <UserXPChart userId={user.id} />
       )}
 
       {/* Tab 2: Position Timeline */}
       {activeDossierTab === 'rank' && (
-        <PositionTimeline targetUserId={user.id} />
+        <PositionTimeline userId={user.id} />
       )}
 
       {/* Tab 3: Level Journey */}

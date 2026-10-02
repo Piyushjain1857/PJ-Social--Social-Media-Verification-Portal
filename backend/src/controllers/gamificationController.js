@@ -18,7 +18,9 @@ const ACTION_NAMES = {
   COMMENT: 'Comment',
   STORY: 'Story',
   BONUS: 'Manual Bonus',
-  ADJUSTMENT: 'Adjustment'
+  ADJUSTMENT: 'Adjustment',
+  ADMIN_ADJUSTMENT: 'Admin Adjustment',
+  SUPER_ADMIN_ADJUSTMENT: 'Super Admin Adjustment'
 };
 
 const ACTION_ICONS = {
@@ -26,19 +28,20 @@ const ACTION_ICONS = {
   COMMENT: '💬',
   STORY: '📱',
   BONUS: '🎁',
-  ADJUSTMENT: '⚖️'
+  ADJUSTMENT: '⚖️',
+  ADMIN_ADJUSTMENT: '⚖️',
+  SUPER_ADMIN_ADJUSTMENT: '👑'
 };
 
 function getSourceFromTx(tx) {
-  if (tx.submission?.platform) {
-    return tx.submission.platform;
-  }
-  if (tx.metadata?.platform) {
-    return tx.metadata.platform;
-  }
-  if (tx.actionType === 'BONUS' || tx.actionType === 'ADJUSTMENT') {
-    return tx.metadata?.adminName || 'Admin Bonus';
-  }
+  if (tx.metadata?.actor) return tx.metadata.actor;
+  if (tx.metadata?.actorName) return tx.metadata.actorName;
+  if (tx.metadata?.adminName) return tx.metadata.adminName;
+  if (tx.actionType === 'SUPER_ADMIN_ADJUSTMENT') return 'Super Admin';
+  if (tx.actionType === 'ADMIN_ADJUSTMENT' || tx.actionType === 'ADJUSTMENT') return 'Admin';
+  if (tx.actionType === 'BONUS') return 'Admin Bonus';
+  if (tx.submission?.platform) return tx.submission.platform;
+  if (tx.metadata?.platform) return tx.metadata.platform;
   return 'Platform Activity';
 }
 
@@ -186,6 +189,7 @@ const getMyXPHistory = async (req, res, next) => {
         points: tx.points,
         description: tx.description,
         source: getSourceFromTx(tx),
+        metadata: tx.metadata || null,
         date: tx.createdAt,
         createdAt: tx.createdAt,
         submission: tx.submission || null

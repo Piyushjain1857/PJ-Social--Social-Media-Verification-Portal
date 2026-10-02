@@ -319,7 +319,11 @@ const getUserTransactionsHistory = async (userId, {
       const where = { userId };
 
       if (actionType && actionType !== 'ALL') {
-        where.actionType = actionType;
+        if (actionType === 'ADJUSTMENT' || actionType === 'ADJUSTMENTS') {
+          where.actionType = { in: ['ADMIN_ADJUSTMENT', 'SUPER_ADMIN_ADJUSTMENT', 'ADJUSTMENT'] };
+        } else {
+          where.actionType = actionType;
+        }
       }
 
       if (search && search.trim()) {
@@ -381,7 +385,11 @@ const getUserTransactionsHistory = async (userId, {
   let list = Array.from(inMemoryPointTransactions.values()).filter(t => t.userId === userId);
 
   if (actionType && actionType !== 'ALL') {
-    list = list.filter(t => t.actionType === actionType);
+    if (actionType === 'ADJUSTMENT' || actionType === 'ADJUSTMENTS') {
+      list = list.filter(t => ['ADMIN_ADJUSTMENT', 'SUPER_ADMIN_ADJUSTMENT', 'ADJUSTMENT'].includes(t.actionType));
+    } else {
+      list = list.filter(t => t.actionType === actionType);
+    }
   }
 
   if (search && search.trim()) {

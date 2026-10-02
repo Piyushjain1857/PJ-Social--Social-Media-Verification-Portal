@@ -52,6 +52,7 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
   // Adjustment Modal state
   const [adjustTargetUser, setAdjustTargetUser] = useState(null);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [dossierRefreshKey, setDossierRefreshKey] = useState(0);
 
   // Sync hash changes
   useEffect(() => {
@@ -194,10 +195,11 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
     const userName = adjustTargetUser?.name || 'User';
     setToast({
       type: 'success',
-      text: `✅ Successfully adjusted ${deltaStr} for ${userName}. New Balance: ${result.newBalance?.toLocaleString() || 0} XP.`
+      text: `✅ Successfully adjusted ${deltaStr} for ${userName}. New Balance: ${result.newBalance?.toLocaleString() || result.newXP?.toLocaleString() || 0} XP.${result.leveledUp ? ' 🏆 User LEVELED UP!' : ''}${result.levelDemoted ? ' ⚠️ User level adjusted.' : ''}`
     });
     setTimeout(() => setToast(null), 5000);
 
+    setDossierRefreshKey((prev) => prev + 1);
     loadOverview();
     if (activeTab === 'users') loadUsers(pagination.page);
     if (activeTab === 'admins') loadAdmins();
@@ -215,6 +217,7 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
         )}
 
         <AdminUserGamificationDossier
+          key={dossierRefreshKey}
           userId={selectedUserId}
           onBack={handleBackFromDossier}
           onAdjustXP={(u) => handleOpenAdjustModal(u)}
