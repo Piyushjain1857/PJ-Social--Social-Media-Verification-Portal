@@ -64,18 +64,24 @@ export default function App() {
     const pathname = window.location.pathname.replace(/^\//, '');
     const hasToken = !!localStorage.getItem('auth_token');
 
-    // Handle direct path /game-points, /admin/game-points, and /super-admin/game-points
+    // Handle direct paths: /game-points, /admin/game-points, /super-admin/game-points, /super-admin/levels
     if (
-      pathname === 'game-points' || pathname.startsWith('game-points') ||
-      pathname === 'admin/game-points' || pathname.startsWith('admin/game-points') ||
-      pathname === 'super-admin/game-points' || pathname.startsWith('super-admin/game-points')
+      pathname === 'game-points' || pathname.startsWith('game-points/') ||
+      pathname === 'admin/game-points' || pathname.startsWith('admin/game-points/') ||
+      pathname === 'super-admin/game-points' || pathname.startsWith('super-admin/game-points/') ||
+      pathname === 'super-admin/levels' || pathname === 'levels'
     ) {
       if (hasToken) {
-        window.location.hash = pathname.startsWith('super-admin/game-points') ? 'super-admin/game-points' : (pathname.startsWith('admin/game-points') ? 'admin/game-points' : 'game-points');
+        if (pathname === 'super-admin/levels' || pathname === 'levels') {
+          window.location.hash = 'levels';
+        } else {
+          window.location.hash = pathname;
+        }
         return 'dashboard';
       }
       return 'login';
     }
+
 
     // Any authenticated workspace views map to 'dashboard' container layout
     if (isAuthSubView(hash)) {

@@ -30,7 +30,8 @@ const testFiles = [
   'gamification_analytics_graphs.test.js',
   'gamification_authorization_audit.test.js',
   'gamification_comprehensive_system.test.js',
-  'gamification_realtime_system.test.js'
+  'gamification_realtime_system.test.js',
+  'gamification_production_e2e.test.js'
 ];
 
 

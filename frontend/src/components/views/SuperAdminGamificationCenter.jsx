@@ -70,14 +70,31 @@ export default function SuperAdminGamificationCenter({ onNavigateToNav = null })
         setSelectedUserId(null);
       }
 
-      // Check if direct subtab requested: #super-admin/game-points?tab=... or similar
-      if (hash.includes('tab=')) {
+      // Check if direct subpath or tab requested
+      if (hash.includes('game-points/transactions') || pathname.includes('game-points/transactions')) {
+        setActiveTab('transactions');
+      } else if (hash.includes('game-points/users') || pathname.includes('game-points/users')) {
+        setActiveTab('users');
+      } else if (hash.includes('game-points/admins') || pathname.includes('game-points/admins')) {
+        setActiveTab('admins');
+      } else if (hash.includes('game-points/levels') || pathname.includes('game-points/levels')) {
+        setActiveTab('levels');
+      } else if (hash.includes('game-points/settings') || pathname.includes('game-points/settings') || hash.includes('game-points/rules') || pathname.includes('game-points/rules')) {
+        setActiveTab('settings');
+      } else if (hash.includes('game-points/leaderboard') || pathname.includes('game-points/leaderboard')) {
+        setActiveTab('leaderboard');
+      } else if (hash.includes('game-points/analytics') || pathname.includes('game-points/analytics')) {
+        setActiveTab('analytics');
+      } else if (hash.includes('game-points/audit-logs') || pathname.includes('game-points/audit-logs')) {
+        setActiveTab('audit-logs');
+      } else if (hash.includes('tab=')) {
         const tabMatch = hash.match(/tab=([a-zA-Z0-9_-]+)/);
         if (tabMatch && tabMatch[1]) {
           setActiveTab(tabMatch[1]);
         }
       }
     };
+
 
     parseUrl();
     window.addEventListener('hashchange', parseUrl);
