@@ -628,6 +628,92 @@ Tokens are obtained via \`POST /api/auth/login\` or \`POST /api/auth/register\`.
           200: { description: 'Audit log entries' }
         }
       }
+    },
+
+    // ADMIN GAMIFICATION GOVERNANCE
+    '/admin/gamification/analytics': {
+      get: {
+        tags: ['Admin Gamification Management'],
+        summary: 'Get Platform-Wide Gamification Analytics & Distribution',
+        responses: {
+          200: { description: 'Gamification analytics telemetry' }
+        }
+      }
+    },
+    '/admin/gamification/users': {
+      get: {
+        tags: ['Admin Gamification Management'],
+        summary: 'List Creators with XP, Level, Rank, and Filters',
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'level', in: 'query', schema: { type: 'integer' } },
+          { name: 'minXP', in: 'query', schema: { type: 'integer' } },
+          { name: 'maxXP', in: 'query', schema: { type: 'integer' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['ACTIVE', 'INACTIVE'] } },
+          { name: 'sortBy', in: 'query', schema: { type: 'string', enum: ['highest_xp', 'lowest_xp', 'highest_level', 'lowest_level', 'recent_activity', 'name'] } }
+        ],
+        responses: {
+          200: { description: 'Paginated creator gamification list' }
+        }
+      }
+    },
+    '/admin/gamification/users/{id}': {
+      get: {
+        tags: ['Admin Gamification Management'],
+        summary: 'Get Complete Creator Gamification Dossier',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+        ],
+        responses: {
+          200: { description: 'Creator gamification details' }
+        }
+      }
+    },
+    '/admin/gamification/users/{id}/adjust-xp': {
+      post: {
+        tags: ['Admin Gamification Management'],
+        summary: 'Manually Adjust Creator XP (Admin / Super Admin)',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['amount', 'reason'],
+                properties: {
+                  type: { type: 'string', enum: ['ADD', 'REMOVE'], default: 'ADD' },
+                  amount: { type: 'integer', example: 50 },
+                  reason: { type: 'string', example: 'Event participation bonus' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'XP adjusted and audit logged successfully' },
+          400: { description: 'Validation error' },
+          403: { description: 'Forbidden' }
+        }
+      }
+    },
+    '/admin/gamification/users/{id}/history': {
+      get: {
+        tags: ['Admin Gamification Management'],
+        summary: 'Get Creator Paginated XP History Ledger',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } }
+        ],
+        responses: {
+          200: { description: 'User XP transactions' }
+        }
+      }
     }
   }
 };

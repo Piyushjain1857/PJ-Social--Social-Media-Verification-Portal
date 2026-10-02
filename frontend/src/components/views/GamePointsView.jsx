@@ -2,106 +2,229 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import PersonalGamificationDashboard from '../gamification/PersonalGamificationDashboard';
 import Leaderboard from '../gamification/Leaderboard';
-import UserXPChart from '../gamification/UserXPChart';
-import PositionTimeline from '../gamification/PositionTimeline';
 import DynamicLevelTimeline from '../gamification/DynamicLevelTimeline';
-import XPHistoryLedger from '../gamification/XPHistoryLedger';
-import { fetchAdminGamificationOverview, adjustUserPoints } from '../../services/api';
-import { fetchUserGamification } from '../../services/gamificationApi';
+import AdminGamificationAnalytics from '../admin/gamification/AdminGamificationAnalytics';
+import AdminUsersPointsTable from '../admin/gamification/AdminUsersPointsTable';
+import AdminUserGamificationDossier from '../admin/gamification/AdminUserGamificationDossier';
+import AdminXPAdjustmentModal from '../admin/gamification/AdminXPAdjustmentModal';
+import {
+  fetchAdminGamificationUsers,
+  fetchAdminGamificationAnalytics
+} from '../../services/adminGamificationApi';
 
 export default function GamePointsView({ onNavigateToNav = null }) {
   const { user } = useAuth();
   const currentRole = user?.role || 'USER';
 
-  // Role-tailored tabs
-  const [adminTab, setAdminTab] = useState('leaderboard'); // 'leaderboard' | 'creators' | 'my-stats' | 'inspector' | 'engine'
-  
-  // Admin creators overview state
-  const [creators, setCreators] = useState([]);
-  const [creatorsLoading, setCreatorsLoading] = useState(false);
-  const [creatorsSearch, setCreatorsSearch] = useState('');
-  const [creatorsPagination, setCreatorsPagination] = useState({ page: 1, limit: 12, totalCount: 0, totalPages: 1 });
+  // Role-tailored tabs: 'users' | 'analytics' | 'leaderboard' | 'engine'
+  const [adminTab, setAdminTab] = useState('users');
 
-  // Inspector state
+  // Selected user for full dossier view (/admin/game-points/user/:id)
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [inspectedUserData, setInspectedUserData] = useState(null);
-  const [inspectorLoading, setInspectorLoading] = useState(false);
 
-  // Super Admin manual adjust modal state
+  // Toast notification state
+  const [toast, setToast] = useState(null);
+
+  // Users Points Table State
+  const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, totalUsers: 0 });
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('highest_xp');
+  const [minXP, setMinXP] = useState('');
+  const [maxXP, setMaxXP] = useState('');
+
+  // Admin Analytics State
+  const [analytics, setAnalytics] = useState(null);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
+
+  // XP Adjustment Modal State
+  const [adjustModalUser, setAdjustModalUser] = useState(null);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [adjustTargetUser, setAdjustTargetUser] = useState(null);
-  const [adjustPointsVal, setAdjustPointsVal] = useState(50);
-  const [adjustReason, setAdjustReason] = useState('Outstanding community advocacy');
-  const [adjustSubmitting, setAdjustSubmitting] = useState(false);
-  const [adjustMessage, setAdjustMessage] = useState(null);
 
-  // Load creators overview for Admin / Super Admin
-  const loadCreators = useCallback(async (page = 1, search = creatorsSearch) => {
+  // ============================================================================
+  // URL Hash/Path Synchronization for /admin/game-points/user/:id
+  // ============================================================================
+  useEffect(() => {
+    const parseUrlUser = () => {
+      const hash = window.location.hash.replace('#', '');
+      const pathname = window.location.pathname;
+      const match = hash.match(/admin\/game-points\/user\/([a-zA-Z0-9_-]+)/) ||
+                    pathname.match(/admin\/game-points\/user\/([a-zA-Z0-9_-]+)/) ||
+                    hash.match(/game-points\/user\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        setSelectedUserId(match[1]);
+      } else if (!hash.includes('user/')) {
+        setSelectedUserId(null);
+      }
+    };
+    parseUrlUser();
+    window.addEventListener('hashchange', parseUrlUser);
+    return () => window.removeEventListener('hashchange', parseUrlUser);
+  }, []);
+
+  // ============================================================================
+  // Fetch Admin Gamification Users (Server-side filtering & pagination)
+  // ============================================================================
+  const loadUsers = useCallback(async (pageToLoad = 1, overrideFilters = {}) => {
     if (currentRole === 'USER') return;
-    setCreatorsLoading(true);
+    setIsUsersLoading(true);
     try {
-      const res = await fetchAdminGamificationOverview({ page, limit: 12, search });
+      const params = {
+        page: pageToLoad,
+        limit: 10,
+        search: overrideFilters.search !== undefined ? overrideFilters.search : search,
+        level: overrideFilters.levelFilter !== undefined ? overrideFilters.levelFilter : levelFilter,
+        status: overrideFilters.statusFilter !== undefined ? overrideFilters.statusFilter : statusFilter,
+        sortBy: overrideFilters.sortBy !== undefined ? overrideFilters.sortBy : sortBy,
+        minXP: overrideFilters.minXP !== undefined ? overrideFilters.minXP : minXP,
+        maxXP: overrideFilters.maxXP !== undefined ? overrideFilters.maxXP : maxXP,
+      };
+
+      // Strip empty values
+      Object.keys(params).forEach((key) => {
+        if (params[key] === '' || params[key] === null || params[key] === undefined) {
+          delete params[key];
+        }
+      });
+
+      const res = await fetchAdminGamificationUsers(params);
       if (res && res.success) {
-        setCreators(res.data?.users || res.data?.creators || res.users || []);
+        setUsers(res.data || []);
         if (res.pagination) {
-          setCreatorsPagination(res.pagination);
+          setPagination(res.pagination);
         }
       }
     } catch (err) {
-      console.warn('Could not load creators overview:', err.message);
+      console.warn('Could not load gamification users:', err.message);
     } finally {
-      setCreatorsLoading(false);
+      setIsUsersLoading(false);
     }
-  }, [currentRole, creatorsSearch]);
+  }, [currentRole, search, levelFilter, statusFilter, sortBy, minXP, maxXP]);
 
-  useEffect(() => {
-    if (currentRole !== 'USER' && adminTab === 'creators') {
-      loadCreators(creatorsPagination.page, creatorsSearch);
-    }
-  }, [currentRole, adminTab, loadCreators, creatorsPagination.page, creatorsSearch]);
-
-  const handleInspectUser = async (uId) => {
-    setSelectedUserId(uId);
-    setAdminTab('inspector');
-    setInspectorLoading(true);
+  // ============================================================================
+  // Fetch Admin Analytics
+  // ============================================================================
+  const loadAnalytics = useCallback(async () => {
+    if (currentRole === 'USER') return;
+    setIsAnalyticsLoading(true);
     try {
-      const res = await fetchUserGamification(uId);
+      const res = await fetchAdminGamificationAnalytics();
       if (res && res.success) {
-        setInspectedUserData(res.data);
+        setAnalytics(res.data);
       }
     } catch (err) {
-      console.warn('Failed to load user dossier:', err);
+      console.warn('Could not load gamification analytics:', err.message);
     } finally {
-      setInspectorLoading(false);
+      setIsAnalyticsLoading(false);
     }
+  }, [currentRole]);
+
+  // Initial load
+  useEffect(() => {
+    if (currentRole !== 'USER') {
+      loadUsers(1);
+      loadAnalytics();
+    }
+  }, [currentRole]);
+
+  // Debounced search handling
+  useEffect(() => {
+    if (currentRole === 'USER') return;
+    const timer = setTimeout(() => {
+      loadUsers(1, { search });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Handle Filter & Sort Changes
+  const handleLevelFilterChange = (val) => {
+    setLevelFilter(val);
+    loadUsers(1, { levelFilter: val });
   };
 
-  const handleAdjustPointsSubmit = async (e) => {
-    e.preventDefault();
-    if (!adjustTargetUser?.id) return;
-    setAdjustSubmitting(true);
-    setAdjustMessage(null);
-    try {
-      const res = await adjustUserPoints({
-        userId: adjustTargetUser.id,
-        points: parseInt(adjustPointsVal, 10),
-        reason: adjustReason
-      });
-      if (res && res.success) {
-        setAdjustMessage({ type: 'success', text: `Successfully adjusted balance by ${adjustPointsVal > 0 ? '+' : ''}${adjustPointsVal} XP!` });
-        setTimeout(() => {
-          setShowAdjustModal(false);
-          setAdjustMessage(null);
-          loadCreators(creatorsPagination.page);
-        }, 1500);
-      } else {
-        throw new Error(res?.message || 'Adjustment failed');
-      }
-    } catch (err) {
-      setAdjustMessage({ type: 'error', text: err.message || 'Error executing adjustment' });
-    } finally {
-      setAdjustSubmitting(false);
-    }
+  const handleStatusFilterChange = (val) => {
+    setStatusFilter(val);
+    loadUsers(1, { statusFilter: val });
+  };
+
+  const handleSortByChange = (val) => {
+    setSortBy(val);
+    loadUsers(1, { sortBy: val });
+  };
+
+  const handleMinXPChange = (val) => {
+    setMinXP(val);
+    loadUsers(1, { minXP: val });
+  };
+
+  const handleMaxXPChange = (val) => {
+    setMaxXP(val);
+    loadUsers(1, { maxXP: val });
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setLevelFilter('');
+    setStatusFilter('');
+    setSortBy('highest_xp');
+    setMinXP('');
+    setMaxXP('');
+    loadUsers(1, {
+      search: '',
+      levelFilter: '',
+      statusFilter: '',
+      sortBy: 'highest_xp',
+      minXP: '',
+      maxXP: ''
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    loadUsers(newPage);
+  };
+
+  // ============================================================================
+  // Dossier Navigation
+  // ============================================================================
+  const handleViewUser = (userId) => {
+    setSelectedUserId(userId);
+    window.location.hash = `admin/game-points/user/${userId}`;
+  };
+
+  const handleViewProgress = (userId) => {
+    handleViewUser(userId);
+  };
+
+  const handleBackFromDossier = () => {
+    setSelectedUserId(null);
+    window.location.hash = 'admin/game-points';
+  };
+
+  // ============================================================================
+  // XP Adjustment Modal & Handlers
+  // ============================================================================
+  const handleOpenAdjustModal = (targetUser) => {
+    setAdjustModalUser(targetUser);
+    setShowAdjustModal(true);
+  };
+
+  const handleAdjustmentSuccess = (result) => {
+    const deltaStr = (result.deltaXP > 0 ? '+' : '') + result.deltaXP + ' XP';
+    const userName = adjustModalUser?.name || 'Creator';
+    const newBal = result.newBalance !== undefined ? result.newBalance.toLocaleString() : '';
+
+    setToast({
+      type: 'success',
+      text: `✅ Successfully applied ${deltaStr} adjustment to ${userName}. New Balance: ${newBal} XP.`
+    });
+    setTimeout(() => setToast(null), 4500);
+
+    // Refresh active data
+    loadUsers(pagination.page);
+    loadAnalytics();
   };
 
   // ============================================================================
@@ -112,26 +235,75 @@ export default function GamePointsView({ onNavigateToNav = null }) {
   }
 
   // ============================================================================
-  // 2. ADMIN & SUPER ADMIN: Role-Tailored Gamification Hub
+  // 2. ADMIN & SUPER ADMIN: Full Governance & Points Management Suite
   // ============================================================================
   const isSuperAdmin = currentRole === 'SUPER_ADMIN';
 
+  // If viewing a specific user dossier (/admin/game-points/user/:id)
+  if (selectedUserId) {
+    return (
+      <div className="layout-content-area gamepoints-admin-container">
+        {toast && (
+          <div className={`admin-gamification-toast ${toast.type}`}>
+            <span>{toast.text}</span>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', marginLeft: '0.5rem', fontSize: '1rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <AdminUserGamificationDossier
+          userId={selectedUserId}
+          onBack={handleBackFromDossier}
+          onAdjustXP={(userData) => handleOpenAdjustModal(userData)}
+        />
+
+        {showAdjustModal && adjustModalUser && (
+          <AdminXPAdjustmentModal
+            user={adjustModalUser}
+            isOpen={showAdjustModal}
+            onClose={() => setShowAdjustModal(false)}
+            onSuccess={handleAdjustmentSuccess}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="layout-content-area gamepoints-admin-container">
+      {/* Toast Notification Banner */}
+      {toast && (
+        <div className={`admin-gamification-toast ${toast.type}`}>
+          <span>{toast.text}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', marginLeft: '0.5rem', fontSize: '1rem' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="gamepoints-dashboard-banner glass-panel">
         <div className="gamepoints-banner-content">
           <div className="gamepoints-banner-badge admin">
             <span className="gamepoints-banner-dot" />
-            <span>{isSuperAdmin ? '👑 Super Administrator Access' : '🛡️ Admin Moderator Oversight'}</span>
+            <span>{isSuperAdmin ? '👑 Super Administrator Governance' : '🛡️ Admin Points Oversight'}</span>
           </div>
           <h1 className="gamepoints-banner-title">
-            <span className="gamepoints-banner-icon">🎮</span> Game Points Governance &amp; Leaderboard
+            <span className="gamepoints-banner-icon">🎮</span> Game Points Governance &amp; Administration
           </h1>
           <p className="gamepoints-banner-description">
             {isSuperAdmin
-              ? 'Configure dynamic level tiers, inspect creator progression curves, audit global XP transactions, and reward bonuses.'
-              : 'Monitor community rankings, inspect participant progression curves, and verify creator activity points.'}
+              ? 'Manage creator XP balances, audit adjustments, configure dynamic level tiers, and monitor global gamification analytics.'
+              : 'Monitor community rankings, adjust creator XP with verified compliance audits, and inspect participant progression curves.'}
           </p>
         </div>
 
@@ -141,32 +313,30 @@ export default function GamePointsView({ onNavigateToNav = null }) {
             <button
               type="button"
               role="tab"
+              aria-selected={adminTab === 'users'}
+              className={`gamepoints-subnav-btn ${adminTab === 'users' ? 'active' : ''}`}
+              onClick={() => setAdminTab('users')}
+            >
+              <span>👥</span> Users Points Table
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={adminTab === 'analytics'}
+              className={`gamepoints-subnav-btn ${adminTab === 'analytics' ? 'active' : ''}`}
+              onClick={() => setAdminTab('analytics')}
+            >
+              <span>📊</span> Analytics Dashboard
+            </button>
+            <button
+              type="button"
+              role="tab"
               aria-selected={adminTab === 'leaderboard'}
               className={`gamepoints-subnav-btn ${adminTab === 'leaderboard' ? 'active' : ''}`}
               onClick={() => setAdminTab('leaderboard')}
             >
               <span>🏆</span> Community Leaderboard
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={adminTab === 'creators'}
-              className={`gamepoints-subnav-btn ${adminTab === 'creators' ? 'active' : ''}`}
-              onClick={() => setAdminTab('creators')}
-            >
-              <span>👥</span> Creators Directory
-            </button>
-            {selectedUserId && (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={adminTab === 'inspector'}
-                className={`gamepoints-subnav-btn ${adminTab === 'inspector' ? 'active' : ''}`}
-                onClick={() => setAdminTab('inspector')}
-              >
-                <span>🔍</span> User Dossier
-              </button>
-            )}
             {isSuperAdmin && (
               <button
                 type="button"
@@ -175,14 +345,14 @@ export default function GamePointsView({ onNavigateToNav = null }) {
                 className={`gamepoints-subnav-btn ${adminTab === 'engine' ? 'active' : ''}`}
                 onClick={() => setAdminTab('engine')}
               >
-                <span>⚡</span> Level Engine Controls
+                <span>⚡</span> Level Engine
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Governance & Administration Advisory Notice */}
+      {/* Governance Advisory Notice */}
       <div style={{
         margin: '1.25rem 0',
         padding: '0.85rem 1.25rem',
@@ -196,203 +366,106 @@ export default function GamePointsView({ onNavigateToNav = null }) {
       }}>
         <span style={{ fontSize: '1.25rem' }}>🛡️</span>
         <span style={{ color: 'var(--text-secondary)' }}>
-          <strong style={{ color: 'var(--text-highlight)' }}>Management Account:</strong> Administrators and Super Administrators configure, audit, and allocate game points for creators. Administrative accounts manage the ecosystem and do not hold personal player points or compete on the leaderboard.
+          <strong style={{ color: 'var(--text-highlight)' }}>Administrative Account:</strong> Administrators oversee and adjust game points for platform creators. Administrative accounts manage the ecosystem and do not hold personal player points or compete on the leaderboard.
         </span>
       </div>
 
-      {/* Tab: Community Leaderboard */}
+      {/* TAB 1: USERS POINTS TABLE (Default View) */}
+      {adminTab === 'users' && (
+        <div style={{ marginTop: '1.5rem' }}>
+          {/* Top 6 KPI summary cards on users page for fast telemetry */}
+          {analytics?.metrics && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '1rem',
+                marginBottom: '1.5rem'
+              }}
+            >
+              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Users</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-highlight)', marginTop: '0.2rem' }}>
+                  {(analytics.metrics.totalUsers || 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total XP Distributed</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.2rem' }}>
+                  {(analytics.metrics.totalXPDistributed || 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Average User XP</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#a855f7', marginTop: '0.2rem' }}>
+                  {(analytics.metrics.averageUserXP || 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Highest XP</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#facc15', marginTop: '0.2rem' }}>
+                  {(analytics.metrics.highestXP || 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Highest Level</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ec4899', marginTop: '0.2rem' }}>
+                  Level {analytics.metrics.highestLevel || 1}
+                </div>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Creators</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>
+                  {(analytics.metrics.activeUsers || 0).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <AdminUsersPointsTable
+            users={users}
+            pagination={pagination}
+            isLoading={isUsersLoading}
+            search={search}
+            onSearchChange={setSearch}
+            levelFilter={levelFilter}
+            onLevelFilterChange={handleLevelFilterChange}
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            sortBy={sortBy}
+            onSortByChange={handleSortByChange}
+            minXP={minXP}
+            onMinXPChange={handleMinXPChange}
+            maxXP={maxXP}
+            onMaxXPChange={handleMaxXPChange}
+            onClearFilters={handleClearFilters}
+            onPageChange={handlePageChange}
+            onViewUser={handleViewUser}
+            onAdjustXP={handleOpenAdjustModal}
+            onViewProgress={handleViewProgress}
+          />
+        </div>
+      )}
+
+      {/* TAB 2: ANALYTICS DASHBOARD */}
+      {adminTab === 'analytics' && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <AdminGamificationAnalytics
+            analytics={analytics}
+            isLoading={isAnalyticsLoading}
+            onRefresh={loadAnalytics}
+          />
+        </div>
+      )}
+
+      {/* TAB 3: COMMUNITY LEADERBOARD */}
       {adminTab === 'leaderboard' && (
         <div style={{ marginTop: '1.5rem' }}>
-          <Leaderboard onSelectUser={(uId) => handleInspectUser(uId)} />
+          <Leaderboard onSelectUser={(uId) => handleViewUser(uId)} />
         </div>
       )}
 
-      {/* Tab: Creators Overview Directory */}
-      {adminTab === 'creators' && (
-        <div className="glass-panel" style={{ marginTop: '1.5rem', padding: '1.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div>
-              <h3 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.2rem' }}>
-                👥 Community Creators Directory
-              </h3>
-              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                Inspect participant XP balances, levels, and verification activity
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <input
-                type="text"
-                placeholder="Search creator by name or email…"
-                className="input-portal"
-                value={creatorsSearch}
-                onChange={(e) => {
-                  setCreatorsSearch(e.target.value);
-                  loadCreators(1, e.target.value);
-                }}
-                style={{ width: '280px', fontSize: '0.85rem' }}
-              />
-            </div>
-          </div>
-
-          {creatorsLoading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <div className="status-dot checking" style={{ margin: '0 auto 1rem auto' }} />
-              <span>Loading creators directory…</span>
-            </div>
-          ) : creators.length === 0 ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-              No creators found matching search criteria.
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-              {creators.map((c) => {
-                const totalXP = c.totalXP ?? c.totalPoints ?? 0;
-                const levelObj = c.level || {};
-
-                return (
-                  <div
-                    key={c.id}
-                    className="glass-panel"
-                    style={{
-                      padding: '1.25rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                      border: '1px solid rgba(255,255,255,0.06)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: 'var(--text-highlight)', fontSize: '0.95rem' }}>
-                          {c.name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {c.email}
-                        </div>
-                      </div>
-                      <span className="level-badge level-badge-sm tier-active">
-                        {levelObj.icon || '🌱'} Lvl {levelObj.level || levelObj.currentLevel || 1}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
-                      <div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Total XP</div>
-                        <div style={{ fontWeight: 800, color: '#38bdf8', fontSize: '1rem' }}>{totalXP.toLocaleString()} XP</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Approved Proofs</div>
-                        <div style={{ fontWeight: 700, color: 'var(--text-highlight)', fontSize: '1rem' }}>
-                          {c.approvedSubmissionsCount ?? c._count?.submissions ?? 0}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        style={{ flex: 1, fontSize: '0.78rem', padding: '0.35rem' }}
-                        onClick={() => handleInspectUser(c.id)}
-                      >
-                        🔍 Inspect Dossier
-                      </button>
-                      {isSuperAdmin && (
-                        <button
-                          type="button"
-                          className="btn-portal-primary"
-                          style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
-                          onClick={() => {
-                            setAdjustTargetUser(c);
-                            setShowAdjustModal(true);
-                          }}
-                        >
-                          🎁 Bonus / Adjust
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab: Inspect Specific User Dossier */}
-      {adminTab === 'inspector' && (
-        <div style={{ marginTop: '1.5rem' }}>
-          {inspectorLoading ? (
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-              <div className="status-dot checking" style={{ margin: '0 auto 1rem auto' }} />
-              <span>Loading user dossier…</span>
-            </div>
-          ) : !selectedUserId ? (
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-              Select a creator from the directory or leaderboard to inspect their full gamification dossier.
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ margin: 0, color: 'var(--text-highlight)' }}>
-                  🔍 User Dossier: {inspectedUserData?.levelName} (Level {inspectedUserData?.currentLevel})
-                </h3>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setAdminTab('creators')}
-                  style={{ fontSize: '0.8rem' }}
-                >
-                  ← Back to Directory
-                </button>
-              </div>
-
-              <div className="gamepoints-kpi-grid">
-                <div className="gamepoints-kpi-card level-card glass-panel">
-                  <div className="gamepoints-kpi-header">
-                    <span className="gamepoints-kpi-title">User Level</span>
-                    <span className="gamepoints-level-badge-pill">Tier {inspectedUserData?.currentLevel}</span>
-                  </div>
-                  <div className="gamepoints-level-display">
-                    <div className="gamepoints-level-big-icon">{inspectedUserData?.icon || '🌱'}</div>
-                    <div className="gamepoints-level-text-group">
-                      <div className="gamepoints-level-number-tag">LEVEL {inspectedUserData?.currentLevel}</div>
-                      <div className="gamepoints-level-title">{inspectedUserData?.levelName}</div>
-                      <div className="gamepoints-level-xp-value">{inspectedUserData?.totalXP?.toLocaleString()} XP</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="gamepoints-kpi-card position-card glass-panel">
-                  <div className="gamepoints-kpi-header">
-                    <span className="gamepoints-kpi-title">Authoritative Rank</span>
-                    <span className="gamepoints-rank-standing-pill">#{inspectedUserData?.rank || 1}</span>
-                  </div>
-                  <div className="gamepoints-position-display">
-                    <div className="gamepoints-rank-big-number">#{inspectedUserData?.rank || 1}</div>
-                    <div className="gamepoints-rank-of-total">out of {inspectedUserData?.totalParticipants} creators</div>
-                  </div>
-                  <div className="gamepoints-percentile-box">
-                    Ahead of {inspectedUserData?.percentileAhead}% of community
-                  </div>
-                </div>
-              </div>
-
-              {/* Inspected User's Chart and History */}
-              <div style={{ marginTop: '1.5rem' }}>
-                <UserXPChart userId={selectedUserId} />
-              </div>
-              <div style={{ marginTop: '1.5rem' }}>
-                <PositionTimeline userId={selectedUserId} />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-
-      {/* Tab: Super Admin Level Engine Controls */}
+      {/* TAB 4: SUPER ADMIN LEVEL ENGINE */}
       {adminTab === 'engine' && isSuperAdmin && (
         <div className="glass-panel" style={{ marginTop: '1.5rem', padding: '1.75rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -439,78 +512,14 @@ export default function GamePointsView({ onNavigateToNav = null }) {
         </div>
       )}
 
-      {/* Super Admin Points Adjustment Modal */}
-      {showAdjustModal && (
-        <div className="modal-backdrop" onClick={() => setShowAdjustModal(false)}>
-          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-            <div className="modal-header">
-              <h3 style={{ margin: 0, color: 'var(--text-highlight)' }}>
-                🎁 Super Admin Points Bonus / Adjustment
-              </h3>
-              <button type="button" className="btn-close" onClick={() => setShowAdjustModal(false)}>✕</button>
-            </div>
-
-            <form onSubmit={handleAdjustPointsSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="form-label">Target Creator</label>
-                <div style={{ fontWeight: 700, color: 'var(--text-highlight)', fontSize: '1rem' }}>
-                  {adjustTargetUser?.name} ({adjustTargetUser?.email})
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Adjustment Points / XP</label>
-                <input
-                  type="number"
-                  className="input-portal"
-                  value={adjustPointsVal}
-                  onChange={(e) => setAdjustPointsVal(e.target.value)}
-                  placeholder="e.g. 50 or -20"
-                  required
-                />
-                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
-                  Positive values award bonuses; negative values deduct points.
-                </span>
-              </div>
-
-              <div>
-                <label className="form-label">Mandatory Audit Reason</label>
-                <textarea
-                  className="input-portal"
-                  rows="3"
-                  value={adjustReason}
-                  onChange={(e) => setAdjustReason(e.target.value)}
-                  placeholder="Explain why this adjustment is being issued for compliance log…"
-                  required
-                />
-              </div>
-
-              {adjustMessage && (
-                <div className={`alert-box ${adjustMessage.type}`}>
-                  {adjustMessage.text}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowAdjustModal(false)}
-                  disabled={adjustSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-portal-primary"
-                  disabled={adjustSubmitting}
-                >
-                  {adjustSubmitting ? 'Recording Audit…' : 'Execute Adjustment'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* XP Adjustment Modal */}
+      {showAdjustModal && adjustModalUser && (
+        <AdminXPAdjustmentModal
+          user={adjustModalUser}
+          isOpen={showAdjustModal}
+          onClose={() => setShowAdjustModal(false)}
+          onSuccess={handleAdjustmentSuccess}
+        />
       )}
     </div>
   );

@@ -2616,3 +2616,67 @@
   }
 }
 
+/* ==========================================================================
+   Admin Gamification Suite: Tables, Cards, Toasts, Responsive
+   ========================================================================== */
+.admin-desktop-points-table {
+  display: block;
+}
+
+.admin-mobile-points-cards {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-desktop-points-table {
+    display: none !important;
+  }
+
+  .admin-mobile-points-cards {
+    display: flex !important;
+    flex-direction: column;
+  }
+}
+
+.admin-gamification-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.4rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.2);
+  animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.admin-gamification-toast.success {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+.admin-gamification-toast.error {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+@keyframes slideInToast {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+

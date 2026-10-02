@@ -118,7 +118,11 @@ export default function MainLayout({
     if (hash === 'super-admin/levels' || pathname === '/super-admin/levels') {
       hash = 'levels';
     }
-    if (hash === 'game-points' || pathname === '/game-points') {
+    if (
+      hash === 'game-points' || pathname === '/game-points' ||
+      hash === 'admin/game-points' || pathname === '/admin/game-points' ||
+      hash.startsWith('admin/game-points') || pathname.startsWith('/admin/game-points')
+    ) {
       return 'game-points';
     }
     if (hash === 'gamification') {
@@ -128,8 +132,8 @@ export default function MainLayout({
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
 
     // 1. If URL hash matches permitted navigation item for this role, prioritize it
-    if (hash && roleItems.some(item => item.id === hash)) {
-      return hash;
+    if (hash && (roleItems.some(item => item.id === hash) || (hash.startsWith('admin/game-points') && role !== 'USER'))) {
+      return hash.startsWith('admin/game-points') ? 'game-points' : hash;
     }
 
     // 2. Otherwise check localStorage for previously active navigation
@@ -151,8 +155,8 @@ export default function MainLayout({
   const handleNavChange = (navId) => {
     const role = user?.role || 'USER';
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
-    const isValid = roleItems.some(item => item.id === navId);
-    const targetNav = isValid ? navId : 'dashboard';
+    const isValid = roleItems.some(item => item.id === navId) || navId === 'game-points' || navId === 'admin/game-points';
+    const targetNav = isValid ? (navId === 'admin/game-points' ? 'game-points' : navId) : 'dashboard';
 
     if (controlledOnNavChange) {
       controlledOnNavChange(targetNav);
@@ -161,8 +165,9 @@ export default function MainLayout({
     }
 
     // Keep URL hash and localStorage in sync so reload keeps the exact page!
-    if (window.location.hash.replace('#', '') !== targetNav) {
-      window.location.hash = targetNav;
+    const targetHash = (targetNav === 'game-points' && role !== 'USER') ? 'admin/game-points' : targetNav;
+    if (window.location.hash.replace('#', '') !== targetHash && !window.location.hash.includes('admin/game-points/user/')) {
+      window.location.hash = targetHash;
     }
     try {
       localStorage.setItem('active_portal_nav', targetNav);
@@ -174,13 +179,18 @@ export default function MainLayout({
 
   // Keep URL hash and localStorage updated with activeNav
   useEffect(() => {
-    if (window.location.hash.replace('#', '') !== activeNav) {
-      window.location.hash = activeNav;
+    const currentHash = window.location.hash.replace('#', '');
+    if (activeNav === 'game-points' && (currentHash === 'admin/game-points' || currentHash.startsWith('admin/game-points'))) {
+      return;
+    }
+    const targetHash = (activeNav === 'game-points' && user?.role !== 'USER') ? 'admin/game-points' : activeNav;
+    if (currentHash !== targetHash && !currentHash.startsWith('admin/game-points/user/')) {
+      window.location.hash = targetHash;
     }
     try {
       localStorage.setItem('active_portal_nav', activeNav);
     } catch (e) {}
-  }, [activeNav]);
+  }, [activeNav, user?.role]);
 
   // Synchronize view on browser back / forward navigation (hashchange)
   useEffect(() => {
@@ -192,14 +202,15 @@ export default function MainLayout({
       }
       const role = user?.role || 'USER';
       const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
-      if (hash && roleItems.some(item => item.id === hash)) {
+      if (hash && (roleItems.some(item => item.id === hash) || (hash.startsWith('admin/game-points') && role !== 'USER'))) {
+        const effectiveNav = hash.startsWith('admin/game-points') ? 'game-points' : hash;
         if (controlledOnNavChange) {
-          controlledOnNavChange(hash);
+          controlledOnNavChange(effectiveNav);
         } else {
-          setInternalNav(hash);
+          setInternalNav(effectiveNav);
         }
         try {
-          localStorage.setItem('active_portal_nav', hash);
+          localStorage.setItem('active_portal_nav', effectiveNav);
         } catch (e) {}
       }
     };

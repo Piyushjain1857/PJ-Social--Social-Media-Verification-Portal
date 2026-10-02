@@ -21,7 +21,8 @@ const testFiles = [
   'gamification_level_system.test.js',
   'superadmin_levels.test.js',
   'game_points_verification.test.js',
-  'swagger.test.js'
+  'swagger.test.js',
+  'admin_gamification.test.js'
 ];
 
 console.log('========================================================');

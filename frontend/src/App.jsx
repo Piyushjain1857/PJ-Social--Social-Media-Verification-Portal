@@ -56,8 +56,11 @@ export default function App() {
     const pathname = window.location.pathname.replace(/^\//, '');
     const hasToken = !!localStorage.getItem('auth_token');
 
-    // Handle direct path /game-points
-    if (pathname === 'game-points' || pathname.startsWith('game-points')) {
+    // Handle direct path /game-points and /admin/game-points
+    if (
+      pathname === 'game-points' || pathname.startsWith('game-points') ||
+      pathname === 'admin/game-points' || pathname.startsWith('admin/game-points')
+    ) {
       if (hasToken) {
         window.location.hash = 'game-points';
         return 'dashboard';

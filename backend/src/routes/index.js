@@ -45,6 +45,10 @@ const adminLevelRoutes = require('./adminLevelRoutes');
 router.use('/admin/levels', adminLevelRoutes);
 router.use('/superadmin/levels', adminLevelRoutes);
 
+// Admin Gamification Management routes (/api/admin/gamification)
+const adminGamificationRoutes = require('./adminGamificationRoutes');
+router.use('/admin/gamification', adminGamificationRoutes);
+
 // Super Admin Exclusive Governance routes (/api/superadmin)
 router.use('/superadmin', superAdminRoutes);
 
