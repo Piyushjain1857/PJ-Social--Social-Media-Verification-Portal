@@ -8,6 +8,7 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 
 ## 📑 Table of Contents
 
+- [🎯 Project Pitch & Presentation Guide (PROJECT_PITCH.md)](PROJECT_PITCH.md)
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Tech Stack](#-tech-stack)
