@@ -120,6 +120,15 @@ const getLeaderboardList = async (req, res, next) => {
  */
 const getUserPointsById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to view another user\'s point balance.'
+      });
+    }
+
     const { id } = req.params;
 
     const targetUser = await findUserById(id);
@@ -220,6 +229,15 @@ const getAllTransactionsAdmin = async (req, res, next) => {
  */
 const adjustUserPoints = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Only Super Administrators can manually adjust points on this endpoint.'
+      });
+    }
+
     const { userId, points, reason } = req.body;
 
     if (!userId || typeof userId !== 'string') {

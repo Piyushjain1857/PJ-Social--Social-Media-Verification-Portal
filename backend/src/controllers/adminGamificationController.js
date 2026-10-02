@@ -32,6 +32,15 @@ const ACTION_ICONS = {
  */
 const getUsersList = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Administrator privileges required.'
+      });
+    }
+
     const {
       page = 1,
       limit = 10,
@@ -70,6 +79,15 @@ const getUsersList = async (req, res, next) => {
  */
 const getUserDetails = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Administrator privileges required.'
+      });
+    }
+
     const { id } = req.params;
     const dossier = await getAdminGamificationUserDetails(id);
 
@@ -95,6 +113,15 @@ const getUserDetails = async (req, res, next) => {
  */
 const getAnalytics = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Administrator privileges required.'
+      });
+    }
+
     const analytics = await getAdminGamificationAnalytics();
 
     return res.status(200).json({
@@ -112,6 +139,15 @@ const getAnalytics = async (req, res, next) => {
  */
 const postAdjustXP = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Administrator privileges required.'
+      });
+    }
+
     const { id } = req.params;
     const { type = 'ADD', amount, reason } = req.body;
 
@@ -142,6 +178,15 @@ const postAdjustXP = async (req, res, next) => {
  */
 const getUserHistory = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Administrator privileges required.'
+      });
+    }
+
     const { id } = req.params;
     const { page = 1, limit = 10, actionType } = req.query;
 

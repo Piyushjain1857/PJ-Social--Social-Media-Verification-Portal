@@ -297,6 +297,15 @@ const getMyLevelJourney = async (req, res, next) => {
  */
 const getUserGamificationById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to inspect another user\'s gamification profile.'
+      });
+    }
+
     const { id } = req.params;
     const dbStatus = await checkDatabaseConnection();
 
@@ -341,6 +350,15 @@ const getUserGamificationById = async (req, res, next) => {
  */
 const getUserXPChartById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to view another user\'s XP chart.'
+      });
+    }
+
     const { id } = req.params;
     const { timeframe = '30d' } = req.query;
 
@@ -361,6 +379,15 @@ const getUserXPChartById = async (req, res, next) => {
  */
 const getUserRankMetricsById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to view another user\'s rank metrics.'
+      });
+    }
+
     const { id } = req.params;
     const rankData = await getUserRankMetrics(id);
 
@@ -379,6 +406,15 @@ const getUserRankMetricsById = async (req, res, next) => {
  */
 const getUserRankHistoryById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to view another user\'s rank history.'
+      });
+    }
+
     const { id } = req.params;
     const historyData = await getUserRankHistory(id);
 
@@ -398,6 +434,15 @@ const getUserRankHistoryById = async (req, res, next) => {
  */
 const getUserLevelJourneyById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to view another user\'s level journey.'
+      });
+    }
+
     const userId = req.params.id;
     if (!userId) {
       return res.status(400).json({ success: false, message: 'User ID is required.' });
@@ -472,6 +517,15 @@ const getMyActivityDistribution = async (req, res, next) => {
  */
 const getUserActivityDistributionById = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. You do not have permission to view another user\'s activity distribution.'
+      });
+    }
+
     const { id } = req.params;
     const distribution = await getUserActivityDistribution(id);
     return res.status(200).json({

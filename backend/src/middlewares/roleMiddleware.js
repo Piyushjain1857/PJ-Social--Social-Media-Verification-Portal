@@ -66,9 +66,7 @@ const authorize = (...roles) => {
         success: false,
         error: 'Forbidden',
         code: 'FORBIDDEN',
-        message: `Access denied. This resource requires one of [${allowedRoles.join(', ')}]. Your current role is '${userRole}'.`,
-        requiredRoles: allowedRoles,
-        currentRole: userRole
+        message: 'Access denied. You do not have permission to access this resource.'
       });
     }
 
@@ -121,6 +119,43 @@ const requireSuperAdmin = authorize(ROLES.SUPER_ADMIN);
 const requireAdminOrAbove = authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN);
 const requireAuthenticatedUser = authorize(ROLES.USER, ROLES.ADMIN, ROLES.SUPER_ADMIN);
 
+/**
+ * Resource ownership authorization middleware.
+ * - Allows SUPER_ADMIN and ADMIN access to all resources.
+ * - Allows normal USER only when their authenticated user ID matches the target resource ID.
+ * - Otherwise returns 403 Forbidden.
+ */
+const requireOwnerOrAdmin = (paramName = 'id') => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.id || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required. No valid user session found.'
+      });
+    }
+
+    const { role, id: authenticatedUserId } = req.user;
+
+    if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN) {
+      return next();
+    }
+
+    const targetResourceId = req.params[paramName] || req.body[paramName] || req.query[paramName];
+    if (targetResourceId && String(targetResourceId) === String(authenticatedUserId)) {
+      return next();
+    }
+
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden',
+      code: 'FORBIDDEN',
+      message: 'Access denied. You do not have permission to view or modify another user\'s data.'
+    });
+  };
+};
+
 module.exports = {
   ROLES,
   PERMISSIONS,
@@ -130,4 +165,5 @@ module.exports = {
   requireSuperAdmin,
   requireAdminOrAbove,
   requireAuthenticatedUser,
+  requireOwnerOrAdmin,
 };

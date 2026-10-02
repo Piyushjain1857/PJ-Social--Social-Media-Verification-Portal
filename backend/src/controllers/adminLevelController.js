@@ -27,6 +27,15 @@ const getAllLevelsFromDb = async () => {
  */
 const listLevels = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const levels = await getAllLevelsFromDb();
     const thresholds = buildLevelThresholds(levels);
 
@@ -48,6 +57,15 @@ const listLevels = async (req, res, next) => {
  */
 const getLevelConfiguration = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const levels = await getAllLevelsFromDb();
     const activeLevels = levels.filter(l => l.isActive);
     const thresholds = buildLevelThresholds(activeLevels);
@@ -82,6 +100,15 @@ const getLevelConfiguration = async (req, res, next) => {
  */
 const createLevel = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const { levelNumber, name, xpRequired, icon, description, isActive = true } = req.body;
 
     const parsedLevelNumber = parseInt(levelNumber, 10);
@@ -180,6 +207,15 @@ const createLevel = async (req, res, next) => {
  */
 const updateLevel = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const { id } = req.params;
     const { levelNumber, name, xpRequired, icon, description, isActive } = req.body;
 
@@ -317,6 +353,15 @@ const updateLevel = async (req, res, next) => {
  */
 const updateLevelStatus = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const { id } = req.params;
     const { isActive } = req.body;
 
@@ -377,6 +422,15 @@ const updateLevelStatus = async (req, res, next) => {
  */
 const deleteLevel = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const { id } = req.params;
     const { force = false, deactivateInstead = false } = req.body || {};
 
@@ -481,6 +535,15 @@ const deleteLevel = async (req, res, next) => {
  */
 const generateLevels = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const {
       count = 50,
       xpPerLevel = 250,

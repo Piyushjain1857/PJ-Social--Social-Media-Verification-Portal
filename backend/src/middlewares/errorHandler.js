@@ -74,9 +74,9 @@ const errorHandler = (err, req, res, next) => {
     console.error(err.stack);
   }
 
-  // In production, never leak internal details on 500 errors
-  const safeMessage = isProd && statusCode === 500
-    ? 'An internal server error occurred. Please try again later.'
+  // Never leak internal stack traces or raw database error details on 500 errors
+  const safeMessage = (isProd || statusCode === 500)
+    ? (statusCode === 500 ? 'An internal server error occurred. Please try again later.' : message)
     : message;
 
   res.status(statusCode).json({
@@ -84,8 +84,7 @@ const errorHandler = (err, req, res, next) => {
     error: errorCode || (statusCode >= 500 ? 'InternalServerError' : 'ClientError'),
     code: errorCode,
     message: safeMessage,
-    errors: err.errors || null,
-    stack: !isProd ? err.stack : undefined
+    errors: err.errors || null
   });
 };
 

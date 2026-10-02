@@ -12,26 +12,40 @@ const {
 
 /**
  * Super Admin Gamification Controller
+ * Enforces strict SUPER_ADMIN role access and safe error handling without data leakage.
  */
-const getOverview = async (req, res) => {
+const getOverview = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const data = await getSuperAdminOverview();
     return res.json({
       success: true,
       data
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] Overview error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve Super Admin gamification overview.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
-const getUsers = async (req, res) => {
+const getUsers = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const {
       page,
       limit,
@@ -64,34 +78,42 @@ const getUsers = async (req, res) => {
       pagination: result.pagination
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] GetUsers error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve platform users gamification directory.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
-const getAdmins = async (req, res) => {
+const getAdmins = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const data = await getSuperAdminAdmins();
     return res.json({
       success: true,
       data
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] GetAdmins error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve admin gamification activity.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
-const getTransactions = async (req, res) => {
+const getTransactions = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const {
       page,
       limit,
@@ -124,51 +146,63 @@ const getTransactions = async (req, res) => {
       pagination: result.pagination
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] GetTransactions error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve XP transaction explorer data.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
-const getAnalytics = async (req, res) => {
+const getAnalytics = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const data = await getSuperAdminAnalytics();
     return res.json({
       success: true,
       data
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] Analytics error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve advanced gamification analytics.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
-const getSettings = async (req, res) => {
+const getSettings = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const data = await getGamificationSettings();
     return res.json({
       success: true,
       data
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] GetSettings error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve gamification settings.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
-const updateSettings = async (req, res) => {
+const updateSettings = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const { updates, reason } = req.body;
     if (!updates) {
       return res.status(400).json({
@@ -189,17 +223,27 @@ const updateSettings = async (req, res) => {
       data
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] UpdateSettings error:', err);
-    return res.status(400).json({
-      success: false,
-      message: err.message || 'Failed to update gamification settings.',
-      error: err.message
-    });
+    if (err.statusCode || err.code) {
+      return res.status(err.statusCode || 400).json({
+        success: false,
+        message: err.message || 'Failed to update gamification settings.'
+      });
+    }
+    next(err);
   }
 };
 
-const adjustUserXP = async (req, res) => {
+const adjustUserXP = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const targetUserId = req.params.id;
     const { type, amount, reason } = req.body;
 
@@ -239,17 +283,27 @@ const adjustUserXP = async (req, res) => {
       data: result
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] AdjustUserXP error:', err);
-    return res.status(400).json({
-      success: false,
-      message: err.message || 'Failed to execute Super Admin XP adjustment.',
-      error: err.message
-    });
+    if (err.statusCode || err.code) {
+      return res.status(err.statusCode || 400).json({
+        success: false,
+        message: err.message || 'Failed to execute Super Admin XP adjustment.'
+      });
+    }
+    next(err);
   }
 };
 
-const getAuditLogs = async (req, res) => {
+const getAuditLogs = async (req, res, next) => {
   try {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'Access denied. Super Administrator privileges required.'
+      });
+    }
+
     const { page, limit, action, actor, targetId, startDate, endDate } = req.query;
     const result = await getSuperAdminAuditLogs({
       page,
@@ -267,12 +321,7 @@ const getAuditLogs = async (req, res) => {
       pagination: result.pagination
     });
   } catch (err) {
-    console.error('[SuperAdminGamificationController] AuditLogs error:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve gamification audit logs.',
-      error: err.message
-    });
+    next(err);
   }
 };
 
