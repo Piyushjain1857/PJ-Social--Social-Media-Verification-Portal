@@ -18,35 +18,27 @@ export default function UserXPChart({ userId = null }) {
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = userId
-          ? await fetchUserXPChart(userId, timeframe)
-          : await fetchMyXPChart(timeframe);
-        if (isMounted) {
-          if (res && res.success) {
-            setChartData(res.data);
-          } else {
-            throw new Error(res?.message || 'Failed to load XP progression data.');
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err.message || 'Error loading XP chart.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = userId
+        ? await fetchUserXPChart(userId, timeframe)
+        : await fetchMyXPChart(timeframe);
+      if (res && res.success) {
+        setChartData(res.data);
+      } else {
+        throw new Error(res?.message || 'Failed to load XP progression data.');
       }
-    };
+    } catch (err) {
+      setError(err.message || 'Error loading XP chart.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
-    return () => { isMounted = false; };
   }, [timeframe, userId]);
 
   const points = chartData?.points || [];
@@ -215,8 +207,11 @@ export default function UserXPChart({ userId = null }) {
             <span>Calculating authoritative XP timeline from PostgreSQL ledger…</span>
           </div>
         ) : error ? (
-          <div className="gamepoints-chart-error">
+          <div className="gamepoints-chart-error" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '2.5rem' }}>
             <span>⚠️ {error}</span>
+            <button type="button" className="btn-portal-secondary" onClick={loadData}>
+              🔄 Retry Telemetry Fetch
+            </button>
           </div>
         ) : points.length === 0 ? (
           <div className="gamepoints-chart-empty">
@@ -341,6 +336,39 @@ export default function UserXPChart({ userId = null }) {
                     />
                   </g>
                 );
+              })}
+
+              {/* Level Progression Milestones on Curve */}
+              {points.map((p, i) => {
+                if (i === 0) return null;
+                const prevLevel = points[i - 1]?.level;
+                if (p.level > prevLevel) {
+                  const px = getX(i);
+                  const py = getY(p.xp);
+                  return (
+                    <g key={`lvl-milestone-${i}`}>
+                      <circle
+                        cx={px}
+                        cy={py}
+                        r={8}
+                        fill="#a855f7"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                      />
+                      <text
+                        x={px}
+                        y={py - 12}
+                        fill="#facc15"
+                        fontSize="10"
+                        fontWeight="800"
+                        textAnchor="middle"
+                      >
+                        Lvl {p.level}
+                      </text>
+                    </g>
+                  );
+                }
+                return null;
               })}
 
               {/* Interactive Hover Crosshair */}

@@ -5,7 +5,8 @@ const {
   getUserRankMetrics,
   getUserGamificationProfile,
   getUserXPChartData,
-  getUserRankHistory
+  getUserRankHistory,
+  getUserActivityDistribution
 } = require('./levelService');
 const { recordAuditLog } = require('./auditLogService');
 const { createNotification } = require('../repositories/notificationRepository');
@@ -248,12 +249,13 @@ const getAdminGamificationUserDetails = async (userId) => {
     throw err;
   }
 
-  const [profile, chartData, rankHistory, txResult, activeLevels] = await Promise.all([
+  const [profile, chartData, rankHistory, txResult, activeLevels, activityDistribution] = await Promise.all([
     getUserGamificationProfile(userId),
     getUserXPChartData(userId, '30d'),
     getUserRankHistory(userId),
     getUserTransactionsHistory(userId, { page: 1, limit: 10 }),
-    getActiveLevels()
+    getActiveLevels(),
+    getUserActivityDistribution(userId)
   ]);
 
   const rawRecords = txResult.records || txResult.transactions || [];
@@ -291,6 +293,8 @@ const getAdminGamificationUserDetails = async (userId) => {
     chartData: chartData.points || [],
     rankHistory: rankHistory.timeline || [],
     trend: rankHistory.trend || 'stable',
+    activityDistribution: activityDistribution?.activities || [],
+    activitySummary: activityDistribution || {},
     recentHistory: formattedHistory,
     historyPagination: {
       page: txResult.page || 1,
@@ -685,5 +689,6 @@ module.exports = {
   getAdminGamificationUsers,
   getAdminGamificationUserDetails,
   getAdminGamificationAnalytics,
-  adjustUserXP
+  adjustUserXP,
+  getUserActivityDistribution
 };

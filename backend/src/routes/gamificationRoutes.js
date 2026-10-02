@@ -8,11 +8,13 @@ const {
   getMyXPHistory,
   getLevelsList,
   getMyLevelJourney,
+  getMyActivityDistribution,
   getUserGamificationById,
   getUserXPChartById,
   getUserRankMetricsById,
   getUserRankHistoryById,
-  getUserLevelJourneyById
+  getUserLevelJourneyById,
+  getUserActivityDistributionById
 } = require('../controllers/gamificationController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
 
@@ -25,6 +27,9 @@ router.get('/me', authenticate, getMyGamification);
 
 // Authenticated user XP progression chart over time
 router.get('/me/chart', authenticate, getMyXPChart);
+
+// Authenticated user activity distribution breakdown
+router.get('/me/activity-distribution', authenticate, getMyActivityDistribution);
 
 // Authenticated user real ranking & percentile metrics
 router.get('/me/rank', authenticate, getMyRankMetrics);
@@ -51,5 +56,6 @@ router.get('/user/:id/chart', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), g
 router.get('/user/:id/rank', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserRankMetricsById);
 router.get('/user/:id/rank-history', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserRankHistoryById);
 router.get('/user/:id/journey', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserLevelJourneyById);
+router.get('/user/:id/activity-distribution', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getUserActivityDistributionById);
 
 module.exports = router;

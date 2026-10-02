@@ -4,16 +4,23 @@ import { fetchSuperAdminAnalytics } from '../../../services/superAdminGamificati
 export default function SuperAdminGamificationAnalytics() {
   const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [velocityMode, setVelocityMode] = useState('daily'); // 'daily' | 'weekly' | 'monthly' | 'growth'
+  const [hoveredItem, setHoveredItem] = useState(null);
 
   const loadAnalytics = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetchSuperAdminAnalytics();
       if (res && res.success) {
         setAnalytics(res.data);
+      } else {
+        throw new Error(res?.message || 'Failed to retrieve Super Admin analytics.');
       }
     } catch (err) {
       console.warn('Could not load Super Admin analytics:', err);
+      setError(err.message || 'Failed to load platform-wide analytics.');
     } finally {
       setIsLoading(false);
     }
@@ -25,107 +32,430 @@ export default function SuperAdminGamificationAnalytics() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⌛</div>
-        <div>Loading Super Admin advanced gamification analytics...</div>
+      <div className="glass-panel" style={{ padding: '3.5rem', textAlign: 'center', color: 'var(--text-secondary)', borderRadius: '16px' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⏳</div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.35rem' }}>
+          Aggregating Global Gamification Telemetry…
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Performing PostgreSQL group aggregations across transactions, users, and levels
+        </div>
       </div>
     );
   }
 
-  if (!analytics) return null;
+  if (error || !analytics) {
+    return (
+      <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center', borderRadius: '16px' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+        <h3 style={{ color: '#f87171', margin: '0 0 0.5rem 0' }}>Could Not Load Platform Analytics</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>{error || 'No analytics data received.'}</p>
+        <button type="button" className="btn-portal-secondary" onClick={loadAnalytics}>
+          🔄 Retry Telemetry Fetch
+        </button>
+      </div>
+    );
+  }
 
   const {
-    xpOverTime = [],
+    dailyXP = [],
+    weeklyXP = [],
+    monthlyXP = [],
+    xpGrowth = [],
     activityContribution = [],
     xpDistribution = [],
     usersByLevel = [],
     topUsers = [],
     fastestProgressingUsers = [],
-    totalXPDistributed = 1
+    summary = {}
   } = analytics;
 
-  // Compute maximum daily XP for 30-day SVG chart
-  const maxDailyXP = Math.max(1, ...xpOverTime.map(d => d.xp));
+  // Active dataset based on velocityMode
+  let activeData = dailyXP;
+  let activePeriodLabel = 'Daily XP Velocity (Last 30 Days)';
+  if (velocityMode === 'weekly') {
+    activeData = weeklyXP;
+    activePeriodLabel = 'Weekly XP Velocity (Last 12 Weeks)';
+  } else if (velocityMode === 'monthly') {
+    activeData = monthlyXP;
+    activePeriodLabel = 'Monthly XP Velocity (Last 12 Months)';
+  } else if (velocityMode === 'growth') {
+    activeData = xpGrowth;
+    activePeriodLabel = 'Cumulative Platform XP Growth';
+  }
+
+  const maxVal = Math.max(1, ...activeData.map(d => velocityMode === 'growth' ? (d.cumulativeXP || 0) : (d.xp || 0)));
+  const totalVolumeInView = activeData.reduce((acc, cur) => acc + (cur.xp || 0), 0);
+  const totalTxsInView = activeData.reduce((acc, cur) => acc + (cur.transactions || 0), 0);
+
+  // SVG dimensions for Growth curve
+  const svgWidth = 800;
+  const svgHeight = 200;
+  const padding = { top: 20, right: 25, bottom: 35, left: 60 };
+  const innerW = svgWidth - padding.left - padding.right;
+  const innerH = svgHeight - padding.top - padding.bottom;
+
+  let growthPointsD = '';
+  let growthAreaD = '';
+  if (velocityMode === 'growth' && xpGrowth.length > 0) {
+    const coords = xpGrowth.map((p, idx) => {
+      const x = padding.left + (idx / Math.max(1, xpGrowth.length - 1)) * innerW;
+      const ratio = (p.cumulativeXP || 0) / maxVal;
+      const y = padding.top + innerH - ratio * innerH;
+      return { x, y, ...p };
+    });
+
+    growthPointsD = `M ${coords[0].x} ${coords[0].y}`;
+    for (let i = 1; i < coords.length; i++) {
+      const prev = coords[i - 1];
+      const cur = coords[i];
+      const cp1x = prev.x + (cur.x - prev.x) / 2;
+      const cp1y = prev.y;
+      const cp2x = prev.x + (cur.x - prev.x) / 2;
+      const cp2y = cur.y;
+      growthPointsD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${cur.x} ${cur.y}`;
+    }
+    const last = coords[coords.length - 1];
+    const first = coords[0];
+    const bottomY = padding.top + innerH;
+    growthAreaD = `${growthPointsD} L ${last.x} ${bottomY} L ${first.x} ${bottomY} Z`;
+  }
 
   return (
-    <div className="superadmin-gamification-analytics">
-      {/* Top 30-Day Velocity Chart */}
-      <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '14px', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div>
-            <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.15rem' }}>
-              📈 30-Day Platform XP Distributed Velocity
-            </h4>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Daily cumulative points awarded across verified activities and manual bonus events
-            </p>
+    <div className="superadmin-gamification-analytics" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* 1. Global Summary KPI Tiles */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem'
+        }}
+      >
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #38bdf8' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total XP Distributed</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.2rem' }}>
+            {(summary.totalXPDistributed || 0).toLocaleString()} XP
           </div>
-          <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 700 }}>
-            Peak Day: {maxDailyXP.toLocaleString()} XP
-          </span>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>All-time verified points</div>
         </div>
 
-        {/* Dynamic SVG / Bar Visualizer */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', height: '140px', gap: '4px', paddingTop: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          {xpOverTime.map((day) => {
-            const heightPercent = Math.max(4, Math.round((day.xp / maxDailyXP) * 100));
-            return (
-              <div
-                key={day.date}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  height: '100%',
-                  justifyContent: 'flex-end'
-                }}
-                title={`${day.date}: ${day.xp} XP (${day.transactions} transactions)`}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: `${heightPercent}%`,
-                    background: day.xp > 0 ? 'linear-gradient(180deg, #38bdf8 0%, #6366f1 100%)' : 'rgba(255,255,255,0.04)',
-                    borderRadius: '3px 3px 0 0',
-                    transition: 'all 0.3s'
-                  }}
-                />
-              </div>
-            );
-          })}
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #a855f7' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Transactions</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#a855f7', marginTop: '0.2rem' }}>
+            {(summary.totalTransactions || 0).toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Ledger audit records</div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-          <span>30 Days Ago</span>
-          <span>15 Days Ago</span>
-          <span>Today</span>
+
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #10b981' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Active Creators</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981', marginTop: '0.2rem' }}>
+            {(summary.totalUsers || 0).toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Participating users</div>
+        </div>
+
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '14px', borderLeft: '4px solid #f59e0b' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Peak Daily Volume</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>
+            {(summary.peakDailyXP || 0).toLocaleString()} XP
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Single-day platform high</div>
         </div>
       </div>
 
-      {/* Grid: Activity Contribution & XP Distribution */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-        {/* Activity Contribution Breakdown */}
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '14px' }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800 }}>
-            🎯 Activity Contribution Breakdown
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {activityContribution.map((act) => (
-              <div key={act.activity}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                  <span style={{ fontWeight: 700, color: 'var(--text-highlight)' }}>
-                    {act.activity === 'LIKE' ? '👍 LIKE' : (act.activity === 'COMMENT' ? '💬 COMMENT' : (act.activity === 'STORY' ? '📱 STORY' : '✏️ MANUAL ADJUSTMENT'))}
+      {/* 2. Interactive XP Growth & Velocity Visualizer */}
+      <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.35rem' }}>📈</span>
+              <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.2rem' }}>
+                {activePeriodLabel}
+              </h4>
+              <span className="gamepoints-badge-live">Real Aggregated Data</span>
+            </div>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Period volume: <strong>{totalVolumeInView.toLocaleString()} XP</strong> across <strong>{totalTxsInView.toLocaleString()} transactions</strong>
+            </p>
+          </div>
+
+          {/* Timeframe Mode Selector */}
+          <div className="gamepoints-timeframe-btn-group" role="group" aria-label="Velocity timeframe">
+            <button
+              type="button"
+              className={`gamepoints-timeframe-btn ${velocityMode === 'daily' ? 'active' : ''}`}
+              onClick={() => { setVelocityMode('daily'); setHoveredItem(null); }}
+            >
+              📅 Daily (30d)
+            </button>
+            <button
+              type="button"
+              className={`gamepoints-timeframe-btn ${velocityMode === 'weekly' ? 'active' : ''}`}
+              onClick={() => { setVelocityMode('weekly'); setHoveredItem(null); }}
+            >
+              📊 Weekly (12w)
+            </button>
+            <button
+              type="button"
+              className={`gamepoints-timeframe-btn ${velocityMode === 'monthly' ? 'active' : ''}`}
+              onClick={() => { setVelocityMode('monthly'); setHoveredItem(null); }}
+            >
+              🗓️ Monthly (12m)
+            </button>
+            <button
+              type="button"
+              className={`gamepoints-timeframe-btn ${velocityMode === 'growth' ? 'active' : ''}`}
+              onClick={() => { setVelocityMode('growth'); setHoveredItem(null); }}
+            >
+              📈 XP Growth
+            </button>
+          </div>
+        </div>
+
+        {/* Chart Canvas Area */}
+        {activeData.length === 0 ? (
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            No transaction records found for this period.
+          </div>
+        ) : velocityMode === 'growth' ? (
+          /* SVG Line / Area Growth Chart */
+          <div style={{ width: '100%', overflowX: 'auto', position: 'relative' }}>
+            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} style={{ width: '100%', height: 'auto', minWidth: '600px' }}>
+              <defs>
+                <linearGradient id="growthAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.45" />
+                  <stop offset="70%" stopColor="#6366f1" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="growthStrokeGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="50%" stopColor="#818cf8" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+
+              {/* Y Grid */}
+              {[0, 0.33, 0.66, 1].map((ratio, idx) => {
+                const y = padding.top + innerH - ratio * innerH;
+                const val = Math.round(ratio * maxVal);
+                return (
+                  <g key={`ygrid-${idx}`}>
+                    <line x1={padding.left} y1={y} x2={svgWidth - padding.right} y2={y} stroke="rgba(255,255,255,0.07)" strokeDasharray="3 3" />
+                    <text x={padding.left - 10} y={y + 4} fill="var(--text-muted)" fontSize="11" textAnchor="end">
+                      {val.toLocaleString()}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {growthAreaD && <path d={growthAreaD} fill="url(#growthAreaGrad)" />}
+              {growthPointsD && <path d={growthPointsD} fill="none" stroke="url(#growthStrokeGrad)" strokeWidth="3" strokeLinecap="round" />}
+
+              {/* X Axis Labels */}
+              {xpGrowth.map((pt, idx) => {
+                if (idx % Math.ceil(xpGrowth.length / 6) !== 0 && idx !== xpGrowth.length - 1) return null;
+                const x = padding.left + (idx / Math.max(1, xpGrowth.length - 1)) * innerW;
+                return (
+                  <text key={`xlbl-${idx}`} x={x} y={padding.top + innerH + 20} fill="var(--text-muted)" fontSize="11" textAnchor="middle">
+                    {pt.label}
+                  </text>
+                );
+              })}
+            </svg>
+          </div>
+        ) : (
+          /* Responsive Column / Bar Velocity Visualizer */
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                height: '170px',
+                gap: activeData.length > 20 ? '4px' : '10px',
+                paddingTop: '1.5rem',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+              }}
+            >
+              {activeData.map((item, idx) => {
+                const val = item.xp || 0;
+                const heightPct = Math.max(val > 0 ? 6 : 2, Math.round((val / maxVal) * 100));
+                const isHovered = hoveredItem && (hoveredItem.date === item.date || hoveredItem.period === item.period || hoveredItem.month === item.month);
+
+                return (
+                  <div
+                    key={item.date || item.period || item.month || idx}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      height: '100%',
+                      justifyContent: 'flex-end',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={() => setHoveredItem(item)}
+                    onMouseLeave={() => setHoveredItem(null)}
+                  >
+                    <div
+                      style={{
+                        width: '100%',
+                        height: `${heightPct}%`,
+                        background: val > 0
+                          ? isHovered
+                            ? '#38bdf8'
+                            : 'linear-gradient(180deg, #38bdf8 0%, #6366f1 100%)'
+                          : 'rgba(255, 255, 255, 0.04)',
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'all 0.2s',
+                        boxShadow: isHovered ? '0 0 12px rgba(56, 189, 248, 0.6)' : 'none'
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* X-axis start / mid / end indicators */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.65rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <span>{activeData[0]?.label || 'Start'}</span>
+              <span>{activeData[Math.floor(activeData.length / 2)]?.label || 'Mid'}</span>
+              <span>{activeData[activeData.length - 1]?.label || 'Present'}</span>
+            </div>
+
+            {/* Hovered Tooltip Card */}
+            {hoveredItem && (
+              <div
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '10px',
+                  background: 'rgba(15, 23, 42, 0.9)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Period: </span>
+                  <strong style={{ color: '#fff' }}>{hoveredItem.label || hoveredItem.date || hoveredItem.month}</strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>XP Awarded: </span>
+                  <strong style={{ color: '#38bdf8' }}>{(hoveredItem.xp || 0).toLocaleString()} XP</strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Transactions: </span>
+                  <strong style={{ color: '#a855f7' }}>{(hoveredItem.transactions || 0).toLocaleString()}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 3. Users by Level & XP Distribution Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+        {/* Users by Level Distribution */}
+        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
+              ⚡ Users by Dynamic Level Tier
+            </h4>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Database Aggregated
+            </span>
+          </div>
+
+          {usersByLevel.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              No level distribution data recorded.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '340px', overflowY: 'auto' }}>
+              {usersByLevel.map((lvl) => {
+                const maxLevelCount = Math.max(1, ...usersByLevel.map(l => l.count));
+                const barWidth = Math.max(3, Math.round((lvl.count / maxLevelCount) * 100));
+
+                return (
+                  <div
+                    key={lvl.level}
+                    style={{
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '10px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text-highlight)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>{lvl.icon || '🌱'}</span>
+                        <span>Level {lvl.level}: {lvl.levelName}</span>
+                      </span>
+                      <span style={{ color: '#38bdf8', fontWeight: 800 }}>
+                        {lvl.count.toLocaleString()} creators ({lvl.percentage}%)
+                      </span>
+                    </div>
+
+                    <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.06)', borderRadius: '999px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${barWidth}%`,
+                          background: 'linear-gradient(90deg, #38bdf8, #818cf8)',
+                          borderRadius: '999px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* XP Distribution Buckets */}
+        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
+              👥 Creator XP Distribution Buckets
+            </h4>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Overall Population
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {xpDistribution.map((tier) => (
+              <div
+                key={tier.label}
+                style={{
+                  padding: '0.85rem 1rem',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  borderLeft: `4px solid ${tier.color || '#38bdf8'}`
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    {tier.label}
                   </span>
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    <strong>{act.totalXP.toLocaleString()} XP</strong> ({act.percentage}%)
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: tier.color || '#38bdf8' }}>
+                    {tier.count.toLocaleString()} creators ({tier.percentage}%)
                   </span>
                 </div>
-                <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '999px', overflow: 'hidden' }}>
+
+                <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.06)', borderRadius: '999px', overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
-                      width: `${Math.min(100, Math.max(2, act.percentage))}%`,
-                      background: act.activity === 'LIKE' ? '#38bdf8' : (act.activity === 'COMMENT' ? '#a855f7' : (act.activity === 'STORY' ? '#ec4899' : '#f59e0b')),
+                      width: `${Math.max(2, tier.percentage)}%`,
+                      background: tier.color || '#38bdf8',
                       borderRadius: '999px'
                     }}
                   />
@@ -134,43 +464,69 @@ export default function SuperAdminGamificationAnalytics() {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* XP Distribution Tiers */}
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '14px' }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800 }}>
-            👥 Creator XP Distribution Buckets
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {xpDistribution.map((tier) => (
-              <div
-                key={tier.label}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.65rem 0.85rem',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255,255,255,0.05)'
-                }}
-              >
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  {tier.label}
+      {/* 4. Global Activity Contribution Breakdown */}
+      <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <h4 style={{ margin: 0, color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.15rem' }}>
+              🎯 Platform Activity Contribution Breakdown
+            </h4>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              XP volume categorized by verified action channels and moderation events
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          {activityContribution.map((act) => (
+            <div
+              key={act.activity}
+              style={{
+                padding: '1.1rem 1.25rem',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                borderLeft: `4px solid ${act.color || '#38bdf8'}`
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontWeight: 700, color: 'var(--text-highlight)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span>{act.icon}</span> {act.name}
                 </span>
-                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#38bdf8' }}>
-                  {tier.count} creators
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    color: act.color || '#38bdf8'
+                  }}
+                >
+                  {act.percentage}%
                 </span>
               </div>
-            ))}
-          </div>
+
+              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: act.color || '#38bdf8', margin: '0.35rem 0' }}>
+                {act.totalXP.toLocaleString()} XP
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <span>{act.count.toLocaleString()} actions</span>
+                <span>Avg {act.averageXP} XP</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Grid: Top 10 Creators & Fastest Progressing Creators */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+      {/* 5. Top Creators & Fastest Progressing Gainers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {/* Top 10 Creators */}
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '14px' }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800 }}>
+        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
             👑 Top 10 Platform Record Holders
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -183,7 +539,7 @@ export default function SuperAdminGamificationAnalytics() {
                   justifyContent: 'space-between',
                   padding: '0.65rem 0.85rem',
                   background: u.rank === 1 ? 'rgba(250, 204, 21, 0.05)' : 'rgba(255,255,255,0.02)',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   border: u.rank === 1 ? '1px solid rgba(250, 204, 21, 0.25)' : '1px solid rgba(255,255,255,0.05)'
                 }}
               >
@@ -204,10 +560,10 @@ export default function SuperAdminGamificationAnalytics() {
           </div>
         </div>
 
-        {/* Fastest Progressing Users */}
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '14px' }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800 }}>
-            🚀 Fastest Weekly XP Velocity Gainers
+        {/* Fastest Progressing Creators */}
+        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-highlight)', fontWeight: 800, fontSize: '1.1rem' }}>
+            🚀 Fastest 7-Day Velocity Gainers
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {fastestProgressingUsers.map((u, idx) => (
@@ -219,7 +575,7 @@ export default function SuperAdminGamificationAnalytics() {
                   justifyContent: 'space-between',
                   padding: '0.65rem 0.85rem',
                   background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   border: '1px solid rgba(255,255,255,0.05)'
                 }}
               >

@@ -608,149 +608,171 @@ const getUserRankMetrics = async (userId, timeframe = 'all_time') => {
 /**
  * Retrieve user's XP progression over time
  */
-const getUserXPChartData = async (userId, timeframe = '30d') => {
+const getUserXPChartData = async (userId, timeframe = "30d") => {
   if (!userId) {
-    throw new Error('User ID is required to fetch chart data.');
+    throw new Error("User ID is required to fetch chart data.");
   }
 
   const activeLevels = await getActiveLevels();
   const dbStatus = await checkDatabaseConnection();
 
-  let transactions = [];
-  let userCreatedAt = new Date();
-
-  if (dbStatus.isConnected && prisma) {
-    try {
-      const [user, txs] = await Promise.all([
-        prisma.user.findUnique({
-          where: { id: userId },
-          select: { role: true, createdAt: true, totalXP: true, totalPoints: true }
-        }),
-        prisma.pointTransaction.findMany({
-          where: { userId },
-          orderBy: { createdAt: 'asc' },
-          select: { id: true, xp: true, points: true, createdAt: true, actionType: true }
-        })
-      ]);
-
-      if (user && user.role !== 'USER') {
-        return {
-          isParticipant: false,
-          role: user.role,
-          message: 'Administrators manage game points and do not generate player XP graphs.',
-          data: []
-        };
+  if (!dbStatus.isConnected || !prisma) {
+    return {
+      timeframe,
+      points: [],
+      summary: {
+        startingXP: 0,
+        endingXP: 0,
+        netXPGained: 0,
+        dataPointsCount: 0,
+        currentLevel: 1,
+        currentLevelName: "Novice",
+        currentLevelIcon: "🌱"
       }
+    };
+  }
 
-      if (user) {
-        userCreatedAt = user.createdAt;
-      }
-      transactions = txs || [];
-    } catch (err) {
-      console.warn('[LevelService] Error fetching transactions for chart:', err.message);
-    }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, createdAt: true, totalXP: true }
+  });
+
+  if (!user) {
+    const err = new Error("User not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (user.role !== "USER") {
+    return {
+      isParticipant: false,
+      role: user.role,
+      message: "Administrators manage game points and do not generate player XP graphs.",
+      data: []
+    };
   }
 
   const now = new Date();
-  const cleanTf = (timeframe || '30d').toLowerCase();
+  const cleanTf = (timeframe || "30d").toLowerCase();
 
-  // Determine interval and points
-  const points = [];
   let daysBack = 30;
   let intervalDays = 1;
 
-  if (cleanTf === '7d' || cleanTf === '7_days') {
+  if (cleanTf === "7d" || cleanTf === "7_days") {
     daysBack = 7;
     intervalDays = 1;
-  } else if (cleanTf === '30d' || cleanTf === '30_days') {
+  } else if (cleanTf === "30d" || cleanTf === "30_days") {
     daysBack = 30;
     intervalDays = 1;
-  } else if (cleanTf === '3m' || cleanTf === '90d' || cleanTf === '3_months') {
+  } else if (cleanTf === "3m" || cleanTf === "90d" || cleanTf === "3_months") {
     daysBack = 90;
-    intervalDays = 3;
-  } else if (cleanTf === '6m' || cleanTf === '180d' || cleanTf === '6_months') {
+    intervalDays = 1;
+  } else if (cleanTf === "6m" || cleanTf === "180d" || cleanTf === "6_months") {
     daysBack = 180;
-    intervalDays = 7;
-  } else if (cleanTf === 'all' || cleanTf === 'all_time') {
-    const earliestDate = transactions.length > 0
-      ? new Date(transactions[0].createdAt)
-      : new Date(userCreatedAt);
-    const diffDays = Math.max(7, Math.ceil((now.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)));
-    daysBack = Math.min(730, diffDays); // Up to 2 years
-    intervalDays = Math.max(1, Math.ceil(daysBack / 30));
+    intervalDays = 1;
+  } else if (cleanTf === "all" || cleanTf === "all_time") {
+    const earliestTx = await prisma.pointTransaction.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true }
+    });
+    const firstDate = earliestTx ? new Date(earliestTx.createdAt) : new Date(user.createdAt);
+    const diffDays = Math.max(7, Math.ceil((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)));
+    daysBack = Math.min(1095, diffDays);
+    intervalDays = Math.max(1, Math.ceil(daysBack / 60));
   }
 
-  const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-  startDate.setHours(0, 0, 0, 0);
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const startDate = new Date(todayUTC.getTime() - (daysBack - 1) * 24 * 60 * 60 * 1000);
+  const endDate = new Date(todayUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-  // Pre-calculate cumulative XP before startDate
-  let runningXP = 0;
-  for (const tx of transactions) {
-    const txDate = new Date(tx.createdAt);
-    if (txDate < startDate) {
-      runningXP += (tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points) || 0;
-    }
+  // 1. Total XP gained strictly prior to startDate (DB Aggregation)
+  const priorResult = await prisma.$queryRaw`
+    SELECT COALESCE(SUM(COALESCE("xp", "points", 0)), 0)::int AS prior_xp
+    FROM "point_transactions"
+    WHERE "userId" = ${userId}
+      AND "createdAt" < ${startDate}
+  `;
+  let runningXP = priorResult[0]?.prior_xp || 0;
+
+  // 2. Grouped daily gains within window [startDate, endDate] (DB Aggregation)
+  const dailyRows = await prisma.$queryRaw`
+    SELECT 
+      TO_CHAR("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
+      SUM(COALESCE("xp", "points", 0))::int AS xp_gained,
+      COUNT(id)::int AS count
+    FROM "point_transactions"
+    WHERE "userId" = ${userId}
+      AND "createdAt" >= ${startDate}
+      AND "createdAt" <= ${endDate}
+    GROUP BY TO_CHAR("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+    ORDER BY day ASC
+  `;
+
+  const dailyMap = new Map();
+  if (Array.isArray(dailyRows)) {
+    dailyRows.forEach(r => {
+      dailyMap.set(r.day, r.xp_gained || 0);
+    });
   }
 
-  let txIndex = 0;
-  // Advance txIndex to first transaction inside the window
-  while (txIndex < transactions.length && new Date(transactions[txIndex].createdAt) < startDate) {
-    txIndex++;
-  }
-
-  // Generate bucket dates
+  const points = [];
   let currentDate = new Date(startDate);
-  while (currentDate <= now) {
-    const bucketEnd = new Date(currentDate);
-    bucketEnd.setHours(23, 59, 59, 999);
 
-    let xpGainedInInterval = 0;
-    while (txIndex < transactions.length && new Date(transactions[txIndex].createdAt) <= bucketEnd) {
-      const tx = transactions[txIndex];
-      const val = (tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points) || 0;
-      runningXP += val;
-      xpGainedInInterval += val;
-      txIndex++;
-    }
+  while (currentDate <= todayUTC) {
+    const dateStr = currentDate.toISOString().split("T")[0];
+    const gained = dailyMap.get(dateStr) || 0;
+    runningXP += gained;
 
     const levelData = calculateUserLevel(runningXP, activeLevels);
 
     points.push({
-      date: currentDate.toISOString().split('T')[0],
-      label: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: dateStr,
+      label: currentDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
       timestamp: currentDate.getTime(),
       xp: runningXP,
-      xpGained: xpGainedInInterval,
+      xpGained: gained,
       level: levelData.currentLevel,
       levelName: levelData.levelName,
-      icon: levelData.icon
+      icon: levelData.icon || "🌱"
     });
 
     currentDate = new Date(currentDate.getTime() + intervalDays * 24 * 60 * 60 * 1000);
   }
 
-  // Ensure today's end state is included as final point if not already
-  if (points.length === 0 || points[points.length - 1].date !== now.toISOString().split('T')[0]) {
-    while (txIndex < transactions.length) {
-      const tx = transactions[txIndex];
-      runningXP += (tx.xp !== undefined && tx.xp !== null ? tx.xp : tx.points) || 0;
-      txIndex++;
-    }
-    const finalLevel = calculateUserLevel(runningXP, activeLevels);
+  if (points.length === 0) {
+    const lvl = calculateUserLevel(user.totalXP || 0, activeLevels);
     points.push({
-      date: now.toISOString().split('T')[0],
-      label: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      timestamp: now.getTime(),
-      xp: runningXP,
+      date: todayUTC.toISOString().split("T")[0],
+      label: todayUTC.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+      timestamp: todayUTC.getTime(),
+      xp: user.totalXP || 0,
       xpGained: 0,
-      level: finalLevel.currentLevel,
-      levelName: finalLevel.levelName,
-      icon: finalLevel.icon
+      level: lvl.currentLevel,
+      levelName: lvl.levelName,
+      icon: lvl.icon || "🌱"
     });
+  } else {
+    const lastPt = points[points.length - 1];
+    const todayStr = todayUTC.toISOString().split("T")[0];
+    if (lastPt.date !== todayStr) {
+      const lvl = calculateUserLevel(user.totalXP || runningXP, activeLevels);
+      points.push({
+        date: todayStr,
+        label: todayUTC.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+        timestamp: todayUTC.getTime(),
+        xp: user.totalXP || runningXP,
+        xpGained: 0,
+        level: lvl.currentLevel,
+        levelName: lvl.levelName,
+        icon: lvl.icon || "🌱"
+      });
+    }
   }
 
-  const startXP = points.length > 0 ? points[0].xp : 0;
-  const endXP = points.length > 0 ? points[points.length - 1].xp : 0;
+  const startXP = points[0].xp;
+  const endXP = points[points.length - 1].xp;
+  const finalLevel = calculateUserLevel(endXP, activeLevels);
 
   return {
     timeframe: cleanTf,
@@ -760,21 +782,102 @@ const getUserXPChartData = async (userId, timeframe = '30d') => {
       endingXP: endXP,
       netXPGained: Math.max(0, endXP - startXP),
       dataPointsCount: points.length,
-      currentLevel: points.length > 0 ? points[points.length - 1].level : 1,
-      currentLevelName: points.length > 0 ? points[points.length - 1].levelName : 'Novice'
+      currentLevel: finalLevel.currentLevel,
+      currentLevelName: finalLevel.levelName,
+      currentLevelIcon: finalLevel.icon || "🌱"
     }
   };
 };
 
 /**
- * Retrieve user's position/rank over monthly intervals.
- * Section: "📊 My Position Over Time"
- * Returns chronological timeline: January #87, February #63, March #41, April #24...
- * Along with trajectory trend (upward, downward, stable) and rank change.
- * 
- * @param {string} userId
- * @returns {Promise<Object>}
+ * Retrieve a user's activity distribution breakdown using database aggregation
  */
+const getUserActivityDistribution = async (userId) => {
+  if (!userId) {
+    throw new Error("User ID is required to fetch activity distribution.");
+  }
+
+  const dbStatus = await checkDatabaseConnection();
+
+  if (!dbStatus.isConnected || !prisma) {
+    return {
+      userId,
+      totalXP: 0,
+      totalActions: 0,
+      activities: []
+    };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, role: true, totalXP: true }
+  });
+
+  if (!user || user.role !== "USER") {
+    return {
+      userId,
+      isParticipant: false,
+      totalXP: 0,
+      totalActions: 0,
+      activities: []
+    };
+  }
+
+  // Database aggregation via groupBy
+  const distribution = await prisma.pointTransaction.groupBy({
+    by: ["actionType"],
+    where: { userId },
+    _sum: { xp: true, points: true },
+    _count: { id: true }
+  });
+
+  const ACTION_CONFIG = {
+    LIKE: { name: "Like Reactions", icon: "❤️", color: "#38bdf8" },
+    COMMENT: { name: "Comment Verifications", icon: "💬", color: "#a855f7" },
+    STORY: { name: "Story Submissions", icon: "📱", color: "#ec4899" },
+    BONUS: { name: "Event Bonuses", icon: "🎁", color: "#f59e0b" },
+    ADJUSTMENT: { name: "Admin Adjustments", icon: "⚖️", color: "#10b981" },
+    ADMIN_ADJUSTMENT: { name: "Admin Adjustments", icon: "⚖️", color: "#10b981" },
+    SUPER_ADMIN_ADJUSTMENT: { name: "Super Admin Adjustments", icon: "👑", color: "#6366f1" }
+  };
+
+  let totalPositiveXP = 0;
+  let totalActions = 0;
+
+  const activities = distribution.map((item) => {
+    const rawXP = item._sum?.xp !== undefined && item._sum?.xp !== null ? item._sum.xp : (item._sum?.points || 0);
+    const count = item._count?.id || 0;
+    if (rawXP > 0) totalPositiveXP += rawXP;
+    totalActions += count;
+    const cfg = ACTION_CONFIG[item.actionType] || { name: item.actionType, icon: "⚡", color: "#94a3b8" };
+    return {
+      actionType: item.actionType,
+      name: cfg.name,
+      icon: cfg.icon,
+      color: cfg.color,
+      totalXP: rawXP,
+      count,
+      averageXP: count > 0 ? Math.round((rawXP / count) * 10) / 10 : 0
+    };
+  });
+
+  const denom = Math.max(1, totalPositiveXP);
+  activities.forEach(act => {
+    act.percentage = act.totalXP > 0 ? Math.round((act.totalXP / denom) * 100) : 0;
+  });
+
+  activities.sort((a, b) => b.totalXP - a.totalXP);
+
+  return {
+    userId,
+    userName: user.name,
+    totalXP: user.totalXP || totalPositiveXP,
+    totalPositiveXP,
+    totalActions,
+    activities
+  };
+};
+
 const getUserRankHistory = async (userId) => {
   if (!userId) {
     throw new Error('User ID is required to fetch rank history.');
@@ -922,6 +1025,7 @@ module.exports = {
   getUserGamificationProfile,
   getUserRankMetrics,
   getUserXPChartData,
+  getUserActivityDistribution,
   getUserRankHistory,
   invalidateLevelsCache
 };

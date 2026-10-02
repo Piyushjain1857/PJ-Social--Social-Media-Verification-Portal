@@ -6,7 +6,8 @@ const {
   calculateUserLevel,
   getUserRankMetrics,
   getUserXPChartData,
-  getUserRankHistory
+  getUserRankHistory,
+  getUserActivityDistribution
 } = require('../services/levelService');
 const {
   getUserTransactionsHistory
@@ -446,17 +447,55 @@ const getUserLevelJourneyById = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/gamification/me/activity-distribution
+ * Protected: Authenticated User
+ * Returns user's activity breakdown (LIKE, COMMENT, STORY, BONUS, etc.)
+ */
+const getMyActivityDistribution = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const distribution = await getUserActivityDistribution(userId);
+    return res.status(200).json({
+      success: true,
+      data: distribution
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/gamification/user/:id/activity-distribution
+ * Protected: Admin & Super Admin
+ * Returns inspected user's activity breakdown
+ */
+const getUserActivityDistributionById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const distribution = await getUserActivityDistribution(id);
+    return res.status(200).json({
+      success: true,
+      data: distribution
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMyGamification,
   getMyXPChart,
   getMyRankMetrics,
   getMyRankHistory,
   getMyXPHistory,
+  getMyActivityDistribution,
   getLevelsList,
   getMyLevelJourney,
   getUserGamificationById,
   getUserXPChartById,
   getUserRankMetricsById,
   getUserRankHistoryById,
-  getUserLevelJourneyById
+  getUserLevelJourneyById,
+  getUserActivityDistributionById
 };

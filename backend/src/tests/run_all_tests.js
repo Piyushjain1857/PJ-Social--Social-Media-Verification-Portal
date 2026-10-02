@@ -26,7 +26,8 @@ const testFiles = [
   'superadmin_gamification.test.js',
   'complete_gamification_audit.test.js',
   'submission_xp_awarding.test.js',
-  'level_engine.test.js'
+  'level_engine.test.js',
+  'gamification_analytics_graphs.test.js'
 ];
 
 console.log('========================================================');

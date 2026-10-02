@@ -85,6 +85,13 @@ export const fetchMyXPChart = async (timeframe = '30d') => {
 };
 
 /**
+ * Fetch authenticated creator's activity distribution breakdown
+ */
+export const fetchMyActivityDistribution = async () => {
+  return await authFetch('/gamification/me/activity-distribution');
+};
+
+/**
  * Fetch authenticated creator's current rank, total participants, and percentile
  */
 export const fetchMyRank = async () => {
@@ -111,6 +118,13 @@ export const fetchUserGamification = async (userId) => {
  */
 export const fetchUserXPChart = async (userId, timeframe = '30d') => {
   return await authFetch(`/gamification/user/${userId}/chart?timeframe=${encodeURIComponent(timeframe)}`);
+};
+
+/**
+ * Admin / Super Admin: Fetch target user's activity distribution breakdown
+ */
+export const fetchUserActivityDistribution = async (userId) => {
+  return await authFetch(`/gamification/user/${userId}/activity-distribution`);
 };
 
 /**
@@ -187,9 +201,11 @@ export default {
   fetchMyRankHistory,
   fetchMyXPHistory,
   fetchMyLevelJourney,
+  fetchMyActivityDistribution,
   fetchGamificationLevels,
   fetchUserGamification,
   fetchUserXPChart,
+  fetchUserActivityDistribution,
   fetchUserRank,
   fetchUserRankHistory,
   fetchAdminLevels,

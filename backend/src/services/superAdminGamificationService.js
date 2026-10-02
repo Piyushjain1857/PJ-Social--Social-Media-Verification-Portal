@@ -1,6 +1,6 @@
 const { prisma } = require('../config/db');
 const { setActivityPointConfig } = require('./pointsService');
-const { calculateUserLevel, recalculateUserGamification, getUserLevelProgress, getActiveLevels } = require('./levelService');
+const { calculateUserLevel, recalculateUserGamification, getUserLevelProgress, getActiveLevels, buildLevelThresholds } = require('./levelService');
 const { createNotification } = require('../repositories/notificationRepository');
 
 /**
@@ -577,51 +577,183 @@ const getSuperAdminTransactions = async ({
  */
 const getSuperAdminAnalytics = async () => {
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-  // 1. XP Over Time (Group by date for last 30 days)
-  const recentTxs = await prisma.pointTransaction.findMany({
-    where: { createdAt: { gte: thirtyDaysAgo } },
-    select: { points: true, createdAt: true, actionType: true },
-    orderBy: { createdAt: 'asc' }
-  });
+  const thirtyDaysAgo = new Date(todayUTC.getTime() - 29 * 24 * 60 * 60 * 1000);
+  const twelveWeeksAgo = new Date(todayUTC.getTime() - 83 * 24 * 60 * 60 * 1000);
+  const twelveMonthsAgo = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth() + 1, 1));
 
-  const dailyBuckets = {};
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateStr = d.toISOString().split('T')[0];
-    dailyBuckets[dateStr] = { date: dateStr, xp: 0, transactions: 0 };
+  // 1. Database-aggregated Periodic Telemetry in Parallel
+  const [dailyRaw, weeklyRaw, monthlyRaw, activitySums, totalXPObj, totalUsersCount] = await Promise.all([
+    prisma.$queryRaw`
+      SELECT 
+        TO_CHAR("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
+        SUM(COALESCE("xp", "points", 0))::int AS xp,
+        COUNT(id)::int AS transactions
+      FROM "point_transactions"
+      WHERE "createdAt" >= ${thirtyDaysAgo}
+      GROUP BY TO_CHAR("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+      ORDER BY day ASC
+    `,
+    prisma.$queryRaw`
+      SELECT 
+        TO_CHAR(DATE_TRUNC('week', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS week_start,
+        SUM(COALESCE("xp", "points", 0))::int AS xp,
+        COUNT(id)::int AS transactions
+      FROM "point_transactions"
+      WHERE "createdAt" >= ${twelveWeeksAgo}
+      GROUP BY DATE_TRUNC('week', "createdAt" AT TIME ZONE 'UTC')
+      ORDER BY week_start ASC
+    `,
+    prisma.$queryRaw`
+      SELECT 
+        TO_CHAR(DATE_TRUNC('month', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM') AS month_key,
+        SUM(COALESCE("xp", "points", 0))::int AS xp,
+        COUNT(id)::int AS transactions
+      FROM "point_transactions"
+      WHERE "createdAt" >= ${twelveMonthsAgo}
+      GROUP BY DATE_TRUNC('month', "createdAt" AT TIME ZONE 'UTC')
+      ORDER BY month_key ASC
+    `,
+    prisma.pointTransaction.groupBy({
+      by: ['actionType'],
+      _sum: { xp: true, points: true },
+      _count: { id: true }
+    }),
+    prisma.$queryRaw`
+      SELECT COALESCE(SUM(COALESCE("xp", "points", 0)), 0)::int AS total_xp,
+             COUNT(id)::int AS total_transactions
+      FROM "point_transactions"
+    `,
+    prisma.user.count({ where: { role: 'USER' } })
+  ]);
+
+  const totalPlatformXP = totalXPObj[0]?.total_xp || 0;
+  const totalTransactionsCount = totalXPObj[0]?.total_transactions || 0;
+
+  // 1a. Fill 30-Day Daily Buckets (Zero-filled if no transactions)
+  const dailyMap = new Map();
+  (dailyRaw || []).forEach(r => dailyMap.set(r.day, { xp: r.xp || 0, transactions: r.transactions || 0 }));
+
+  // Prior cumulative XP before 30 days ago
+  const priorXPObj = await prisma.$queryRaw`
+    SELECT COALESCE(SUM(COALESCE("xp", "points", 0)), 0)::int AS prior_xp
+    FROM "point_transactions"
+    WHERE "createdAt" < ${thirtyDaysAgo}
+  `;
+  let runningCumulativeXP = priorXPObj[0]?.prior_xp || 0;
+
+  const dailyXP = [];
+  const xpGrowth = [];
+  for (let i = 0; i < 30; i++) {
+    const cur = new Date(thirtyDaysAgo.getTime() + i * 24 * 60 * 60 * 1000);
+    const dateStr = cur.toISOString().split('T')[0];
+    const data = dailyMap.get(dateStr) || { xp: 0, transactions: 0 };
+    runningCumulativeXP += data.xp;
+
+    const dayObj = {
+      date: dateStr,
+      label: cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+      xp: data.xp,
+      transactions: data.transactions,
+      cumulativeXP: runningCumulativeXP
+    };
+
+    dailyXP.push(dayObj);
+    xpGrowth.push({
+      date: dateStr,
+      label: dayObj.label,
+      xpGained: data.xp,
+      cumulativeXP: runningCumulativeXP,
+      transactions: data.transactions
+    });
   }
 
-  recentTxs.forEach((tx) => {
-    const dateStr = new Date(tx.createdAt).toISOString().split('T')[0];
-    if (dailyBuckets[dateStr]) {
-      dailyBuckets[dateStr].xp += tx.points;
-      dailyBuckets[dateStr].transactions += 1;
-    }
+  // 1b. Fill 12-Week Weekly Buckets
+  const weeklyMap = new Map();
+  (weeklyRaw || []).forEach(r => weeklyMap.set(r.week_start, { xp: r.xp || 0, transactions: r.transactions || 0 }));
+
+  const weeklyXP = [];
+  let currentMonday = new Date(twelveWeeksAgo);
+  // Align to Monday
+  const dayOfWeek = currentMonday.getUTCDay();
+  const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+  currentMonday.setUTCDate(currentMonday.getUTCDate() + diffToMonday);
+
+  for (let w = 0; w < 12; w++) {
+    const weekStartStr = currentMonday.toISOString().split('T')[0];
+    const weekEnd = new Date(currentMonday.getTime() + 6 * 24 * 60 * 60 * 1000);
+    const wData = weeklyMap.get(weekStartStr) || { xp: 0, transactions: 0 };
+
+    weeklyXP.push({
+      period: weekStartStr,
+      label: `Wk of ${currentMonday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`,
+      startDate: weekStartStr,
+      endDate: weekEnd.toISOString().split('T')[0],
+      xp: wData.xp,
+      transactions: wData.transactions
+    });
+
+    currentMonday.setUTCDate(currentMonday.getUTCDate() + 7);
+  }
+
+  // 1c. Fill 12-Month Monthly Buckets
+  const monthlyMap = new Map();
+  (monthlyRaw || []).forEach(r => monthlyMap.set(r.month_key, { xp: r.xp || 0, transactions: r.transactions || 0 }));
+
+  const monthlyXP = [];
+  for (let m = 11; m >= 0; m--) {
+    const mDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - m, 1));
+    const mKey = mDate.toISOString().slice(0, 7); // YYYY-MM
+    const mData = monthlyMap.get(mKey) || { xp: 0, transactions: 0 };
+
+    monthlyXP.push({
+      month: mKey,
+      label: mDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+      year: mDate.getUTCFullYear(),
+      xp: mData.xp,
+      transactions: mData.transactions
+    });
+  }
+
+  // Backwards compatibility alias
+  const xpOverTime = dailyXP;
+
+  // 2. Activity Contribution Breakdown
+  const ACTION_CONFIG = {
+    LIKE: { name: 'Like Reactions', icon: '❤️', color: '#38bdf8' },
+    COMMENT: { name: 'Comment Verifications', icon: '💬', color: '#a855f7' },
+    STORY: { name: 'Story Submissions', icon: '📱', color: '#ec4899' },
+    BONUS: { name: 'Event Bonuses', icon: '🎁', color: '#f59e0b' },
+    ADJUSTMENT: { name: 'Admin Adjustments', icon: '⚖️', color: '#10b981' },
+    ADMIN_ADJUSTMENT: { name: 'Admin Adjustments', icon: '⚖️', color: '#10b981' },
+    SUPER_ADMIN_ADJUSTMENT: { name: 'Super Admin Adjustments', icon: '👑', color: '#6366f1' }
+  };
+
+  let totalPositiveXPSum = 0;
+  activitySums.forEach((a) => {
+    const val = a._sum.xp !== undefined && a._sum.xp !== null ? a._sum.xp : (a._sum.points || 0);
+    if (val > 0) totalPositiveXPSum += val;
   });
+  const actDenom = Math.max(1, totalPositiveXPSum);
 
-  const xpOverTime = Object.values(dailyBuckets);
+  const activityContribution = activitySums.map((a) => {
+    const val = a._sum.xp !== undefined && a._sum.xp !== null ? a._sum.xp : (a._sum.points || 0);
+    const count = a._count?.id || 0;
+    const cfg = ACTION_CONFIG[a.actionType] || { name: a.actionType, icon: '⚡', color: '#94a3b8' };
+    return {
+      activity: a.actionType,
+      name: cfg.name,
+      icon: cfg.icon,
+      color: cfg.color,
+      totalXP: val,
+      count,
+      averageXP: count > 0 ? Math.round((val / count) * 10) / 10 : 0,
+      percentage: Math.round((val / actDenom) * 100)
+    };
+  }).sort((a, b) => b.totalXP - a.totalXP);
 
-  // 2. Activity Contribution
-  const activitySums = await prisma.pointTransaction.groupBy({
-    by: ['actionType'],
-    _sum: { points: true },
-    _count: { id: true }
-  });
-
-  let totalXPSum = 0;
-  activitySums.forEach((a) => { totalXPSum += a._sum.points || 0; });
-  totalXPSum = Math.max(1, totalXPSum);
-
-  const activityContribution = activitySums.map((a) => ({
-    activity: a.actionType,
-    totalXP: a._sum.points || 0,
-    count: a._count.id,
-    percentage: Math.round(((a._sum.points || 0) / totalXPSum) * 100)
-  }));
-
-  // 3. XP Distribution Buckets
+  // 3. XP Distribution Buckets (DB Count Aggregations)
   const [tier1, tier2, tier3, tier4, tier5] = await Promise.all([
     prisma.user.count({ where: { role: 'USER', totalXP: { gte: 0, lte: 99 } } }),
     prisma.user.count({ where: { role: 'USER', totalXP: { gte: 100, lte: 499 } } }),
@@ -630,31 +762,56 @@ const getSuperAdminAnalytics = async () => {
     prisma.user.count({ where: { role: 'USER', totalXP: { gte: 5000 } } })
   ]);
 
+  const userDenom = Math.max(1, totalUsersCount);
   const xpDistribution = [
-    { label: '0 – 99 XP', count: tier1 },
-    { label: '100 – 499 XP', count: tier2 },
-    { label: '500 – 999 XP', count: tier3 },
-    { label: '1,000 – 4,999 XP', count: tier4 },
-    { label: '5,000+ XP', count: tier5 }
+    { label: '0 – 99 XP', count: tier1, percentage: Math.round((tier1 / userDenom) * 100), color: '#94a3b8' },
+    { label: '100 – 499 XP', count: tier2, percentage: Math.round((tier2 / userDenom) * 100), color: '#38bdf8' },
+    { label: '500 – 999 XP', count: tier3, percentage: Math.round((tier3 / userDenom) * 100), color: '#818cf8' },
+    { label: '1,000 – 4,999 XP', count: tier4, percentage: Math.round((tier4 / userDenom) * 100), color: '#a855f7' },
+    { label: '5,000+ XP', count: tier5, percentage: Math.round((tier5 / userDenom) * 100), color: '#f59e0b' }
   ];
 
-  // 4. Users by Level
-  const allUsers = await prisma.user.findMany({
-    where: { role: 'USER' },
-    select: { totalXP: true }
-  });
+  // 4. Users by Level (DB Aggregation via SQL CASE without pulling raw users)
+  let usersByLevel = [];
+  try {
+    const activeLevels = await getActiveLevels();
+    const thresholds = buildLevelThresholds(activeLevels);
+    if (thresholds.length > 0) {
+      const caseClauses = thresholds.map((t) => {
+        if (t.isLast) {
+          return `WHEN "totalXP" >= ${t.cumulativeStartXP} THEN ${t.levelNumber}`;
+        }
+        return `WHEN "totalXP" >= ${t.cumulativeStartXP} AND "totalXP" <= ${t.cumulativeEndXP} THEN ${t.levelNumber}`;
+      }).join(' ');
 
-  const levelCounts = {};
-  allUsers.forEach((u) => {
-    const lvlObj = calculateUserLevel(u.totalXP);
-    const lvl = lvlObj.currentLevel || lvlObj.level || 1;
-    levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
-  });
+      const rawLevelCounts = await prisma.$queryRawUnsafe(`
+        SELECT 
+          CASE ${caseClauses} ELSE 1 END AS level,
+          COUNT(id)::int AS count
+        FROM "users"
+        WHERE "role" = 'USER'
+        GROUP BY CASE ${caseClauses} ELSE 1 END
+        ORDER BY level ASC
+      `);
 
-  const usersByLevel = Object.entries(levelCounts).map(([lvl, count]) => ({
-    level: parseInt(lvl, 10),
-    count
-  })).sort((a, b) => a.level - b.level);
+      const countMap = new Map();
+      (rawLevelCounts || []).forEach(r => countMap.set(parseInt(r.level, 10), r.count));
+
+      usersByLevel = thresholds.map(t => {
+        const count = countMap.get(t.levelNumber) || 0;
+        return {
+          level: t.levelNumber,
+          levelName: t.name,
+          icon: t.icon || '🌱',
+          count,
+          percentage: Math.round((count / userDenom) * 100),
+          range: `${t.cumulativeStartXP.toLocaleString()} – ${t.isLast ? 'Apex' : t.cumulativeEndXP.toLocaleString()} XP`
+        };
+      }).filter(t => t.count > 0 || t.level <= 10);
+    }
+  } catch (err) {
+    console.warn('[SuperAdminGamification] DB UsersByLevel fallback:', err.message);
+  }
 
   // 5. Top 10 Creators
   const topCreators = await prisma.user.findMany({
@@ -687,12 +844,12 @@ const getSuperAdminAnalytics = async () => {
   });
 
   // 6. Fastest Progressing Users (Highest XP gained in last 7 days)
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(todayUTC.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fastUsersGroup = await prisma.pointTransaction.groupBy({
     by: ['userId'],
     where: { createdAt: { gte: sevenDaysAgo } },
-    _sum: { points: true },
-    orderBy: { _sum: { points: 'desc' } },
+    _sum: { xp: true, points: true },
+    orderBy: { _sum: { xp: 'desc' } },
     take: 5
   });
 
@@ -702,17 +859,24 @@ const getSuperAdminAnalytics = async () => {
         where: { id: item.userId },
         select: { id: true, name: true, email: true, totalXP: true }
       });
+      const gained = item._sum?.xp !== undefined && item._sum?.xp !== null ? item._sum.xp : (item._sum?.points || 0);
       return {
         id: item.userId,
         name: u?.name || 'Creator',
         email: u?.email || '',
-        weeklyXP: item._sum.points || 0,
+        weeklyXP: gained,
         totalXP: u?.totalXP || 0
       };
     })
   );
 
+  const peakDailyXP = Math.max(0, ...dailyXP.map(d => d.xp));
+
   return {
+    dailyXP,
+    weeklyXP,
+    monthlyXP,
+    xpGrowth,
     xpOverTime,
     timeline: xpOverTime,
     activityContribution,
@@ -721,7 +885,13 @@ const getSuperAdminAnalytics = async () => {
     usersByLevel,
     topUsers,
     fastestProgressingUsers,
-    totalXPDistributed: totalXPSum
+    totalXPDistributed: totalPlatformXP,
+    summary: {
+      totalXPDistributed: totalPlatformXP,
+      totalTransactions: totalTransactionsCount,
+      totalUsers: totalUsersCount,
+      peakDailyXP
+    }
   };
 };
 

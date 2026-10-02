@@ -4,6 +4,7 @@ import UserXPChart from '../../gamification/UserXPChart';
 import PositionTimeline from '../../gamification/PositionTimeline';
 import DynamicLevelTimeline from '../../gamification/DynamicLevelTimeline';
 import XPHistoryLedger from '../../gamification/XPHistoryLedger';
+import UserActivityDistribution from '../../gamification/UserActivityDistribution';
 
 export default function AdminUserGamificationDossier({
   userId,
@@ -13,7 +14,7 @@ export default function AdminUserGamificationDossier({
   const [dossier, setDossier] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeDossierTab, setActiveDossierTab] = useState('overview'); // 'overview' | 'chart' | 'rank' | 'levels' | 'history'
+  const [activeDossierTab, setActiveDossierTab] = useState('overview'); // 'overview' | 'activity' | 'levels' | 'rank' | 'history'
 
   const loadDossier = async () => {
     setIsLoading(true);
@@ -264,17 +265,24 @@ export default function AdminUserGamificationDossier({
         </button>
         <button
           type="button"
-          onClick={() => setActiveDossierTab('rank')}
-          className={`gamepoints-subnav-btn ${activeDossierTab === 'rank' ? 'active' : ''}`}
+          onClick={() => setActiveDossierTab('activity')}
+          className={`gamepoints-subnav-btn ${activeDossierTab === 'activity' ? 'active' : ''}`}
         >
-          <span>📊</span> Rank Timeline
+          <span>🎯</span> Activity Distribution
         </button>
         <button
           type="button"
           onClick={() => setActiveDossierTab('levels')}
           className={`gamepoints-subnav-btn ${activeDossierTab === 'levels' ? 'active' : ''}`}
         >
-          <span>⚡</span> Level Journey
+          <span>⚡</span> Level Progression
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveDossierTab('rank')}
+          className={`gamepoints-subnav-btn ${activeDossierTab === 'rank' ? 'active' : ''}`}
+        >
+          <span>📊</span> Rank Timeline
         </button>
         <button
           type="button"
@@ -290,17 +298,22 @@ export default function AdminUserGamificationDossier({
         <UserXPChart userId={user.id} />
       )}
 
-      {/* Tab 2: Position Timeline */}
-      {activeDossierTab === 'rank' && (
-        <PositionTimeline userId={user.id} />
+      {/* Tab 2: Activity Distribution Breakdown */}
+      {activeDossierTab === 'activity' && (
+        <UserActivityDistribution userId={user.id} initialData={dossier?.activitySummary} />
       )}
 
-      {/* Tab 3: Level Journey */}
+      {/* Tab 3: Level Progression */}
       {activeDossierTab === 'levels' && (
         <DynamicLevelTimeline userXP={profile.totalXP} currentLevel={profile.currentLevel} />
       )}
 
-      {/* Tab 4: XP Activity History */}
+      {/* Tab 4: Position Timeline */}
+      {activeDossierTab === 'rank' && (
+        <PositionTimeline userId={user.id} />
+      )}
+
+      {/* Tab 5: XP Activity History */}
       {activeDossierTab === 'history' && (
         <XPHistoryLedger targetUserId={user.id} />
       )}
