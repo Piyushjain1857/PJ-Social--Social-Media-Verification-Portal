@@ -13,8 +13,6 @@ import LoginPage from './pages/LoginPage';
 import MainLayout from './components/MainLayout';
 import { fetchHealth } from './services/api';
 import './styles/index.css';
-import './styles/app.css';
-import './styles/gamification.css';
 
 /**
  * View Routing:

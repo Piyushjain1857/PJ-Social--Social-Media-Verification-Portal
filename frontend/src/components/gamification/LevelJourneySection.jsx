@@ -34,10 +34,14 @@ export default function LevelJourneySection({ userId = null }) {
     loadJourney();
   }, [loadJourney]);
 
-  // Scroll current level into view
+  // Scroll current level into view within its container only (preventing page scroll)
   useEffect(() => {
     if (!isLoading && currentRef.current) {
-      currentRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const container = currentRef.current.parentElement;
+      if (container && container.scrollWidth > container.clientWidth) {
+        const offset = currentRef.current.offsetLeft - (container.clientWidth / 2) + (currentRef.current.clientWidth / 2);
+        container.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+      }
     }
   }, [isLoading]);
 

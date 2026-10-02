@@ -101,7 +101,6 @@ export const ROLE_NAVIGATION = {
     { id: 'my-submissions', label: 'My Submissions', icon: '📋', description: 'Track your submission verification statuses' },
     { id: 'notifications', label: 'Notifications', icon: '🔔', description: 'Verification updates & alerts', hasBadge: true },
     { id: 'profile', label: 'Profile', icon: '👤', description: 'Creator profile & connected handles' },
-    { id: 'points', label: 'Points & Rewards', icon: '🏆', description: 'Verified points balance & XP level milestones' },
   ]
 };
 
@@ -317,6 +316,15 @@ export default function MainLayout({
       handleNavChange('dashboard');
     }
   }, [user?.role]);
+
+  // Ensure views open at the top without unwanted scrolling
+  useEffect(() => {
+    const mainCol = document.querySelector('.layout-main-column');
+    if (mainCol) {
+      mainCol.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+  }, [activeNav]);
 
   // Mobile drawer state
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -729,8 +737,7 @@ export default function MainLayout({
 
         {/* Sidebar Navigation Items */}
         <nav className="sidebar-nav-container">
-          <div className="sidebar-section-heading">Navigation Menu</div>
-          {navItems.filter(item => item.id !== 'points').map((item) => {
+          {navItems.map((item) => {
             const isActive = activeNav === item.id;
             let badge = null;
             if (item.isUrgentBadge && pendingReviewCount > 0) {
@@ -756,58 +763,6 @@ export default function MainLayout({
               </button>
             );
           })}
-
-          {/* Dedicated Points & Gamification Section in Sidebar */}
-          {currentRole === 'USER' && (
-            <div className="sidebar-points-section">
-              <div className="sidebar-section-heading">Points &amp; Rewards</div>
-              <button
-                type="button"
-                id="sidebar-nav-points"
-                className={`sidebar-nav-item ${activeNav === 'points' ? 'active role-user' : ''}`}
-                onClick={() => handleNavChange('points')}
-                aria-current={activeNav === 'points' ? 'page' : undefined}
-              >
-                <div className="sidebar-nav-item-content">
-                  <span className="sidebar-nav-icon">🏆</span>
-                  <span>Points &amp; XP</span>
-                </div>
-                <span className="sidebar-points-badge-pill">{userPoints} Pts</span>
-              </button>
-
-              <div
-                className="sidebar-points-widget"
-                onClick={() => handleNavChange('game-points')}
-                title="View full points activity and XP milestones"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavChange('game-points'); }}
-              >
-                <div className="sidebar-points-widget-top">
-                  <div className="sidebar-points-tier">
-                    <span className="sidebar-points-tier-icon">{gamificationData?.icon || '🌱'}</span>
-                    <div className="sidebar-points-tier-text">
-                      <span className="sidebar-points-tier-name">{gamificationData?.levelName || 'Novice'}</span>
-                      <span className="sidebar-points-tier-lvl">Level {gamificationData?.currentLevel || 1}</span>
-                    </div>
-                  </div>
-                  <span className="sidebar-points-xp-count">{gamificationData?.totalXP ?? userPoints} XP</span>
-                </div>
-
-                <div className="sidebar-points-bar-bg">
-                  <div
-                    className="sidebar-points-bar-fill"
-                    style={{ width: `${Math.min(100, Math.max(0, gamificationData?.progressPercentage ?? 0))}%` }}
-                  />
-                </div>
-
-                <div className="sidebar-points-widget-footer">
-                  <span>{gamificationData?.xpRemaining != null ? `${gamificationData.xpRemaining} XP to next` : 'Max Level'}</span>
-                  <span>{gamificationData?.progressPercentage ?? 0}%</span>
-                </div>
-              </div>
-            </div>
-          )}
         </nav>
 
         {/* Sidebar Footer */}
@@ -862,7 +817,7 @@ export default function MainLayout({
           {user?.role === 'USER' && gamificationData && (
             <div
               style={{ cursor: 'pointer', marginBottom: '0.65rem' }}
-              onClick={() => handleNavChange('points')}
+              onClick={() => handleNavChange('game-points')}
               title="View Level Journey & Gamification"
             >
               <LevelProgressCard
@@ -922,8 +877,7 @@ export default function MainLayout({
         </div>
 
         <nav className="sidebar-nav-container">
-          <div className="sidebar-section-heading">Workspace Navigation</div>
-          {navItems.filter(item => item.id !== 'points').map((item) => {
+          {navItems.map((item) => {
             const isActive = activeNav === item.id;
             let badge = null;
             if (item.isUrgentBadge && pendingReviewCount > 0) {
@@ -947,55 +901,6 @@ export default function MainLayout({
               </button>
             );
           })}
-
-          {/* Dedicated Points & Gamification Section in Mobile Drawer */}
-          {currentRole === 'USER' && (
-            <div className="sidebar-points-section">
-              <div className="sidebar-section-heading">Points &amp; Rewards</div>
-              <button
-                type="button"
-                className={`sidebar-nav-item ${activeNav === 'points' ? 'active role-user' : ''}`}
-                onClick={() => { handleNavChange('points'); setIsMobileDrawerOpen(false); }}
-              >
-                <div className="sidebar-nav-item-content">
-                  <span className="sidebar-nav-icon">🏆</span>
-                  <span>Points &amp; XP</span>
-                </div>
-                <span className="sidebar-points-badge-pill">{userPoints} Pts</span>
-              </button>
-
-              <div
-                className="sidebar-points-widget"
-                onClick={() => { handleNavChange('game-points'); setIsMobileDrawerOpen(false); }}
-                title="View full points activity and XP milestones"
-                role="button"
-                tabIndex={0}
-              >
-                <div className="sidebar-points-widget-top">
-                  <div className="sidebar-points-tier">
-                    <span className="sidebar-points-tier-icon">{gamificationData?.icon || '🌱'}</span>
-                    <div className="sidebar-points-tier-text">
-                      <span className="sidebar-points-tier-name">{gamificationData?.levelName || 'Novice'}</span>
-                      <span className="sidebar-points-tier-lvl">Level {gamificationData?.currentLevel || 1}</span>
-                    </div>
-                  </div>
-                  <span className="sidebar-points-xp-count">{gamificationData?.totalXP ?? userPoints} XP</span>
-                </div>
-
-                <div className="sidebar-points-bar-bg">
-                  <div
-                    className="sidebar-points-bar-fill"
-                    style={{ width: `${Math.min(100, Math.max(0, gamificationData?.progressPercentage ?? 0))}%` }}
-                  />
-                </div>
-
-                <div className="sidebar-points-widget-footer">
-                  <span>{gamificationData?.xpRemaining != null ? `${gamificationData.xpRemaining} XP to next` : 'Max Level'}</span>
-                  <span>{gamificationData?.progressPercentage ?? 0}%</span>
-                </div>
-              </div>
-            </div>
-          )}
         </nav>
 
         <div className="sidebar-footer">

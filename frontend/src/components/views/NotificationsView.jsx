@@ -236,82 +236,129 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
   // Metrics computation
   const totalCount = pagination.totalCount || notifications.length;
   const readCount = Math.max(0, totalCount - unreadCount);
+  const approvalCount = notifications.filter(n => n.type === 'APPROVAL' || n.title?.toLowerCase().includes('approved')).length;
 
   return (
     <div className="notif-page-container">
-      {/* Top Banner / Actions Bar */}
-      <div className="glass-panel notif-header-panel">
-        <div>
-          <h2 style={{ margin: '0 0 0.35rem 0', fontSize: '1.25rem', color: 'var(--text-highlight)' }}>
-            🔔 Notification & Verification Center
-          </h2>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            Real-time updates regarding submission reviews, administrative actions, and account security.
-          </p>
+      {/* Dynamic Notification KPI HUD Cards */}
+      <div className="notif-kpi-grid">
+        <div className="notif-kpi-card">
+          <div className="notif-kpi-icon-box total">
+            🔔
+          </div>
+          <div className="notif-kpi-info">
+            <span className="notif-kpi-label">Total Alerts</span>
+            <span className="notif-kpi-value">{totalCount}</span>
+            <span className="notif-kpi-subtext">Activity & verification history</span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <button
-            type="button"
-            className="btn-refresh-pill"
-            onClick={loadNotifications}
-            disabled={isLoading}
-          >
-            <svg
-              className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-              <path d="M3 21v-5h5" />
-            </svg>
-            <span>{isLoading ? 'Checking…' : 'Refresh Data'}</span>
-          </button>
+        <div className="notif-kpi-card">
+          <div className="notif-kpi-icon-box unread">
+            ⚡
+          </div>
+          <div className="notif-kpi-info">
+            <span className="notif-kpi-label">Unread Attention</span>
+            <span className="notif-kpi-value" style={{ color: unreadCount > 0 ? '#fb7185' : 'inherit' }}>
+              {unreadCount}
+            </span>
+            <span className="notif-kpi-subtext">
+              {unreadCount > 0 ? 'Pending acknowledgement' : 'All alerts caught up'}
+            </span>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleMarkAllAsRead}
-            disabled={unreadCount === 0 || isMarkingAll}
-            style={{
-              padding: '0.45rem 0.95rem',
-              fontSize: '0.82rem',
-              opacity: unreadCount === 0 ? 0.5 : 1,
-              cursor: unreadCount === 0 ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isMarkingAll ? 'Marking...' : '✓ Mark All as Read'}
-          </button>
+        <div className="notif-kpi-card">
+          <div className="notif-kpi-icon-box approvals">
+            🎉
+          </div>
+          <div className="notif-kpi-info">
+            <span className="notif-kpi-label">Approvals &amp; Rewards</span>
+            <span className="notif-kpi-value" style={{ color: '#34d399' }}>
+              {approvalCount}
+            </span>
+            <span className="notif-kpi-subtext">Verified submissions &amp; XP</span>
+          </div>
+        </div>
+
+        <div className="notif-kpi-card">
+          <div className="notif-kpi-icon-box clearance">
+            🛡️
+          </div>
+          <div className="notif-kpi-info">
+            <span className="notif-kpi-label">RBAC Clearance</span>
+            <span className="notif-kpi-value" style={{ fontSize: '1.2rem', color: '#c084fc' }}>
+              {user?.role || 'USER'}
+            </span>
+            <span className="notif-kpi-subtext">Active access clearance</span>
+          </div>
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="notif-stats-strip">
-        <div className="notif-stat-pill">
-          <span>Total Notifications:</span>
-          <strong>{totalCount}</strong>
+      {/* Action Toolbar with Category Tabs & Mark All Button */}
+      <div className="notif-toolbar-strip">
+        <div className="notif-filter-tabs">
+          <button
+            type="button"
+            className={`notif-filter-tab ${typeFilter === 'ALL' && readFilter === 'ALL' ? 'active' : ''}`}
+            onClick={() => { setTypeFilter('ALL'); setReadFilter('ALL'); setPage(1); }}
+          >
+            <span>All</span>
+            <span className="notif-filter-count">{totalCount}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`notif-filter-tab ${readFilter === 'UNREAD' ? 'active' : ''}`}
+            onClick={() => { setReadFilter('UNREAD'); setTypeFilter('ALL'); setPage(1); }}
+          >
+            <span>Unread</span>
+            <span className="notif-filter-count">{unreadCount}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`notif-filter-tab ${readFilter === 'READ' ? 'active' : ''}`}
+            onClick={() => { setReadFilter('READ'); setTypeFilter('ALL'); setPage(1); }}
+          >
+            <span>Read</span>
+            <span className="notif-filter-count">{readCount}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`notif-filter-tab ${typeFilter === 'APPROVAL' ? 'active' : ''}`}
+            onClick={() => { setTypeFilter('APPROVAL'); setReadFilter('ALL'); setPage(1); }}
+          >
+            <span>🎉 Approvals</span>
+          </button>
+
+          <button
+            type="button"
+            className={`notif-filter-tab ${typeFilter === 'REJECTION' ? 'active' : ''}`}
+            onClick={() => { setTypeFilter('REJECTION'); setReadFilter('ALL'); setPage(1); }}
+          >
+            <span>❌ Rejections</span>
+          </button>
+
+          <button
+            type="button"
+            className={`notif-filter-tab ${typeFilter === 'ACCOUNT_ALERT' ? 'active' : ''}`}
+            onClick={() => { setTypeFilter('ACCOUNT_ALERT'); setReadFilter('ALL'); setPage(1); }}
+          >
+            <span>🛡️ Admin Actions</span>
+          </button>
         </div>
-        <div className={`notif-stat-pill ${unreadCount > 0 ? 'unread' : ''}`}>
-          <span>Unread:</span>
-          <strong>{unreadCount}</strong>
-        </div>
-        <div className="notif-stat-pill">
-          <span>Read:</span>
-          <strong>{readCount}</strong>
-        </div>
-        <div className="notif-stat-pill" style={{ marginLeft: 'auto' }}>
-          <span>Security Clearance:</span>
-          <strong style={{ color: 'var(--accent-cyan)' }}>{user?.role || 'USER'}</strong>
-        </div>
+
+        <button
+          type="button"
+          className="notif-action-btn-markall"
+          onClick={handleMarkAllAsRead}
+          disabled={unreadCount === 0 || isMarkingAll}
+        >
+          <span>{isMarkingAll ? '⌛' : '✓'}</span>
+          <span>{isMarkingAll ? 'Marking All...' : 'Mark All as Read'}</span>
+        </button>
       </div>
 
       {/* Status banner if action was performed */}
@@ -338,60 +385,6 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
           </button>
         </div>
       )}
-
-      {/* Quick Category Tabs */}
-      <div className="notif-filter-tabs" style={{ marginBottom: '0.5rem' }}>
-        <button
-          type="button"
-          className={`notif-filter-tab ${typeFilter === 'ALL' && readFilter === 'ALL' ? 'active' : ''}`}
-          onClick={() => { setTypeFilter('ALL'); setReadFilter('ALL'); setPage(1); }}
-        >
-          <span>All</span>
-          <span className="notif-filter-count">{totalCount}</span>
-        </button>
-
-        <button
-          type="button"
-          className={`notif-filter-tab ${readFilter === 'UNREAD' ? 'active' : ''}`}
-          onClick={() => { setReadFilter('UNREAD'); setTypeFilter('ALL'); setPage(1); }}
-        >
-          <span>Unread</span>
-          <span className="notif-filter-count">{unreadCount}</span>
-        </button>
-
-        <button
-          type="button"
-          className={`notif-filter-tab ${readFilter === 'READ' ? 'active' : ''}`}
-          onClick={() => { setReadFilter('READ'); setTypeFilter('ALL'); setPage(1); }}
-        >
-          <span>Read</span>
-          <span className="notif-filter-count">{readCount}</span>
-        </button>
-
-        <button
-          type="button"
-          className={`notif-filter-tab ${typeFilter === 'APPROVAL' ? 'active' : ''}`}
-          onClick={() => { setTypeFilter('APPROVAL'); setReadFilter('ALL'); setPage(1); }}
-        >
-          <span>🎉 Approvals</span>
-        </button>
-
-        <button
-          type="button"
-          className={`notif-filter-tab ${typeFilter === 'REJECTION' ? 'active' : ''}`}
-          onClick={() => { setTypeFilter('REJECTION'); setReadFilter('ALL'); setPage(1); }}
-        >
-          <span>❌ Rejections</span>
-        </button>
-
-        <button
-          type="button"
-          className={`notif-filter-tab ${typeFilter === 'ACCOUNT_ALERT' ? 'active' : ''}`}
-          onClick={() => { setTypeFilter('ACCOUNT_ALERT'); setReadFilter('ALL'); setPage(1); }}
-        >
-          <span>🛡️ Admin Actions</span>
-        </button>
-      </div>
 
       {/* Professional Search & Filter Bar */}
       <FilterBar
@@ -449,7 +442,7 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
       {isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {[1, 2, 3].map(n => (
-            <div key={n} className="glass-panel skeleton-card" style={{ height: '90px' }} />
+            <div key={n} className="glass-panel skeleton-card" style={{ height: '90px', borderRadius: '14px' }} />
           ))}
         </div>
       ) : notifications.length === 0 ? (
@@ -480,7 +473,7 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
             return (
               <div
                 key={notif.id}
-                className={`glass-panel notif-card ${isUnread ? 'unread' : ''}`}
+                className={`notif-card ${isUnread ? 'unread' : ''}`}
                 style={{
                   borderLeftColor: meta.borderColor,
                 }}
@@ -491,7 +484,7 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
                   style={{
                     background: meta.bgColor,
                     color: meta.color,
-                    border: `1px solid ${meta.borderColor}33`
+                    border: `1px solid ${meta.borderColor}44`
                   }}
                 >
                   {meta.icon}
@@ -510,10 +503,11 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
                       <span
                         className="badge"
                         style={{
-                          fontSize: '0.66rem',
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
                           background: meta.bgColor,
                           color: meta.color,
-                          borderColor: `${meta.borderColor}44`
+                          borderColor: `${meta.borderColor}55`
                         }}
                       >
                         {meta.label}
@@ -532,11 +526,11 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
 
                   {/* Card Bottom / Actions */}
                   <div className="notif-card-bottom">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                       {notif.submissionId && (
                         <button
                           type="button"
-                          className="nav-link"
+                          className="notif-submission-pill"
                           onClick={() => {
                             if (user?.role === 'USER') {
                               onNavigateToNav('my-submissions');
@@ -544,25 +538,14 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
                               onNavigateToNav('review-submissions');
                             }
                           }}
-                          style={{
-                            fontSize: '0.78rem',
-                            background: 'none',
-                            border: 'none',
-                            padding: 0,
-                            cursor: 'pointer',
-                            color: 'var(--accent-cyan)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.25rem'
-                          }}
                         >
-                          <span>Inspect linked submission #{notif.submissionId}</span>
+                          <span>🔍 Inspect Submission #{notif.submissionId.slice(0, 8)}</span>
                           <span>→</span>
                         </button>
                       )}
 
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        {new Date(notif.createdAt).toLocaleDateString()} at{' '}
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                        {new Date(notif.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
                         {new Date(notif.createdAt).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit'
@@ -574,16 +557,9 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
                       {isUnread ? (
                         <button
                           type="button"
-                          className="btn-secondary"
+                          className="notif-mark-single-btn"
                           onClick={() => handleMarkAsRead(notif.id)}
                           disabled={isMarkingThis}
-                          style={{
-                            fontSize: '0.74rem',
-                            padding: '0.25rem 0.65rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.35rem'
-                          }}
                         >
                           <span>{isMarkingThis ? '⌛' : '✓'}</span>
                           <span>{isMarkingThis ? 'Marking...' : 'Mark as read'}</span>
@@ -591,9 +567,10 @@ export default function NotificationsView({ onNavigateToNav, onNotificationUpdat
                       ) : (
                         <span
                           style={{
-                            fontSize: '0.72rem',
+                            fontSize: '0.74rem',
+                            fontWeight: 600,
                             color: 'var(--text-muted)',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             gap: '0.25rem'
                           }}

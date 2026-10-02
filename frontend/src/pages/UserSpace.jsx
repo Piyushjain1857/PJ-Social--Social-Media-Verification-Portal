@@ -18,13 +18,59 @@ const PLATFORMS = [
 ];
 
 const ACTIONS = [
-  { id: 'LIKE', name: 'Like / Upvote', icon: '❤️', desc: 'Reacted to official post' },
-  { id: 'COMMENT', name: 'Discussion Comment', icon: '💬', desc: 'Meaningful feedback posted' },
-  { id: 'STORY', name: '24h Story Share', icon: '📱', desc: 'Broadcasted to followers' },
+  { id: 'LIKE', name: 'Like / Upvote', icon: '❤️', desc: 'Reacted to official post', xp: '+10 XP' },
+  { id: 'COMMENT', name: 'Discussion Comment', icon: '💬', desc: 'Meaningful feedback posted', xp: '+15 XP' },
+  { id: 'STORY', name: '24h Story Share', icon: '📱', desc: 'Broadcasted to followers', xp: '+25 XP' },
+];
+
+const SAMPLE_DEMO_SUBMISSIONS = [
+  {
+    id: 1042,
+    platform: 'INSTAGRAM',
+    actionType: 'STORY',
+    postUrl: 'https://www.instagram.com/p/DAq_official_fest_2026',
+    description: 'Shared the official University Tech Fest teaser on my 24h Instagram story with #PJTechFest2026 tag.',
+    screenshotUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&auto=format&fit=crop&q=80',
+    status: 'APPROVED',
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    reviews: [
+      {
+        adminName: 'Dean of Media / Moderator',
+        feedback: 'Story view metrics, official handle mention, and timestamp verified. +25 XP credited to your profile!'
+      }
+    ]
+  },
+  {
+    id: 1041,
+    platform: 'LINKEDIN',
+    actionType: 'COMMENT',
+    postUrl: 'https://www.linkedin.com/feed/update/urn:li:activity:724810294819028374',
+    description: 'Participated in the AI Research Symposium discussion thread with key questions on multi-agent safety.',
+    screenshotUrl: 'https://images.unsplash.com/photo-1616469829941-c7200edec809?w=600&auto=format&fit=crop&q=80',
+    status: 'PENDING',
+    createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+    reviews: []
+  },
+  {
+    id: 1039,
+    platform: 'FACEBOOK',
+    actionType: 'LIKE',
+    postUrl: 'https://www.facebook.com/university.official/posts/9910283819284',
+    description: 'Liked and reacted to the campus placement report release post.',
+    screenshotUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop&q=80',
+    status: 'APPROVED',
+    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+    reviews: [
+      {
+        adminName: 'Campus Admin',
+        feedback: 'Verified engagement on primary placement broadcast. +10 XP awarded.'
+      }
+    ]
+  }
 ];
 
 export default function UserSpace({ onNavigate, onNavigateToNav }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   // Tab State
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'create' | 'notifications' | 'profile' | 'rbac-test'
@@ -36,6 +82,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+  const [showDemoPreview, setShowDemoPreview] = useState(false);
 
   // Submissions search & filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,10 +142,10 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
   }, []);
 
   // Compute live creator statistics
-  const totalSubs = submissions.length;
-  const approvedSubs = submissions.filter(s => s.status === 'APPROVED').length;
-  const pendingSubs = submissions.filter(s => s.status === 'PENDING').length;
-  const rejectedSubs = submissions.filter(s => s.status === 'REJECTED').length;
+  const currentSubmissions = showDemoPreview && submissions.length === 0 ? SAMPLE_DEMO_SUBMISSIONS : submissions;
+  const totalSubs = currentSubmissions.length;
+  const approvedSubs = currentSubmissions.filter(s => s.status === 'APPROVED').length;
+  const pendingSubs = currentSubmissions.filter(s => s.status === 'PENDING').length;
   const approvalRate = totalSubs > 0 ? Math.round((approvedSubs / totalSubs) * 100) : 100;
   const unreadNotifs = notifications.filter(n => !n.isRead).length;
 
@@ -166,6 +214,25 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
     }
   };
 
+  // Fast quest launcher from empty state
+  const handleStartQuest = (platform, actionType) => {
+    const targetObj = PLATFORMS.find(p => p.id === platform);
+    setFormData(prev => ({
+      ...prev,
+      platform,
+      actionType,
+      postUrl: targetObj?.placeholder || ''
+    }));
+    setActiveTab('create');
+  };
+
+  // Copy link
+  const handleCopyUrl = (url, id) => {
+    navigator.clipboard?.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   // Mark single notification read
   const handleMarkNotifRead = async (id) => {
     try {
@@ -220,7 +287,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
   };
 
   // Filtered submissions
-  const filteredSubmissions = submissions.filter(sub => {
+  const filteredSubmissions = currentSubmissions.filter(sub => {
     const matchesSearch = !searchTerm ||
       sub.postUrl?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -234,7 +301,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
     if (status === 'APPROVED') {
       return (
         <span className="user-sub-status-pill approved">
-          <span>✓</span> APPROVED
+          <span>✓</span> VERIFIED APPROVED
         </span>
       );
     }
@@ -255,17 +322,23 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
   const selectedPlatformObj = PLATFORMS.find(p => p.id === formData.platform) || PLATFORMS[0];
   const selectedActionObj = ACTIONS.find(a => a.id === formData.actionType) || ACTIONS[0];
 
+  const currentLevelNumber = gamification?.currentLevel || 1;
+  const currentLevelName = gamification?.levelName || 'Novice';
+  const currentTotalXP = gamification?.totalXP || 0;
+  const currentProgressPercent = gamification?.progressPercentage || 0;
+  const xpRemaining = gamification?.xpRemaining ?? 100;
+
   return (
     <div className="user-space-wrapper">
-      {/* ── 1. Top Creator Hero Banner ── */}
-      <section className="user-hero-card" aria-label="Creator Activity Workspace Header">
+      {/* ── 1. Top Creator Command Hub (Hero Banner) ── */}
+      <section className="user-hero-card" aria-label="Creator Activity Workspace Command Hub">
         <div className="user-hero-inner">
           <div className="user-hero-identity">
             <div className="user-hero-avatar-wrap">
               <div className="user-hero-avatar">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
-              <div className="user-hero-status-pip" title="Account active and verified" />
+              <div className="user-hero-status-pip" title="Live Authenticated Session Active" />
             </div>
 
             <div className="user-hero-details">
@@ -276,114 +349,170 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 <span className="user-badge-chip account-active">
                   ✓ VERIFIED ACCOUNT
                 </span>
-                {gamification?.levelName && (
-                  <span className="user-badge-chip xp-tier">
-                    {gamification.icon || '🌱'} Level {gamification.currentLevel || 1} · {gamification.levelName}
-                  </span>
-                )}
+                <span className="user-badge-chip xp-tier">
+                  {gamification?.icon || '🌱'} Level {currentLevelNumber} · {currentLevelName}
+                </span>
+                <span className="user-badge-chip streak-chip">
+                  🔥 1-Day Streak
+                </span>
               </div>
               <h1>
-                <span>Creator Activity Workspace</span>
+                <span>Welcome back, </span>
+                <span className="creator-name-highlight">{user?.name || 'Creator'}</span>
               </h1>
               <p className="user-hero-email">
-                Logged in as <strong>{user?.name}</strong> (<span style={{ color: 'var(--role-user, #34d399)' }}>{user?.email}</span>)
+                <span>Account:</span>
+                <strong style={{ color: '#f8fafc' }}>{user?.email}</strong>
+                <span style={{ color: '#475569' }}>•</span>
+                <span style={{ color: '#38bdf8' }}>ID: #{user?.id ? String(user.id).slice(-6) : 'PJ-USER'}</span>
               </p>
             </div>
           </div>
 
           <div className="user-hero-actions">
-            {onNavigateToNav ? (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => onNavigateToNav('dashboard')}
-                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}
-              >
-                📊 Main Dashboard
-              </button>
-            ) : onNavigate ? (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => onNavigate('portal')}
-                style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}
-              >
-                🌐 Public Landing
-              </button>
-            ) : null}
-
             <button
               type="button"
-              className="btn-refresh-pill"
-              onClick={loadUserData}
-              disabled={isLoading}
-              title="Refresh all metrics"
-            >
-              <svg
-                className={`refresh-icon-svg ${isLoading ? 'spinning' : ''}`}
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                <path d="M3 21v-5h5" />
-              </svg>
-              <span>{isLoading ? 'Refreshing…' : 'Refresh Data'}</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={logout}
-              style={{
-                fontSize: '0.82rem',
-                padding: '0.5rem 1.1rem',
-                background: 'rgba(239, 68, 68, 0.85)',
-                color: '#fff',
-                borderColor: 'rgba(239, 68, 68, 0.4)'
+              className="btn-hero-primary"
+              onClick={() => {
+                setActiveTab('create');
               }}
             >
-              Sign Out
+              <span>➕</span>
+              <span>Submit Proof</span>
             </button>
+
+            <button
+              type="button"
+              className="btn-hero-glass"
+              onClick={() => setActiveTab('profile')}
+            >
+              <span>🎮</span>
+              <span>XP &amp; Rewards</span>
+            </button>
+
+            <div className="telemetry-pill" title="Live background synchronization active">
+              <div className="telemetry-dot" />
+              <span>Live Cloud Sync</span>
+            </div>
           </div>
         </div>
 
-        {/* Hero Quick Metrics Ribbon */}
-        <div className="user-hero-stats-ribbon">
-          <div className="user-hero-stat-box">
-            <span className="user-hero-stat-label">Total Proofs</span>
-            <span className="user-hero-stat-value">{totalSubs}</span>
-          </div>
-          <div className="user-hero-stat-box">
-            <span className="user-hero-stat-label">Verified Approved</span>
-            <span className="user-hero-stat-value success">{approvedSubs}</span>
-          </div>
-          <div className="user-hero-stat-box">
-            <span className="user-hero-stat-label">Pending Review</span>
-            <span className="user-hero-stat-value warning">{pendingSubs}</span>
-          </div>
-          <div className="user-hero-stat-box">
-            <span className="user-hero-stat-label">Approval Rate</span>
-            <span className="user-hero-stat-value">{approvalRate}%</span>
-          </div>
-          <div className="user-hero-stat-box">
-            <span className="user-hero-stat-label">XP Progression</span>
-            <span className="user-hero-stat-value" style={{ color: '#38bdf8' }}>
-              {gamification?.totalXP ?? 0} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>XP</span>
+        {/* Dynamic XP Progress Ribbon inside Hero */}
+        <div className="hero-xp-track-wrap">
+          <div className="hero-xp-track-header">
+            <span className="hero-xp-track-label">
+              <span>⚡ Level Journey:</span>
+              <strong>{currentLevelName}</strong>
+              <span style={{ color: '#64748b' }}>→</span>
+              <span style={{ color: '#94a3b8' }}>Level {currentLevelNumber + 1} (Rising Star)</span>
             </span>
+            <span className="hero-xp-track-values">
+              <span style={{ color: '#34d399' }}>{currentTotalXP} XP</span>
+              <span style={{ color: '#64748b' }}> / </span>
+              <span style={{ color: '#94a3b8' }}>{currentTotalXP + xpRemaining} XP</span>
+              <span style={{ color: '#06b6d4', marginLeft: '0.5rem' }}>({currentProgressPercent}%)</span>
+            </span>
+          </div>
+          <div className="hero-xp-bar-bg">
+            <div
+              className="hero-xp-bar-fill"
+              style={{ width: `${Math.max(4, Math.min(100, currentProgressPercent))}%` }}
+            />
           </div>
         </div>
       </section>
 
-      {/* ── 2. Modern Segmented Tab Navigation ── */}
+      {/* ── 2. Futuristic Holographic Metric Cards ── */}
+      <div className="user-hero-stats-ribbon">
+        {/* Card 1: Total Proofs */}
+        <div className="user-stat-card theme-indigo">
+          <div className="stat-card-header">
+            <span className="stat-card-label">Total Proofs</span>
+            <div className="stat-card-icon-orb indigo">📊</div>
+          </div>
+          <div className="stat-card-value-wrap">
+            <span className="stat-card-value">{totalSubs}</span>
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-card-tag" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+              All Platforms
+            </span>
+            <span>Lifetime Submissions</span>
+          </div>
+        </div>
+
+        {/* Card 2: Verified Approved */}
+        <div className="user-stat-card theme-emerald">
+          <div className="stat-card-header">
+            <span className="stat-card-label">Verified Approved</span>
+            <div className="stat-card-icon-orb emerald">🛡️</div>
+          </div>
+          <div className="stat-card-value-wrap">
+            <span className="stat-card-value emerald">{approvedSubs}</span>
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-card-tag emerald">
+              ✓ Verified
+            </span>
+            <span>Points Credited</span>
+          </div>
+        </div>
+
+        {/* Card 3: Pending Review */}
+        <div className="user-stat-card theme-amber">
+          <div className="stat-card-header">
+            <span className="stat-card-label">Pending Review</span>
+            <div className="stat-card-icon-orb amber">⏳</div>
+          </div>
+          <div className="stat-card-value-wrap">
+            <span className="stat-card-value amber">{pendingSubs}</span>
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-card-tag amber">
+              Under Review
+            </span>
+            <span>Avg &lt; 2h moderation</span>
+          </div>
+        </div>
+
+        {/* Card 4: Approval Rate */}
+        <div className="user-stat-card theme-cyan">
+          <div className="stat-card-header">
+            <span className="stat-card-label">Approval Rate</span>
+            <div className="stat-card-icon-orb cyan">🎯</div>
+          </div>
+          <div className="stat-card-value-wrap">
+            <span className="stat-card-value cyan">{approvalRate}%</span>
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-card-tag cyan">
+              Quality Score
+            </span>
+            <span>Elite Creator Standing</span>
+          </div>
+        </div>
+
+        {/* Card 5: XP Progression */}
+        <div className="user-stat-card theme-violet">
+          <div className="stat-card-header">
+            <span className="stat-card-label">XP Progression</span>
+            <div className="stat-card-icon-orb violet">⚡</div>
+          </div>
+          <div className="stat-card-value-wrap">
+            <span className="stat-card-value violet">
+              {currentTotalXP} <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>XP</span>
+            </span>
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-card-tag violet">
+              Level {currentLevelNumber}
+            </span>
+            <span>Next tier in {xpRemaining} XP</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. High-End Segmented Navigation Bar ── */}
       <nav className="user-tabs-bar" aria-label="Creator Workspace Views">
         <button
           type="button"
@@ -392,7 +521,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
         >
           <span>📋</span>
           <span>My Submissions</span>
-          <span className="user-tab-badge">{submissions.length}</span>
+          <span className="user-tab-badge">{totalSubs}</span>
         </button>
 
         <button
@@ -412,7 +541,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
           <span>🔔</span>
           <span>Notifications</span>
           {unreadNotifs > 0 ? (
-            <span className="user-tab-badge" style={{ background: '#f59e0b', color: '#07090e' }}>
+            <span className="user-tab-badge unread-alert">
               {unreadNotifs}
             </span>
           ) : (
@@ -445,8 +574,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
           className="user-pane-card"
           style={{
             padding: '1rem 1.4rem',
-            borderLeft: '4px solid var(--status-success, #10b981)',
-            background: 'rgba(16, 185, 129, 0.1)',
+            borderLeft: '4px solid #10b981',
+            background: 'rgba(16, 185, 129, 0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -472,8 +601,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
           className="user-pane-card"
           style={{
             padding: '1rem 1.4rem',
-            borderLeft: '4px solid var(--status-error, #ef4444)',
-            background: 'rgba(239, 68, 68, 0.1)',
+            borderLeft: '4px solid #ef4444',
+            background: 'rgba(239, 68, 68, 0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -507,23 +636,30 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 Browse your submitted proof of engagement, verification verdicts, and administrative review notes.
               </p>
             </div>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setActiveTab('create')}
-              style={{
-                fontSize: '0.84rem',
-                padding: '0.5rem 1.15rem',
-                background: 'var(--role-user, #34d399)',
-                color: '#07090e',
-                fontWeight: 700
-              }}
-            >
-              ➕ Submit New Proof
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {submissions.length === 0 && (
+                <button
+                  type="button"
+                  className="btn-hero-glass"
+                  onClick={() => setShowDemoPreview(!showDemoPreview)}
+                  style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
+                >
+                  <span>{showDemoPreview ? '👁️ Hide Sample Proofs' : '✨ Preview Sample Data'}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="btn-hero-primary"
+                onClick={() => setActiveTab('create')}
+              >
+                <span>➕</span>
+                <span>Submit New Proof</span>
+              </button>
+            </div>
           </div>
 
-          {/* Search & Filter Bar */}
+          {/* Search & Filter Controls */}
           <div className="user-subs-controls">
             <div className="user-search-input-wrap">
               <span className="user-search-icon">🔍</span>
@@ -534,78 +670,241 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
-
-            <div className="user-filter-pills">
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', fontWeight: 600 }}>Status:</span>
-              {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
-                <button
-                  key={st}
-                  type="button"
-                  className={`user-filter-pill ${statusFilter === st ? 'active' : ''}`}
-                  onClick={() => setStatusFilter(st)}
-                >
-                  {st === 'ALL' ? 'All' : st === 'PENDING' ? '⏳ Pending' : st === 'APPROVED' ? '✓ Approved' : '✕ Rejected'}
-                </button>
-              ))}
-
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', fontWeight: 600, marginLeft: '0.5rem' }}>Platform:</span>
-              {['ALL', 'INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map((pl) => (
-                <button
-                  key={pl}
-                  type="button"
-                  className={`user-filter-pill ${platformFilter === pl ? 'active' : ''}`}
-                  onClick={() => setPlatformFilter(pl)}
-                >
-                  {pl === 'ALL' ? 'All' : pl === 'INSTAGRAM' ? '📸 Instagram' : pl === 'LINKEDIN' ? '💼 LinkedIn' : '👥 Facebook'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Submissions List */}
-          {isLoading && submissions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-secondary)' }}>
-              <div className="status-dot checking" style={{ width: '20px', height: '20px', margin: '0 auto 1rem auto' }} />
-              <p>Loading your activity submissions…</p>
-            </div>
-          ) : filteredSubmissions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📤</div>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#e2e8f0', fontSize: '1.1rem' }}>
-                {searchTerm || statusFilter !== 'ALL' || platformFilter !== 'ALL'
-                  ? 'No matching submissions found'
-                  : 'No activity proof submitted yet'}
-              </h3>
-              <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.86rem', maxWidth: '380px', marginInline: 'auto' }}>
-                {searchTerm || statusFilter !== 'ALL' || platformFilter !== 'ALL'
-                  ? 'Try clearing your active search filter or status selection.'
-                  : 'Submit social engagement proofs to earn creator points, unlock achievement levels, and rise on the leaderboard.'}
-              </p>
-              {searchTerm || statusFilter !== 'ALL' || platformFilter !== 'ALL' ? (
+              {searchTerm && (
                 <button
                   type="button"
-                  className="btn-secondary"
-                  onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setPlatformFilter('ALL'); }}
-                  style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
+                  className="user-search-clear"
+                  onClick={() => setSearchTerm('')}
+                  title="Clear search"
                 >
-                  Reset Filters
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => setActiveTab('create')}
-                  style={{ fontSize: '0.85rem', padding: '0.55rem 1.25rem', background: 'var(--role-user, #34d399)', color: '#07090e', fontWeight: 700 }}
-                >
-                  Submit Your First Activity Proof →
+                  ✕
                 </button>
               )}
             </div>
+
+            <div className="user-filter-groups">
+              <div className="user-filter-pills">
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Status:</span>
+                {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className={`user-filter-pill ${statusFilter === st ? 'active' : ''}`}
+                    onClick={() => setStatusFilter(st)}
+                  >
+                    {st === 'ALL' ? 'All' : st === 'PENDING' ? '⏳ Pending' : st === 'APPROVED' ? '✓ Approved' : '✕ Rejected'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="user-filter-pills">
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Platform:</span>
+                {['ALL', 'INSTAGRAM', 'LINKEDIN', 'FACEBOOK'].map((pl) => (
+                  <button
+                    key={pl}
+                    type="button"
+                    className={`user-filter-pill ${platformFilter === pl ? `active pill-${pl.toLowerCase()}` : ''}`}
+                    onClick={() => setPlatformFilter(pl)}
+                  >
+                    {pl === 'ALL' ? 'All' : pl === 'INSTAGRAM' ? '📸 Instagram' : pl === 'LINKEDIN' ? '💼 LinkedIn' : '👥 Facebook'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Submissions Feed List */}
+          {isLoading && submissions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#94a3b8' }}>
+              <div className="status-dot checking" style={{ width: '22px', height: '22px', margin: '0 auto 1.25rem auto' }} />
+              <p style={{ fontSize: '1rem', fontWeight: 600 }}>Loading verified activity submissions…</p>
+            </div>
+          ) : filteredSubmissions.length === 0 ? (
+            /* ── Interactive Empty State: Creator Quest Launchpad ── */
+            <div className="creator-quest-launchpad">
+              <div className="launchpad-hero-orb">🚀</div>
+              <h3 className="launchpad-title">
+                {searchTerm || statusFilter !== 'ALL' || platformFilter !== 'ALL'
+                  ? 'No matching activity submissions found'
+                  : 'Launch Your First Creator Submission'}
+              </h3>
+              <p className="launchpad-subtitle">
+                {searchTerm || statusFilter !== 'ALL' || platformFilter !== 'ALL'
+                  ? 'Try clearing your active search term or filter selection to see all records.'
+                  : 'Turn your college social media engagement into verified creator points, climb the campus leaderboard, and unlock elite ranks.'}
+              </p>
+
+              {searchTerm || statusFilter !== 'ALL' || platformFilter !== 'ALL' ? (
+                <button
+                  type="button"
+                  className="btn-hero-glass"
+                  onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setPlatformFilter('ALL'); }}
+                  style={{ margin: '0 auto' }}
+                >
+                  Reset All Filters
+                </button>
+              ) : (
+                <>
+                  {/* 3 Interactive Quick Quests */}
+                  <div className="quest-cards-grid">
+                    {/* Quest 1 */}
+                    <div
+                      className="quest-mission-card instagram"
+                      onClick={() => handleStartQuest('INSTAGRAM', 'STORY')}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="quest-card-header">
+                        <span className="quest-platform-badge">
+                          <span>📸</span> Instagram
+                        </span>
+                        <span className="quest-xp-reward">+25 XP Boost</span>
+                      </div>
+                      <div className="quest-card-body">
+                        <h4>24h Story Broadcast</h4>
+                        <p>Share official fest, hackathon, or campus announcements on your Instagram story.</p>
+                      </div>
+                      <div className="quest-card-footer">
+                        <span>Start Quest →</span>
+                        <span>📱 Story Share</span>
+                      </div>
+                    </div>
+
+                    {/* Quest 2 */}
+                    <div
+                      className="quest-mission-card linkedin"
+                      onClick={() => handleStartQuest('LINKEDIN', 'COMMENT')}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="quest-card-header">
+                        <span className="quest-platform-badge">
+                          <span>💼</span> LinkedIn
+                        </span>
+                        <span className="quest-xp-reward">+15 XP</span>
+                      </div>
+                      <div className="quest-card-body">
+                        <h4>Thoughtful Discussion</h4>
+                        <p>Post meaningful feedback and insights on official college career &amp; research articles.</p>
+                      </div>
+                      <div className="quest-card-footer">
+                        <span>Start Quest →</span>
+                        <span>💬 Discussion</span>
+                      </div>
+                    </div>
+
+                    {/* Quest 3 */}
+                    <div
+                      className="quest-mission-card facebook"
+                      onClick={() => handleStartQuest('INSTAGRAM', 'LIKE')}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="quest-card-header">
+                        <span className="quest-platform-badge">
+                          <span>❤️</span> Social Like
+                        </span>
+                        <span className="quest-xp-reward">+10 XP</span>
+                      </div>
+                      <div className="quest-card-body">
+                        <h4>Campus Post Reaction</h4>
+                        <p>Like and support official announcements across university handles.</p>
+                      </div>
+                      <div className="quest-card-footer">
+                        <span>Start Quest →</span>
+                        <span>⚡ Fastest Proof</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3-Step Verification Roadmap */}
+                  <div className="launchpad-roadmap">
+                    <div className="roadmap-step">
+                      <div className="roadmap-num">1</div>
+                      <div className="roadmap-text">
+                        <h5>Engage on Social Media</h5>
+                        <p>Like, comment, or share official university posts on your handles.</p>
+                      </div>
+                    </div>
+                    <div className="roadmap-step">
+                      <div className="roadmap-num">2</div>
+                      <div className="roadmap-text">
+                        <h5>Capture Screenshot Proof</h5>
+                        <p>Take a clear screenshot showing your username and engagement timestamp.</p>
+                      </div>
+                    </div>
+                    <div className="roadmap-step">
+                      <div className="roadmap-num">3</div>
+                      <div className="roadmap-text">
+                        <h5>Earn Verified XP</h5>
+                        <p>Moderators review and award XP points directly into your creator profile.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-hero-primary"
+                      onClick={() => setActiveTab('create')}
+                      style={{ padding: '0.85rem 2rem', fontSize: '0.95rem' }}
+                    >
+                      <span>🚀</span>
+                      <span>Submit Activity Proof Now</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-hero-glass"
+                      onClick={() => setShowDemoPreview(true)}
+                      style={{ padding: '0.85rem 1.6rem', fontSize: '0.9rem' }}
+                    >
+                      <span>👁️</span>
+                      <span>Preview Sample Verified Card</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {showDemoPreview && submissions.length === 0 && (
+                <div style={{
+                  padding: '0.75rem 1.25rem',
+                  background: 'rgba(56, 189, 248, 0.12)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1rem'
+                }}>
+                  <div style={{ color: '#38bdf8', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>✨</span>
+                    <span><strong>Preview Mode:</strong> Displaying sample verified submissions to demonstrate cards, lightbox zoom, and review notes.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDemoPreview(false)}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                  >
+                    Close Preview
+                  </button>
+                </div>
+              )}
+
               {filteredSubmissions.map((sub) => {
                 const pInfo = PLATFORMS.find(p => p.id === sub.platform) || { name: sub.platform, icon: '🌐', class: 'default' };
+                const formattedId = typeof sub.id === 'string' && sub.id.length > 10
+                  ? `#${sub.id.slice(0, 8)}…`
+                  : `#${sub.id}`;
+                const relativeTime = new Date(sub.createdAt).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+
                 return (
                   <article key={sub.id} className="user-sub-card">
                     <div className="user-sub-card-header">
@@ -615,11 +914,16 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                           <span>{pInfo.name}</span>
                         </span>
                         <span className="action-pill">
-                          {sub.actionType}
+                          {ACTIONS.find(a => a.id === sub.actionType)?.icon || '⚡'} {sub.actionType}
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', fontFamily: 'monospace' }}>
-                          ID: #{sub.id}
-                        </span>
+                        <button
+                          type="button"
+                          className="sub-id-chip"
+                          onClick={() => handleCopyUrl(String(sub.id), `id-${sub.id}`)}
+                          title={`Click to copy full ID (${sub.id})`}
+                        >
+                          {copiedId === `id-${sub.id}` ? '✓ Copied!' : `ID: ${formattedId}`}
+                        </button>
                       </div>
 
                       <div>
@@ -629,34 +933,49 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
 
                     {sub.description && (
                       <p className="user-sub-desc">
-                        {sub.description}
+                        "{sub.description}"
                       </p>
                     )}
 
                     <div className="user-sub-link-row">
-                      <strong style={{ color: '#94a3b8' }}>Post URL:</strong>
-                      <a
-                        href={sub.postUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Open external target post in a new tab"
+                      <div className="target-url-content">
+                        <span className="target-url-label">🔗 Target Post:</span>
+                        <a
+                          href={sub.postUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open target post in a new tab"
+                          className="target-url-link"
+                        >
+                          <span>{sub.postUrl}</span>
+                          <span style={{ fontSize: '0.85rem' }}>↗</span>
+                        </a>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyUrl(sub.postUrl, sub.id)}
+                        className="btn-copy-target"
+                        title="Copy target URL to clipboard"
                       >
-                        <span>{sub.postUrl}</span>
-                        <span style={{ fontSize: '0.75rem' }}>↗</span>
-                      </a>
+                        {copiedId === sub.id ? '✓ Copied' : '📋 Copy URL'}
+                      </button>
                     </div>
 
                     {/* Screenshot Evidence Preview */}
                     {sub.screenshotUrl && (
-                      <div style={{ marginTop: '0.25rem' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', marginBottom: '0.4rem', fontWeight: 600 }}>
-                          📸 Attached Evidence Proof:
+                      <div className="evidence-preview-wrapper">
+                        <div className="evidence-preview-header">
+                          <span>📸</span>
+                          <span>Attached Proof Evidence (Click image to inspect):</span>
                         </div>
-                        <ScreenshotImage
-                          screenshotUrl={sub.screenshotUrl}
-                          alt={`Submission #${sub.id} proof`}
-                          thumbnailStyle={{ width: '100px', height: '65px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)' }}
-                        />
+                        <div className="evidence-image-frame">
+                          <ScreenshotImage
+                            screenshotUrl={sub.screenshotUrl}
+                            alt={`Submission #${sub.id} proof evidence`}
+                            thumbnailStyle={{ width: '150px', height: '95px', borderRadius: '10px', objectFit: 'cover' }}
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -664,8 +983,9 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                     {sub.reviews && sub.reviews.length > 0 && (
                       <div className="moderator-feedback-box">
                         <div className="moderator-feedback-header">
-                          <span>🛡️</span>
-                          <span>Reviewer Feedback ({sub.reviews[0].adminName || 'Moderator'}):</span>
+                          <span className="moderator-shield-icon">🛡️</span>
+                          <span className="moderator-header-text">Official Reviewer Verdict ({sub.reviews[0].adminName || 'Moderator'}):</span>
+                          <span className="moderator-verified-tag">✓ VERIFIED BY ADMIN</span>
                         </div>
                         <p className="moderator-feedback-text">
                           "{sub.reviews[0].feedback || 'Verified activity matches community guidelines.'}"
@@ -673,9 +993,13 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted, #64748b)', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <span>Submitted on {new Date(sub.createdAt).toLocaleString()}</span>
-                      <span>Security: Server-Verified Token</span>
+                    <div className="user-sub-card-footer">
+                      <span className="sub-time-label">
+                        <span>🕒</span> Submitted on {relativeTime}
+                      </span>
+                      <span className="sub-security-token">
+                        <span>🔒</span> Server-Verified Token Signature
+                      </span>
                     </div>
                   </article>
                 );
@@ -695,14 +1019,14 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 <span>Submit Social Media Activity Proof</span>
               </h2>
               <p>
-                Authorized role: <strong style={{ color: 'var(--role-user, #34d399)' }}>USER</strong>. Submissions are securely processed via <code style={{ color: '#38bdf8' }}>POST /api/submissions</code>.
+                Authorized role: <strong style={{ color: '#34d399' }}>USER</strong>. Submissions are processed via secure server-side verification pipelines.
               </p>
             </div>
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-hero-glass"
               onClick={() => setActiveTab('submissions')}
-              style={{ fontSize: '0.82rem', padding: '0.45rem 0.9rem' }}
+              style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
             >
               ← Back to My Submissions
             </button>
@@ -712,7 +1036,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
             {/* Form Column */}
             <form onSubmit={handleCreateSubmission}>
               {/* Platform Selector */}
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-group-label">1. Select Target Social Platform *</label>
                 <div className="platform-select-grid">
                   {PLATFORMS.map((p) => {
@@ -728,7 +1052,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                       >
                         <span className="p-icon">{p.icon}</span>
                         <span className="p-name">{p.name}</span>
-                        {isSelected && <span style={{ fontSize: '0.7rem', color: '#34d399' }}>✓ Selected</span>}
+                        {isSelected && <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>✓ Selected</span>}
                       </div>
                     );
                   })}
@@ -736,7 +1060,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
               </div>
 
               {/* Action Type Selector */}
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-group-label">2. Select Action Type *</label>
                 <div className="action-select-grid">
                   {ACTIONS.map((a) => {
@@ -750,10 +1074,11 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setFormData({ ...formData, actionType: a.id }); }}
                       >
-                        <span style={{ fontSize: '1.25rem' }}>{a.icon}</span>
+                        <span className="action-reward-tag">{a.xp}</span>
+                        <div style={{ fontSize: '1.4rem' }}>{a.icon}</div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{a.name}</div>
-                          <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>{a.desc}</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc' }}>{a.name}</div>
+                          <div style={{ fontSize: '0.74rem', opacity: 0.8, marginTop: '0.2rem' }}>{a.desc}</div>
                         </div>
                       </div>
                     );
@@ -762,7 +1087,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
               </div>
 
               {/* Target Post URL */}
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-group-label">3. Target Post / Reel URL *</label>
                 <input
                   type="url"
@@ -772,26 +1097,36 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                   value={formData.postUrl}
                   onChange={(e) => setFormData({ ...formData, postUrl: e.target.value })}
                 />
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '0.35rem' }}>
-                  Paste the direct public link to the official post you engaged with.
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem' }}>
+                  Paste the direct public link to the official university post you engaged with.
                 </div>
               </div>
 
               {/* Proof Attachment Mode (File Upload vs URL) */}
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-group-label">4. Screenshot Proof Evidence (Optional)</label>
-                <div className="proof-mode-toggle">
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.85rem' }}>
                   <button
                     type="button"
-                    className={`proof-toggle-btn ${proofMode === 'file' ? 'active' : ''}`}
+                    className={`btn-hero-glass ${proofMode === 'file' ? 'selected' : ''}`}
                     onClick={() => setProofMode('file')}
+                    style={{
+                      background: proofMode === 'file' ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.05)',
+                      borderColor: proofMode === 'file' ? '#34d399' : 'rgba(255,255,255,0.1)',
+                      color: proofMode === 'file' ? '#34d399' : '#94a3b8'
+                    }}
                   >
                     📁 Direct Image Upload
                   </button>
                   <button
                     type="button"
-                    className={`proof-toggle-btn ${proofMode === 'url' ? 'active' : ''}`}
+                    className={`btn-hero-glass ${proofMode === 'url' ? 'selected' : ''}`}
                     onClick={() => setProofMode('url')}
+                    style={{
+                      background: proofMode === 'url' ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.05)',
+                      borderColor: proofMode === 'url' ? '#34d399' : 'rgba(255,255,255,0.1)',
+                      color: proofMode === 'url' ? '#34d399' : '#94a3b8'
+                    }}
                   >
                     🔗 External URL
                   </button>
@@ -808,25 +1143,33 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                     />
 
                     {filePreview ? (
-                      <div className="proof-preview-container">
-                        <img src={filePreview} alt="Proof preview" className="proof-thumb-preview" />
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        padding: '1rem',
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        border: '1px solid rgba(52, 211, 153, 0.3)',
+                        borderRadius: '12px'
+                      }}>
+                        <img src={filePreview} alt="Proof preview" style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.2)' }} />
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc' }}>
+                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#f8fafc' }}>
                             {selectedFile?.name}
                           </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #64748b)' }}>
-                            {(selectedFile?.size / 1024).toFixed(1)} KB · Image ready for verification
+                          <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '0.2rem' }}>
+                            ✓ {(selectedFile?.size / 1024).toFixed(1)} KB · Image verified &amp; ready
                           </div>
                         </div>
                         <button
                           type="button"
-                          className="btn-secondary"
+                          className="btn-hero-glass"
                           onClick={() => {
                             setSelectedFile(null);
                             if (filePreview) URL.revokeObjectURL(filePreview);
                             setFilePreview(null);
                           }}
-                          style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
+                          style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem' }}
                         >
                           Remove
                         </button>
@@ -843,11 +1186,11 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                           if (e.dataTransfer.files?.[0]) handleFileChange(e.dataTransfer.files[0]);
                         }}
                       >
-                        <div style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>📷</div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0' }}>
-                          Click or drag image file here to attach proof
+                        <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>📷</div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#e2e8f0' }}>
+                          Click or drag screenshot file here to attach proof
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '0.2rem' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>
                           Supports JPEG, PNG, WebP up to 5 MB
                         </div>
                       </div>
@@ -862,7 +1205,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                       value={formData.screenshotUrl}
                       onChange={(e) => setFormData({ ...formData, screenshotUrl: e.target.value })}
                     />
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '0.35rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem' }}>
                       Provide a direct link to an image host or public screenshot permalink.
                     </div>
                   </div>
@@ -870,53 +1213,49 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
               </div>
 
               {/* Activity Description */}
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '1.75rem' }}>
                 <label className="form-group-label">5. Activity Description &amp; Verification Notes</label>
                 <textarea
                   rows={3}
                   className="user-form-textarea"
-                  placeholder="Provide brief context (e.g., 'Liked the official campus hackathon announcement post and added a congratulatory comment')."
+                  placeholder="Provide brief context (e.g., 'Shared official campus tech fest announcement on my story. Handle @myhandle visible in screenshot')."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
               {/* Submission CTA */}
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn-hero-primary"
                   disabled={submitting}
                   style={{
-                    padding: '0.75rem 1.75rem',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    background: 'var(--role-user, #34d399)',
-                    color: '#07090e',
-                    boxShadow: '0 4px 18px rgba(52, 211, 153, 0.35)'
+                    padding: '0.85rem 2rem',
+                    fontSize: '0.95rem'
                   }}
                 >
                   {submitting ? 'Encrypting & Submitting Proof…' : 'Submit Activity Proof →'}
                 </button>
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="btn-hero-glass"
                   onClick={() => setActiveTab('submissions')}
-                  style={{ padding: '0.75rem 1.25rem', fontSize: '0.88rem' }}
+                  style={{ padding: '0.85rem 1.4rem' }}
                 >
                   Cancel
                 </button>
               </div>
             </form>
 
-            {/* Live Card Preview Column */}
+            {/* Live Simulation Card Preview Column */}
             <div>
               <div className="live-preview-box">
                 <span className="live-preview-badge">
-                  <span>👁️</span> Live Submission Preview
+                  <span>👁️</span> Live Submission Simulator
                 </span>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                   <span className={`platform-pill ${selectedPlatformObj.class}`}>
                     <span>{selectedPlatformObj.icon}</span>
                     <span>{selectedPlatformObj.name}</span>
@@ -926,30 +1265,30 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                   </span>
                 </div>
 
-                <p style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: '0 0 0.65rem 0', minHeight: '36px' }}>
-                  {formData.description || 'Your activity description will appear here once typed.'}
+                <p style={{ fontSize: '0.9rem', color: '#e2e8f0', margin: '0 0 0.85rem 0', minHeight: '44px', lineHeight: 1.5 }}>
+                  {formData.description || 'Your activity description will preview here in real-time as you type.'}
                 </p>
 
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', marginBottom: '0.65rem', wordBreak: 'break-all' }}>
-                  <strong>Target Link:</strong>{' '}
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '0.85rem', wordBreak: 'break-all', padding: '0.5rem 0.75rem', background: 'rgba(10, 15, 28, 0.6)', borderRadius: '6px' }}>
+                  <strong style={{ color: '#64748b' }}>Target URL:</strong>{' '}
                   <span style={{ color: '#38bdf8' }}>
                     {formData.postUrl || selectedPlatformObj.placeholder}
                   </span>
                 </div>
 
                 {filePreview && (
-                  <div style={{ marginBottom: '0.65rem' }}>
+                  <div style={{ marginBottom: '0.85rem' }}>
                     <img
                       src={filePreview}
                       alt="Proof Preview"
-                      style={{ width: '100%', maxHeight: '140px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}
+                      style={{ width: '100%', maxHeight: '160px', objectFit: 'cover', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)' }}
                     />
                   </div>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span>Status: ⏳ Pending Moderator Review</span>
-                  <span>XP: +10-25 XP on approval</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748b', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ color: '#fbbf24', fontWeight: 600 }}>Status: ⏳ Queued for Review</span>
+                  <span style={{ color: '#34d399', fontWeight: 700 }}>Reward: {selectedActionObj.xp}</span>
                 </div>
               </div>
             </div>
@@ -973,9 +1312,9 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
             {unreadNotifs > 0 && (
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-hero-glass"
                 onClick={handleMarkAllRead}
-                style={{ fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
+                style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
               >
                 ✓ Mark All as Read
               </button>
@@ -983,55 +1322,56 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
           </div>
 
           {notifications.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🔕</div>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#e2e8f0' }}>No notifications received yet</h3>
-              <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                When your submitted activities are evaluated by administrators, review verdicts will show here.
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🔕</div>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: '#e2e8f0', fontSize: '1.2rem' }}>No notifications received yet</h3>
+              <p style={{ margin: 0, fontSize: '0.88rem' }}>
+                When your submitted activities are evaluated by administrators, review verdicts and XP alerts will show here.
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {notifications.map((notif) => {
                 const isApproved = notif.title?.toLowerCase().includes('approved') || notif.message?.toLowerCase().includes('approved');
                 const isRejected = notif.title?.toLowerCase().includes('rejected') || notif.message?.toLowerCase().includes('rejected');
                 const icon = isApproved ? '🎉' : isRejected ? '❌' : '📢';
-                const borderColor = isApproved ? '#10b981' : isRejected ? '#ef4444' : 'var(--role-user, #34d399)';
+                const borderColor = isApproved ? '#10b981' : isRejected ? '#ef4444' : '#34d399';
 
                 return (
                   <div
                     key={notif.id}
                     style={{
-                      background: notif.isRead ? 'rgba(15, 23, 42, 0.45)' : 'rgba(52, 211, 153, 0.08)',
-                      borderLeft: `3px solid ${borderColor}`,
-                      borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                      borderRight: '1px solid rgba(255, 255, 255, 0.06)',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-                      borderRadius: 'var(--radius-sm, 8px)',
-                      padding: '1rem 1.25rem',
+                      background: notif.isRead ? 'rgba(15, 23, 42, 0.55)' : 'rgba(52, 211, 153, 0.1)',
+                      borderLeft: `4px solid ${borderColor}`,
+                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      padding: '1.15rem 1.4rem',
                       display: 'flex',
                       alignItems: 'flex-start',
                       justifyContent: 'space-between',
-                      gap: '1rem'
+                      gap: '1rem',
+                      boxShadow: notif.isRead ? 'none' : '0 4px 18px rgba(52, 211, 153, 0.15)'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                      <span style={{ fontSize: '1.4rem' }}>{icon}</span>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#f8fafc' }}>
                             {notif.title}
                           </span>
                           {!notif.isRead && (
-                            <span style={{ background: '#34d399', color: '#07090e', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: '10px' }}>
+                            <span style={{ background: '#34d399', color: '#07090e', fontSize: '0.68rem', fontWeight: 800, padding: '0.12rem 0.5rem', borderRadius: '10px' }}>
                               NEW
                             </span>
                           )}
                         </div>
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.5 }}>
+                        <p style={{ margin: 0, fontSize: '0.88rem', color: '#cbd5e1', lineHeight: 1.5 }}>
                           {notif.message}
                         </p>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '0.4rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.45rem' }}>
                           {new Date(notif.createdAt).toLocaleString()}
                         </div>
                       </div>
@@ -1040,9 +1380,9 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                     {!notif.isRead && (
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className="btn-hero-glass"
                         onClick={() => handleMarkNotifRead(notif.id)}
-                        style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem', flexShrink: 0 }}
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', flexShrink: 0 }}
                       >
                         Mark Read
                       </button>
@@ -1057,102 +1397,118 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
 
       {/* ── TAB 4: Creator Identity & XP Profile ── */}
       {activeTab === 'profile' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {/* Creator Credentials Card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Level Roadmap Grid */}
           <div className="user-pane-card">
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>👤</span> Creator Identity Details
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span>⚡</span> Creator Rank Progression Roadmap
             </h3>
+            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+              Verify social media activity to gain experience points, climb tiers, and unlock exclusive platform perks.
+            </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div style={{ padding: '0.75rem 1rem', background: 'rgba(10, 15, 28, 0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700 }}>Full Name</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginTop: '0.2rem' }}>{user?.name}</div>
-              </div>
-
-              <div style={{ padding: '0.75rem 1rem', background: 'rgba(10, 15, 28, 0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700 }}>Account Email</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', marginTop: '0.2rem' }}>{user?.email}</div>
-              </div>
-
-              <div style={{ padding: '0.75rem 1rem', background: 'rgba(10, 15, 28, 0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700 }}>Assigned Role</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--role-user, #34d399)', marginTop: '0.2rem' }}>{user?.role}</div>
-              </div>
-
-              <div style={{ padding: '0.75rem 1rem', background: 'rgba(10, 15, 28, 0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 700 }}>User ID</div>
-                <div style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: '#94a3b8', marginTop: '0.2rem' }}>{user?.id}</div>
-              </div>
+            <div className="level-milestone-track">
+              {[
+                { level: 1, name: 'Novice', icon: '🌱', xp: '0 - 99 XP', active: currentLevelNumber === 1 },
+                { level: 2, name: 'Rising Star', icon: '⚡', xp: '100 - 249 XP', active: currentLevelNumber === 2 },
+                { level: 3, name: 'Pro Creator', icon: '🚀', xp: '250 - 499 XP', active: currentLevelNumber === 3 },
+                { level: 4, name: 'Ambassador', icon: '👑', xp: '500 - 999 XP', active: currentLevelNumber === 4 },
+                { level: 5, name: 'Elite Vanguard', icon: '🏆', xp: '1000+ XP', active: currentLevelNumber >= 5 }
+              ].map(tier => (
+                <div key={tier.level} className={`milestone-node ${tier.active ? 'active-tier' : ''}`}>
+                  <div className="milestone-icon">{tier.icon}</div>
+                  <div className="milestone-level">Level {tier.level}</div>
+                  <div className="milestone-name">{tier.name}</div>
+                  <div className="milestone-xp">{tier.xp}</div>
+                  {tier.active && (
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#34d399', background: 'rgba(52, 211, 153, 0.2)', padding: '0.1rem 0.5rem', borderRadius: '10px' }}>
+                      CURRENT TIER
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Gamification & XP Card */}
-          <div className="user-pane-card">
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>🎮</span> Gamification &amp; XP Progression
-            </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            {/* Identity Card */}
+            <div className="user-pane-card">
+              <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>👤</span> Verified Creator Credentials
+              </h3>
 
-            {gamification ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(52, 211, 153, 0.08)', borderRadius: '10px', border: '1px solid rgba(52, 211, 153, 0.25)' }}>
-                  <span style={{ fontSize: '2.5rem' }}>{gamification.icon || '🌱'}</span>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#34d399', fontWeight: 700 }}>Current Rank</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>
-                      Level {gamification.currentLevel || 1} · {gamification.levelName || 'Novice'}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                      Total Earned: <strong>{gamification.totalXP || 0} XP</strong>
-                    </div>
-                  </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                <div style={{ padding: '0.85rem 1.15rem', background: 'rgba(10, 15, 28, 0.6)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Creator Name</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginTop: '0.2rem' }}>{user?.name}</div>
                 </div>
 
-                {/* XP Progress Bar */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.35rem' }}>
-                    <span>Progress to Level {(gamification.currentLevel || 1) + 1}</span>
-                    <span>{gamification.progressPercentage || 0}%</span>
-                  </div>
-                  <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${Math.min(100, Math.max(0, gamification.progressPercentage || 0))}%`,
-                        background: 'linear-gradient(90deg, #34d399, #06b6d4)',
-                        borderRadius: '4px',
-                        transition: 'width 0.4s ease'
-                      }}
-                    />
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '0.35rem', textAlign: 'right' }}>
-                    {gamification.xpRemaining != null ? `${gamification.xpRemaining} XP needed for next milestone` : 'Max Level achieved'}
-                  </div>
+                <div style={{ padding: '0.85rem 1.15rem', background: 'rgba(10, 15, 28, 0.6)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Registered Email</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginTop: '0.2rem' }}>{user?.email}</div>
                 </div>
 
-                <div style={{ padding: '0.75rem 1rem', background: 'rgba(10, 15, 28, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  💡 <strong>Earn more XP:</strong> Submit social media engagement proof with clear screenshot evidence. Each approved like earns +10 XP, comments earn +15 XP, and 24h stories earn +25 XP!
+                <div style={{ padding: '0.85rem 1.15rem', background: 'rgba(10, 15, 28, 0.6)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Assigned Role</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#34d399', marginTop: '0.2rem' }}>{user?.role}</div>
+                </div>
+
+                <div style={{ padding: '0.85rem 1.15rem', background: 'rgba(10, 15, 28, 0.6)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>User ID</div>
+                  <div style={{ fontSize: '0.86rem', fontFamily: 'monospace', color: '#38bdf8', marginTop: '0.2rem' }}>{user?.id}</div>
                 </div>
               </div>
-            ) : (
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <p>Loading gamification statistics…</p>
+            </div>
+
+            {/* Achievement Badges Showcase */}
+            <div className="user-pane-card">
+              <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>🏆</span> Creator Achievement Badges
+              </h3>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.85rem' }}>
+                {[
+                  { name: 'First Proof', icon: '🥇', desc: 'Submit first activity proof', unlocked: totalSubs > 0 },
+                  { name: 'Story Master', icon: '📱', desc: '3 verified story broadcasts', unlocked: approvedSubs >= 3 },
+                  { name: 'Discussion Voice', icon: '💬', desc: 'Engage on college forums', unlocked: approvedSubs >= 1 },
+                  { name: 'Flawless Record', icon: '🎯', desc: 'Maintain 100% approval rate', unlocked: approvalRate === 100 && totalSubs > 0 },
+                  { name: 'Active Streak', icon: '🔥', desc: 'Verify within 24 hours', unlocked: true },
+                  { name: 'Century Club', icon: '⚡', desc: 'Amass 100+ Total XP', unlocked: currentTotalXP >= 100 }
+                ].map(badge => (
+                  <div
+                    key={badge.name}
+                    style={{
+                      padding: '0.9rem',
+                      background: badge.unlocked ? 'rgba(52, 211, 153, 0.1)' : 'rgba(15, 23, 42, 0.5)',
+                      border: `1px solid ${badge.unlocked ? 'rgba(52, 211, 153, 0.35)' : 'rgba(255, 255, 255, 0.06)'}`,
+                      borderRadius: '10px',
+                      opacity: badge.unlocked ? 1 : 0.6
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{badge.icon}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: badge.unlocked ? '#34d399' : '#94a3b8' }}>{badge.name}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.2rem' }}>{badge.desc}</div>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 800, marginTop: '0.35rem', color: badge.unlocked ? '#10b981' : '#475569' }}>
+                      {badge.unlocked ? '✓ UNLOCKED' : '🔒 LOCKED'}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
 
       {/* ── TAB 5: RBAC API Defense Probe ── */}
       {activeTab === 'rbac-test' && (
-        <div className="user-pane-card" style={{ borderLeft: '4px solid var(--status-error, #ef4444)' }}>
+        <div className="user-pane-card" style={{ borderLeft: '4px solid #ef4444' }}>
           <div className="user-pane-header">
             <div className="user-pane-title-group">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span className="user-badge-chip" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                <span className="user-badge-chip" style={{ background: 'rgba(239, 68, 68, 0.18)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
                   SECURITY AUDIT SUITE
                 </span>
-                <span className="user-badge-chip" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                <span className="user-badge-chip" style={{ background: 'rgba(16, 185, 129, 0.18)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                   SERVER-ENFORCED MIDDLEWARE
                 </span>
               </div>
@@ -1160,7 +1516,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 <span>🛡️</span>
                 <span>Backend Role Middleware Defense Probe</span>
               </h2>
-              <p style={{ maxWidth: '800px', lineHeight: 1.6 }}>
+              <p style={{ maxWidth: '820px', lineHeight: 1.6 }}>
                 Security mandate: <em>"Do not rely only on frontend hiding. Every protected API must be secured by backend middleware. Test each role against restricted endpoints."</em>
                 <br />
                 Issue live authenticated HTTP requests using your current <strong>USER</strong> JWT token against server endpoints to verify that unauthorized requests are rejected at the server level.
@@ -1169,7 +1525,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
           </div>
 
           {/* Endpoint Probes */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', marginBottom: '1.5rem' }}>
             <button
               type="button"
               className="rbac-probe-btn"
@@ -1212,8 +1568,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
           </div>
 
           {testingEndpoint && (
-            <div style={{ padding: '1rem', color: '#38bdf8', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div className="status-dot checking" style={{ width: '12px', height: '12px' }} />
+            <div style={{ padding: '1rem', color: '#38bdf8', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <div className="status-dot checking" style={{ width: '14px', height: '14px' }} />
               <span>Transmitting live authenticated request to backend middleware…</span>
             </div>
           )}
@@ -1232,13 +1588,13 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 </div>
                 <span
                   style={{
-                    fontSize: '0.72rem',
+                    fontSize: '0.75rem',
                     fontWeight: 800,
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: '4px',
-                    background: rbacTestResult.status === 403 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                    padding: '0.25rem 0.7rem',
+                    borderRadius: '6px',
+                    background: rbacTestResult.status === 403 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)',
                     color: rbacTestResult.status === 403 ? '#f87171' : '#34d399',
-                    border: `1px solid ${rbacTestResult.status === 403 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`
+                    border: `1px solid ${rbacTestResult.status === 403 ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)'}`
                   }}
                 >
                   HTTP {rbacTestResult.status} {rbacTestResult.status === 403 ? 'FORBIDDEN (PROTECTED)' : 'AUTHORIZED'}
@@ -1246,7 +1602,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
               </div>
 
               <div className="rbac-terminal-body">
-                <div style={{ marginBottom: '0.75rem', color: rbacTestResult.status === 403 ? '#fca5a5' : '#86efac' }}>
+                <div style={{ marginBottom: '0.85rem', color: rbacTestResult.status === 403 ? '#fca5a5' : '#86efac' }}>
                   {rbacTestResult.status === 403 ? (
                     <>
                       🛡️ <strong>BACKEND DEFENSE CONFIRMED:</strong> Server role-based middleware intercepted and rejected the unauthorized request as required. The database was never queried.
@@ -1258,18 +1614,18 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                   )}
                 </div>
 
-                <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.4rem' }}>
+                <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.5rem' }}>
                   // Server Response Payload:
                 </div>
                 <pre
                   style={{
-                    background: 'rgba(0, 0, 0, 0.55)',
-                    padding: '1rem',
-                    borderRadius: '6px',
+                    background: 'rgba(0, 0, 0, 0.65)',
+                    padding: '1.25rem',
+                    borderRadius: '8px',
                     margin: 0,
                     overflowX: 'auto',
                     color: '#e2e8f0',
-                    fontSize: '0.8rem',
+                    fontSize: '0.84rem',
                     border: '1px solid rgba(255,255,255,0.08)'
                   }}
                 >

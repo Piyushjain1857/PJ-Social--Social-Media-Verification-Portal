@@ -319,97 +319,68 @@ export default function SubmitActivityView({ onNavigateToNav }) {
     setDescription('');
   };
 
+  // ─── Stepper Progress Calculation ────────────────────────────────────────
+  const isStep1Done = Boolean(platform);
+  const isStep2Done = Boolean(selectedAccountId);
+  const isStep3Done = Boolean(actionType);
+  const isStep4Done = Boolean(postUrl.trim());
+  const isStep5Done = Boolean(file || externalUrl.trim());
+
   // ─── Render Success View ──────────────────────────────────────────────────
   if (submissionResult) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '780px', margin: '0 auto' }}>
-        <div
-          className="glass-panel"
-          style={{
-            padding: '2.5rem',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '1.25rem',
-            borderTop: '4px solid var(--status-success)',
-          }}
-        >
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '2px solid var(--status-success)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2rem',
-              color: 'var(--status-success)',
-            }}
-          >
+      <div className="submit-activity-page-container">
+        <div className="submit-success-panel glass-panel">
+          <div className="submit-success-icon-aura">
             ✓
           </div>
 
           <div>
-            <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', color: 'var(--text-highlight)' }}>
+            <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.6rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
               Activity Evidence Queued Successfully!
             </h2>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem', maxWidth: '520px' }}>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem', maxWidth: '540px' }}>
               Your social media activity evidence has been received with status{' '}
               <strong style={{ color: 'var(--status-warning)' }}>PENDING</strong> and queued for manual administrator moderation review.
             </p>
           </div>
 
           {/* Submission Details Card */}
-          <div
-            style={{
-              width: '100%',
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.25rem',
-              textAlign: 'left',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '1rem',
-            }}
-          >
+          <div className="submit-receipt-card">
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.05em' }}>
                 Reference ID
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', color: 'var(--text-highlight)', marginTop: '0.2rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.88rem', color: 'var(--text-highlight)', marginTop: '0.25rem', fontWeight: 600 }}>
                 {submissionResult.id}
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.05em' }}>
                 Platform &amp; Action
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-highlight)', fontWeight: 600, marginTop: '0.2rem' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-highlight)', fontWeight: 700, marginTop: '0.25rem' }}>
                 {submissionResult.platform} · {submissionResult.actionType}
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.05em' }}>
                 Review Status
               </div>
-              <div style={{ marginTop: '0.2rem' }}>
-                <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>
+              <div style={{ marginTop: '0.25rem' }}>
+                <span className="badge badge-warning" style={{ fontSize: '0.74rem', fontWeight: 700 }}>
                   ⏳ PENDING REVIEW
                 </span>
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.05em' }}>
                 Submission Time
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                 {new Date(submissionResult.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
@@ -419,7 +390,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           <div
             style={{
               padding: '0.9rem 1.25rem',
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: '10px',
               background: 'rgba(245, 158, 11, 0.08)',
               border: '1px solid rgba(245, 158, 11, 0.25)',
               fontSize: '0.82rem',
@@ -438,7 +409,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
               type="button"
               className="btn-primary"
               onClick={() => onNavigateToNav('my-submissions')}
-              style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }}
+              style={{ padding: '0.7rem 1.75rem', fontSize: '0.9rem', fontWeight: 700 }}
             >
               📋 View in My Submissions →
             </button>
@@ -446,7 +417,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
               type="button"
               className="btn-secondary"
               onClick={handleResetForm}
-              style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }}
+              style={{ padding: '0.7rem 1.75rem', fontSize: '0.9rem' }}
             >
               ➕ Submit Another Activity
             </button>
@@ -458,26 +429,51 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
   // ─── Render Main Form ─────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="submit-activity-page-container">
       
+      {/* Live Stepper Progress Tracker */}
+      <div className="submit-stepper-track">
+        <div className={`submit-stepper-item ${isStep1Done ? (isStep2Done ? 'completed' : 'active') : ''}`}>
+          <span className="submit-stepper-circle">{isStep1Done && isStep2Done ? '✓' : '1'}</span>
+          <span>Platform</span>
+        </div>
+        <span className="submit-stepper-arrow">›</span>
+        
+        <div className={`submit-stepper-item ${isStep2Done ? (isStep3Done ? 'completed' : 'active') : (isStep1Done ? 'active' : '')}`}>
+          <span className="submit-stepper-circle">{isStep2Done && isStep3Done ? '✓' : '2'}</span>
+          <span>Target Account</span>
+        </div>
+        <span className="submit-stepper-arrow">›</span>
+
+        <div className={`submit-stepper-item ${isStep3Done ? (isStep4Done ? 'completed' : 'active') : ''}`}>
+          <span className="submit-stepper-circle">{isStep3Done && isStep4Done ? '✓' : '3'}</span>
+          <span>Action Type</span>
+        </div>
+        <span className="submit-stepper-arrow">›</span>
+
+        <div className={`submit-stepper-item ${isStep4Done ? (isStep5Done ? 'completed' : 'active') : ''}`}>
+          <span className="submit-stepper-circle">{isStep4Done && isStep5Done ? '✓' : '4'}</span>
+          <span>Post URL</span>
+        </div>
+        <span className="submit-stepper-arrow">›</span>
+
+        <div className={`submit-stepper-item ${isStep5Done ? 'completed' : ''}`}>
+          <span className="submit-stepper-circle">{isStep5Done ? '✓' : '5'}</span>
+          <span>Proof Screenshot</span>
+        </div>
+      </div>
+
       {/* Policy & System Disclaimer Banner */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '1.25rem 1.5rem',
-          borderLeft: '4px solid var(--status-warning)',
-          background: 'rgba(245, 158, 11, 0.05)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
-          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>⚠️</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-highlight)', marginBottom: '0.25rem' }}>
-              Evidence Submission Protocol (Human Admin Review)
-            </div>
-            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Uploaded screenshots serve strictly as <strong>evidence for human administrator review</strong>. The portal does not claim that a screenshot automatically or instantaneously proves that an engagement occurred. Every submission is recorded with <strong>PENDING</strong> status until an authorized moderator inspects your proof.
-            </div>
+      <div className="submit-protocol-banner">
+        <div className="submit-protocol-icon-box">
+          🛡️
+        </div>
+        <div className="submit-protocol-content">
+          <div className="submit-protocol-title">
+            Evidence Submission Protocol (Human Admin Review)
+          </div>
+          <div className="submit-protocol-desc">
+            Uploaded screenshots serve strictly as <strong>evidence for human administrator review</strong>. The portal does not claim that a screenshot automatically or instantaneously proves that an engagement occurred. Every submission is recorded with <strong>PENDING</strong> status until an authorized moderator inspects your proof.
           </div>
         </div>
       </div>
@@ -495,11 +491,12 @@ export default function SubmitActivityView({ onNavigateToNav }) {
             justifyContent: 'space-between',
             gap: '0.75rem',
             flexWrap: 'wrap',
+            borderRadius: '12px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', color: 'var(--status-error)' }}>
             <span>✕</span>
-            <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>{errorMessage}</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{errorMessage}</span>
           </div>
           <button
             type="button"
@@ -513,26 +510,36 @@ export default function SubmitActivityView({ onNavigateToNav }) {
       )}
 
       {/* Main Submission Form */}
-      <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      <form onSubmit={handleSubmit} className="submit-form-panel glass-panel">
         
         {/* Form Title & Subtitle */}
-        <div>
-          <h2 style={{ margin: '0 0 0.35rem 0', fontSize: '1.35rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
-            ➕ Submit Activity Evidence
+        <div className="submit-form-header">
+          <div className="submit-pipeline-badge">
+            ⚡ Direct Verification Pipeline
+          </div>
+          <h2 className="submit-form-title">
+            Submit Activity Evidence
           </h2>
-          <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
+          <p className="submit-form-subtitle">
             Select your platform, specify the action, provide the target post URL, and upload your screenshot proof.
           </p>
         </div>
 
         {/* ── 1. Platform Selection ── */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.65rem' }}>
-            1. Select Social Media Platform <span style={{ color: 'var(--status-error)' }}>*</span>
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem' }}>
+          <div className="submit-step-label-row">
+            <label className="submit-step-label">
+              <span className="submit-step-badge">STEP 01</span>
+              <span>Select Social Media Platform</span>
+              <span style={{ color: 'var(--status-error)' }}>*</span>
+            </label>
+            <span className="submit-step-hint">Choose destination channel</span>
+          </div>
+
+          <div className="submit-platform-grid">
             {PLATFORMS.map((p) => {
               const isSelected = platform === p.id;
+              const platformSlug = p.name.toLowerCase();
               return (
                 <button
                   key={p.id}
@@ -541,28 +548,16 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                     setPlatform(p.id);
                     setValidationErrors((prev) => ({ ...prev, postUrl: null }));
                   }}
-                  style={{
-                    padding: '1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: isSelected ? `${p.color}18` : 'rgba(255, 255, 255, 0.03)',
-                    border: `2px solid ${isSelected ? p.color : 'var(--border-subtle)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.18s ease',
-                    boxShadow: isSelected ? `0 0 20px ${p.color}25` : 'none',
-                  }}
+                  className={`submit-platform-btn ${isSelected ? `selected ${platformSlug}` : ''}`}
                 >
-                  <span style={{ fontSize: '1.5rem', width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="submit-platform-avatar">
                     {p.icon}
                   </span>
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isSelected ? 'var(--text-highlight)' : 'var(--text-primary)' }}>
+                  <div className="submit-platform-info">
+                    <div className="submit-platform-name">
                       {p.name}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    <div className="submit-platform-status">
                       {isSelected ? '✓ Selected' : 'Click to select'}
                     </div>
                   </div>
@@ -574,26 +569,28 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
         {/* ── 2. Official College Social Account ── */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              2. Target Official College Account <span style={{ color: 'var(--status-error)' }}>*</span>
+          <div className="submit-step-label-row">
+            <label className="submit-step-label">
+              <span className="submit-step-badge">STEP 02</span>
+              <span>Target Official College Account</span>
+              <span style={{ color: 'var(--status-error)' }}>*</span>
             </label>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+            <span className="submit-step-hint">
               Submissions must target verified institutional channels
             </span>
           </div>
 
           {loadingAccounts ? (
-            <div style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px' }}>
               ⏳ Loading active official accounts...
             </div>
           ) : officialAccounts.filter((a) => a.platform === platform && a.isActive).length === 0 ? (
             <div
               style={{
                 padding: '1.25rem',
-                background: 'rgba(239, 68, 68, 0.1)',
+                background: 'rgba(239, 68, 68, 0.08)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '8px',
+                borderRadius: '12px',
                 color: 'var(--status-error)',
                 fontSize: '0.88rem'
               }}
@@ -604,7 +601,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            <div className="submit-accounts-grid">
               {officialAccounts
                 .filter((a) => a.platform === platform && a.isActive)
                 .map((account) => {
@@ -616,49 +613,29 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                         setSelectedAccountId(account.id);
                         setValidationErrors((prev) => ({ ...prev, socialAccountId: null }));
                       }}
-                      style={{
-                        padding: '1rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: isSelected ? `${activePlatform.color}15` : 'rgba(255, 255, 255, 0.03)',
-                        border: `2px solid ${isSelected ? activePlatform.color : 'var(--border-subtle)'}`,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.45rem',
-                        transition: 'all 0.18s ease',
-                        boxShadow: isSelected ? `0 0 16px ${activePlatform.color}25` : 'none'
-                      }}
+                      className={`submit-account-card ${isSelected ? 'selected' : ''}`}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <span style={{ fontSize: '1.15rem' }}>{activePlatform.icon}</span>
-                          <span style={{ fontWeight: 700, fontSize: '0.92rem', color: isSelected ? 'var(--text-highlight)' : 'var(--text-primary)' }}>
+                      <div className="submit-account-header">
+                        <div className="submit-account-identity">
+                          <span style={{ fontSize: '1.25rem' }}>{activePlatform.icon}</span>
+                          <span className="submit-account-name">
                             {account.name || account.handle}
                           </span>
                         </div>
-                        <span
-                          style={{
-                            fontSize: '0.7rem',
-                            color: 'var(--status-success)',
-                            fontWeight: 600,
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            padding: '0.1rem 0.45rem',
-                            borderRadius: '10px'
-                          }}
-                        >
+                        <span className="submit-official-badge">
                           ✓ Official
                         </span>
                       </div>
 
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontFamily: 'monospace' }}>{account.handle}</span>
+                      <div className="submit-account-meta">
+                        <span className="submit-account-handle">{account.handle}</span>
                         {account.accountUrl && (
                           <a
                             href={account.accountUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            style={{ color: activePlatform.color, textDecoration: 'none', fontSize: '0.76rem' }}
+                            className="submit-account-inspect-link"
                           >
                             Inspect Channel ↗
                           </a>
@@ -666,7 +643,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                       </div>
 
                       {isSelected && (
-                        <div style={{ fontSize: '0.72rem', color: activePlatform.color, fontWeight: 700, marginTop: '0.2rem' }}>
+                        <div className="submit-account-active-tag">
                           ● Active Target Channel Selected
                         </div>
                       )}
@@ -677,51 +654,44 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           )}
 
           {validationErrors.socialAccountId && (
-            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem' }}>
-              {validationErrors.socialAccountId}
+            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: 600 }}>
+              ⚠️ {validationErrors.socialAccountId}
             </div>
           )}
         </div>
 
         {/* ── 3. Action Type Selection ── */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)', marginBottom: '0.65rem' }}>
-            3. Verified Action Type <span style={{ color: 'var(--status-error)' }}>*</span>
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem' }}>
+          <div className="submit-step-label-row">
+            <label className="submit-step-label">
+              <span className="submit-step-badge">STEP 03</span>
+              <span>Verified Action Type</span>
+              <span style={{ color: 'var(--status-error)' }}>*</span>
+            </label>
+            <span className="submit-step-hint">Specify social engagement form</span>
+          </div>
+
+          <div className="submit-actions-grid">
             {ACTIONS.map((a) => {
               const isSelected = actionType === a.id;
+              const actionSlug = a.id.toLowerCase();
               return (
                 <button
                   key={a.id}
                   type="button"
                   onClick={() => setActionType(a.id)}
-                  style={{
-                    padding: '0.95rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: isSelected ? 'rgba(99, 102, 241, 0.16)' : 'rgba(255, 255, 255, 0.03)',
-                    border: `2px solid ${isSelected ? 'var(--primary)' : 'var(--border-subtle)'}`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.18s ease',
-                    boxShadow: isSelected ? '0 0 16px var(--primary-glow)' : 'none',
-                  }}
+                  className={`submit-action-card ${isSelected ? `selected ${actionSlug}` : ''}`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                      <span style={{ fontSize: '1.15rem' }}>{a.icon}</span>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? 'var(--text-highlight)' : 'var(--text-primary)' }}>
-                        {a.name}
-                      </span>
+                  <div className="submit-action-card-header">
+                    <div className="submit-action-name-wrap">
+                      <span style={{ fontSize: '1.2rem' }}>{a.icon}</span>
+                      <span>{a.name}</span>
                     </div>
                     {isSelected && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--primary-light)', fontWeight: 800 }}>✓</span>
+                      <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 900 }}>✓</span>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>
+                  <div className="submit-action-desc">
                     {a.description}
                   </div>
                 </button>
@@ -732,38 +702,36 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
         {/* ── 4. Post / Profile URL Input ── */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-            <label htmlFor="post-url-input" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              4. Official Post / Profile URL <span style={{ color: 'var(--status-error)' }}>*</span>
+          <div className="submit-step-label-row">
+            <label htmlFor="post-url-input" className="submit-step-label">
+              <span className="submit-step-badge">STEP 04</span>
+              <span>Official Post / Profile URL</span>
+              <span style={{ color: 'var(--status-error)' }}>*</span>
             </label>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+            <span className="submit-step-hint">
               {activePlatform.hint}
             </span>
           </div>
-          <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', color: 'var(--text-muted)' }}>
+
+          <div className="submit-url-input-wrap">
+            <span className="submit-url-icon-badge">
               🔗
             </span>
             <input
               id="post-url-input"
               type="url"
-              className="input-field"
+              className={`submit-url-field ${validationErrors.postUrl ? 'error' : ''}`}
               placeholder={activePlatform.placeholder}
               value={postUrl}
               onChange={(e) => {
                 setPostUrl(e.target.value);
                 setValidationErrors((prev) => ({ ...prev, postUrl: null }));
               }}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem 0.75rem 2.6rem',
-                borderColor: validationErrors.postUrl ? 'var(--status-error)' : undefined,
-              }}
               required
             />
           </div>
           {validationErrors.postUrl && (
-            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.35rem', fontWeight: 500 }}>
+            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: 600 }}>
               ⚠️ {validationErrors.postUrl}
             </div>
           )}
@@ -771,11 +739,13 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
         {/* ── 5. Screenshot Evidence Upload ── */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              5. Proof Screenshot Evidence <span style={{ color: 'var(--status-error)' }}>*</span>
+          <div className="submit-step-label-row">
+            <label className="submit-step-label">
+              <span className="submit-step-badge">STEP 05</span>
+              <span>Proof Screenshot Evidence</span>
+              <span style={{ color: 'var(--status-error)' }}>*</span>
             </label>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+            <span className="submit-step-hint">
               PNG, JPG, WebP, GIF — max 5 MB
             </span>
           </div>
@@ -795,33 +765,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
-                  style={{
-                    border: `2px dashed ${
-                      isDragOver
-                        ? 'var(--primary)'
-                        : validationErrors.screenshot
-                        ? 'var(--status-error)'
-                        : 'var(--border-subtle)'
-                    }`,
-                    borderRadius: 'var(--radius-md)',
-                    padding: 'clamp(1.5rem, 5vw, 2.5rem) 1.5rem',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    background: isDragOver
-                      ? 'rgba(99, 102, 241, 0.1)'
-                      : validationErrors.screenshot
-                      ? 'rgba(239, 68, 68, 0.04)'
-                      : 'rgba(255, 255, 255, 0.015)',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.65rem',
-                    outline: isDragOver ? '2px solid var(--primary)' : 'none',
-                    outlineOffset: '2px',
-                    transform: isDragOver ? 'scale(1.005)' : 'scale(1)',
-                    boxShadow: isDragOver ? '0 0 24px rgba(99,102,241,0.2)' : 'none',
-                  }}
+                  className={`submit-dropzone ${isDragOver ? 'drag-active' : ''} ${validationErrors.screenshot ? 'error' : ''}`}
                 >
                   <input
                     ref={fileInputRef}
@@ -835,71 +779,39 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                     }}
                   />
 
-                  {/* Upload icon */}
-                  <div
-                    style={{
-                      width: '56px',
-                      height: '56px',
-                      borderRadius: '50%',
-                      background: isDragOver
-                        ? 'rgba(99,102,241,0.2)'
-                        : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${isDragOver ? 'var(--primary)' : 'var(--border-subtle)'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.6rem',
-                      transition: 'all 0.2s ease',
-                      flexShrink: 0,
-                    }}
-                  >
+                  {/* Upload icon aura */}
+                  <div className="submit-dropzone-icon-aura">
                     {isDragOver ? '⬇️' : '📸'}
                   </div>
 
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: isDragOver ? 'var(--primary-light)' : 'var(--text-highlight)', marginBottom: '0.2rem' }}>
+                    <div className="submit-dropzone-primary-text">
                       {isDragOver ? 'Release to attach screenshot' : 'Drag & drop screenshot here'}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      or{' '}
-                      <span style={{ color: 'var(--primary-light)', textDecoration: 'underline', fontWeight: 600 }}>
-                        browse files
-                      </span>
-                      {' '}from your device
+                    <div className="submit-dropzone-subtext">
+                      or <span className="submit-dropzone-browse-link">browse files</span> from your device
                     </div>
                   </div>
 
                   {/* Supported types */}
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.15rem' }}>
+                  <div className="submit-format-pills">
                     {['PNG', 'JPG', 'WebP', 'GIF'].map((t) => (
-                      <span
-                        key={t}
-                        style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          padding: '0.15rem 0.45rem',
-                          borderRadius: '4px',
-                          background: 'rgba(255,255,255,0.06)',
-                          border: '1px solid var(--border-subtle)',
-                          color: 'var(--text-muted)',
-                          letterSpacing: '0.04em',
-                        }}
-                      >
+                      <span key={t} className="submit-format-pill">
                         {t}
                       </span>
                     ))}
                   </div>
 
-                  <div style={{ marginTop: '0.1rem' }}>
+                  <div style={{ marginTop: '0.2rem' }}>
                     <span
                       style={{
                         fontSize: '0.68rem',
-                        padding: '0.2rem 0.6rem',
+                        padding: '0.2rem 0.65rem',
                         borderRadius: '999px',
                         background: 'rgba(245,158,11,0.12)',
                         border: '1px solid rgba(245,158,11,0.25)',
                         color: 'var(--status-warning)',
-                        fontWeight: 600,
+                        fontWeight: 700,
                       }}
                     >
                       📋 Required for admin moderation review
@@ -908,130 +820,66 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                 </div>
               ) : (
                 /* ── File Preview Card ────────────────────────────────────────── */
-                <div
-                  style={{
-                    border: '1px solid rgba(99,102,241,0.3)',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'rgba(99,102,241,0.05)',
-                    overflow: 'hidden',
-                  }}
-                >
+                <div className="submit-preview-card">
                   {/* Thumbnail strip */}
                   <div
-                    style={{
-                      position: 'relative',
-                      width: '100%',
-                      height: 'clamp(120px, 30vw, 200px)',
-                      background: '#000',
-                      overflow: 'hidden',
-                      cursor: 'zoom-in',
-                    }}
+                    className="submit-preview-image-wrap"
                     onClick={() => setLightboxPreview(true)}
                     title="Click to preview full image"
                   >
                     <img
                       src={previewUrl}
                       alt="Screenshot evidence preview"
-                      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                      className="submit-preview-image"
                     />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '2rem',
-                        opacity: 0,
-                        transition: 'all 0.15s ease',
-                      }}
-                      className="preview-hover"
-                    >
+                    <div className="submit-preview-zoom-overlay">
                       🔍
                     </div>
                   </div>
 
                   {/* Metadata row */}
-                  <div
-                    style={{
-                      padding: '0.85rem 1.1rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '0.75rem',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
-                      <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>🖼️</span>
+                  <div className="submit-preview-meta-row">
+                    <div className="submit-preview-file-info">
+                      <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🖼️</span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
-                          <span
-                            style={{
-                              fontSize: '0.65rem',
-                              fontWeight: 800,
-                              padding: '0.1rem 0.45rem',
-                              borderRadius: '4px',
-                              background: 'rgba(16,185,129,0.15)',
-                              border: '1px solid rgba(16,185,129,0.3)',
-                              color: 'var(--status-success)',
-                              letterSpacing: '0.05em',
-                            }}
-                          >
+                        <div className="submit-preview-badges">
+                          <span className="submit-preview-attached-tag">
                             ✓ ATTACHED
                           </span>
                           <span
                             style={{
                               fontSize: '0.65rem',
                               fontWeight: 700,
-                              padding: '0.1rem 0.45rem',
+                              padding: '0.12rem 0.45rem',
                               borderRadius: '4px',
                               background: 'rgba(255,255,255,0.06)',
                               color: 'var(--text-muted)',
                               letterSpacing: '0.04em',
                             }}
                           >
-                            {file.type.split('/')[1]?.toUpperCase()}
+                            {file?.type?.split('/')[1]?.toUpperCase()}
                           </span>
                           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            {file.size < 1024 * 1024
+                            {file && (file.size < 1024 * 1024
                               ? `${(file.size / 1024).toFixed(0)} KB`
-                              : `${(file.size / (1024 * 1024)).toFixed(1)} MB`}
+                              : `${(file.size / (1024 * 1024)).toFixed(1)} MB`)}
                           </span>
                         </div>
                         <div
-                          style={{
-                            fontSize: '0.82rem',
-                            color: 'var(--text-secondary)',
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '260px',
-                          }}
-                          title={file.name}
+                          className="submit-preview-filename"
+                          title={file?.name}
                         >
-                          {file.name}
+                          {file?.name}
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    <div className="submit-preview-actions">
                       <button
                         type="button"
                         onClick={() => setLightboxPreview(true)}
-                        style={{
-                          background: 'rgba(99,102,241,0.12)',
-                          border: '1px solid rgba(99,102,241,0.3)',
-                          borderRadius: 'var(--radius-sm)',
-                          color: 'var(--primary-light)',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          padding: '0.4rem 0.8rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
+                        className="btn-secondary"
+                        style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem' }}
                       >
                         🔍 Preview
                       </button>
@@ -1039,13 +887,13 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                         type="button"
                         onClick={handleClearFile}
                         style={{
-                          background: 'rgba(239,68,68,0.08)',
-                          border: '1px solid rgba(239,68,68,0.25)',
-                          borderRadius: 'var(--radius-sm)',
+                          background: 'rgba(239,68,68,0.1)',
+                          border: '1px solid rgba(239,68,68,0.3)',
+                          borderRadius: '8px',
                           color: 'var(--status-error)',
                           fontSize: '0.78rem',
-                          fontWeight: 600,
-                          padding: '0.4rem 0.8rem',
+                          fontWeight: 700,
+                          padding: '0.4rem 0.85rem',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                         }}
@@ -1065,17 +913,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                   setValidationErrors((prev) => ({ ...prev, screenshot: null }));
                   handleClearFile();
                 }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  marginTop: '0.5rem',
-                  padding: '0.2rem 0',
-                  display: 'block',
-                  textDecoration: 'underline',
-                }}
+                className="submit-mode-toggle-btn"
               >
                 🔗 Or provide an external image link instead
               </button>
@@ -1083,27 +921,22 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           ) : (
             /* ── External Image Link Mode ─────────────────────────────────────── */
             <div>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', color: 'var(--text-muted)' }}>
+              <div className="submit-url-input-wrap">
+                <span className="submit-url-icon-badge">
                   🖼️
                 </span>
                 <input
                   type="url"
-                  className="input-field"
+                  className={`submit-url-field ${validationErrors.screenshot ? 'error' : ''}`}
                   placeholder="https://i.imgur.com/... or other public screenshot link"
                   value={externalUrl}
                   onChange={(e) => {
                     setExternalUrl(e.target.value);
                     setValidationErrors((prev) => ({ ...prev, screenshot: null }));
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem 0.75rem 2.6rem',
-                    borderColor: validationErrors.screenshot ? 'var(--status-error)' : undefined,
-                  }}
                 />
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.3rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.4rem' }}>
                 Paste a public image link showing proof of your engagement.
               </span>
               <button
@@ -1113,17 +946,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                   setExternalUrl('');
                   setValidationErrors((prev) => ({ ...prev, screenshot: null }));
                 }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  marginTop: '0.4rem',
-                  padding: '0.2rem 0',
-                  display: 'block',
-                  textDecoration: 'underline',
-                }}
+                className="submit-mode-toggle-btn"
               >
                 📁 Switch back to file upload
               </button>
@@ -1131,7 +954,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           )}
 
           {validationErrors.screenshot && (
-            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: 500 }}>
+            <div style={{ color: 'var(--status-error)', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: 600 }}>
               ⚠️ {validationErrors.screenshot}
             </div>
           )}
@@ -1139,12 +962,14 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
         {/* ── 6. Optional Context / Description ── */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-            <label htmlFor="description-input" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-highlight)' }}>
-              6. Additional Context / Account Handle <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
+          <div className="submit-step-label-row">
+            <label htmlFor="description-input" className="submit-step-label">
+              <span className="submit-step-badge">STEP 06</span>
+              <span>Additional Context / Account Handle</span>
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
             </label>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              {description.length} / 1000
+            <span className="submit-step-hint">
+              {description.length} / 1000 characters
             </span>
           </div>
           <textarea
@@ -1155,39 +980,40 @@ export default function SubmitActivityView({ onNavigateToNav }) {
             placeholder="e.g. Liked product announcement from registered handle @my_creator_account within 2 hours of post publishing."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            style={{ width: '100%', resize: 'vertical' }}
+            style={{ width: '100%', resize: 'vertical', borderRadius: '10px' }}
           />
         </div>
 
-        {/* ── 6. Live Upload Progress Indicator (When Uploading) ── */}
+        {/* ── Live Upload Progress Indicator (When Uploading) ── */}
         {isSubmitting && (
           <div
             style={{
-              padding: '1rem',
-              borderRadius: 'var(--radius-sm)',
-              background: 'rgba(99, 102, 241, 0.08)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
+              padding: '1.25rem',
+              borderRadius: '12px',
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
+              gap: '0.65rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-              <span style={{ color: 'var(--text-highlight)', fontWeight: 600 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--text-highlight)', fontWeight: 700 }}>
                 {uploadProgress < 100 ? 'Uploading Screenshot Evidence...' : 'Processing Submission & Enqueuing Review...'}
               </span>
-              <span style={{ color: 'var(--primary-light)', fontWeight: 700 }}>
+              <span style={{ color: '#38bdf8', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
                 {uploadProgress}%
               </span>
             </div>
-            <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '7px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: 9999, overflow: 'hidden' }}>
               <div
                 style={{
                   height: '100%',
                   width: `${uploadProgress}%`,
-                  background: 'linear-gradient(90deg, var(--primary) 0%, var(--accent-cyan) 100%)',
-                  borderRadius: 3,
+                  background: 'linear-gradient(90deg, #10b981 0%, #38bdf8 100%)',
+                  borderRadius: 9999,
                   transition: 'width 0.2s ease',
+                  boxShadow: '0 0 10px rgba(56, 189, 248, 0.5)',
                 }}
               />
             </div>
@@ -1195,49 +1021,30 @@ export default function SubmitActivityView({ onNavigateToNav }) {
         )}
 
         {/* ── 7. Submission Actions ── */}
-        <div
-          style={{
-            borderTop: '1px solid var(--border-subtle)',
-            paddingTop: '1.25rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            All submissions are strictly authenticated and associated with your creator profile.
+        <div className="submit-form-footer">
+          <div className="submit-security-footnote">
+            <span>🔒</span>
+            <span>All submissions are cryptographically associated with your creator profile.</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
             <button
               type="button"
               className="btn-secondary"
               disabled={isSubmitting}
               onClick={() => onNavigateToNav('dashboard')}
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.88rem' }}
+              style={{ padding: '0.75rem 1.4rem', fontSize: '0.9rem' }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn-primary"
+              className="submit-btn-primary"
               disabled={isSubmitting}
-              style={{
-                padding: '0.65rem 1.75rem',
-                fontSize: '0.92rem',
-                fontWeight: 700,
-                background: 'var(--role-user)',
-                color: '#07090e',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-              }}
             >
               {isSubmitting ? (
                 <>
-                  <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid rgba(0,0,0,0.3)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                   Submitting Evidence...
                 </>
               ) : (
