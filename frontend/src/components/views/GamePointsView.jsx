@@ -11,6 +11,8 @@ import {
   fetchAdminGamificationUsers,
   fetchAdminGamificationAnalytics
 } from '../../services/adminGamificationApi';
+import { gamificationRealtimeClient } from '../../services/gamificationRealtimeClient';
+
 
 export default function GamePointsView({ onNavigateToNav = null }) {
   const { user } = useAuth();
@@ -130,6 +132,53 @@ export default function GamePointsView({ onNavigateToNav = null }) {
       loadAnalytics();
     }
   }, [currentRole]);
+
+  // Real-time synchronization for Admin points table, dossier, and telemetry
+  useEffect(() => {
+    if (currentRole === 'USER') return;
+
+    const unsubscribe = gamificationRealtimeClient.subscribe((event, data) => {
+      if (event === 'admin_user_xp_updated' || event === 'xp_updated') {
+        // 1. Live update the user row in the table in place
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            if (u.id === data.userId) {
+              return {
+                ...u,
+                totalXP: data.totalXP,
+                currentLevel: data.currentLevel ?? u.currentLevel,
+                level: data.currentLevel ?? u.level,
+                levelName: data.levelName ?? u.levelName,
+                icon: data.icon ?? u.icon
+              };
+            }
+            return u;
+          })
+        );
+
+        // 2. If the user's dossier is open, trigger full fresh refresh
+        if (selectedUserId === data.userId) {
+          setDossierRefreshKey((k) => k + 1);
+        }
+
+        // 3. Refresh admin analytics in the background
+        loadAnalytics();
+
+        // 4. Subtle non-intrusive toast notice
+        if (data.deltaXP) {
+          const deltaSign = data.deltaXP > 0 ? '+' : '';
+          showToast(`⚡ Real-time update: ${data.userName || 'User'} ${deltaSign}${data.deltaXP} XP (Now ${data.totalXP.toLocaleString()} XP)`, 'info');
+        }
+      }
+
+      if (event === 'leaderboard_updated') {
+        loadAnalytics();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentRole, selectedUserId, loadAnalytics]);
+
 
   // Debounced search handling
   useEffect(() => {

@@ -121,8 +121,23 @@ const updateGamificationSettings = async ({ updates = [], reason = 'Super Admin 
     });
   }
 
+
+  // Broadcast rule change to all connected clients
+  try {
+    const realtimeService = require('./realtimeGamificationService');
+    realtimeService.broadcastRulesUpdated({
+      rules: updatedRecords,
+      updatedBy: adminUser.name,
+      reason,
+      timestamp: new Date().toISOString()
+    });
+  } catch (rtErr) {
+    console.warn('[SuperAdminGamification] Realtime broadcast notice:', rtErr.message);
+  }
+
   return updatedRecords;
 };
+
 
 /**
  * ============================================================================

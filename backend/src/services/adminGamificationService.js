@@ -661,7 +661,7 @@ const adjustUserXP = async ({
     console.warn('[AdminGamificationService] Failed to record audit log:', auditErr.message);
   }
 
-  return {
+  const responsePayload = {
     success: true,
     message: `Successfully adjusted XP for ${targetUser.name} by ${actualDelta > 0 ? '+' : ''}${actualDelta} XP.`,
     data: {
@@ -683,7 +683,47 @@ const adjustUserXP = async ({
       transactionId: transaction.id
     }
   };
+
+
+  // Broadcast live updates to target user and all admin tables
+  try {
+    const realtimeService = require('./realtimeGamificationService');
+    realtimeService.broadcastUserXPUpdated(userId, {
+      userId,
+      userName: targetUser.name,
+      totalXP: newXP,
+      currentLevel: newLevelInfo.currentLevel,
+      levelName: newLevelInfo.levelName,
+      icon: newLevelInfo.icon,
+      progressPercentage: newLevelInfo.progressPercentage,
+      xpRemaining: newLevelInfo.xpRemaining,
+      deltaXP: actualDelta,
+      reason: cleanReason,
+      adjustedBy: adminUser.name,
+      timestamp: timestamp
+    });
+
+    if (leveledUp) {
+      realtimeService.broadcastLevelUp(userId, {
+        userId,
+        currentLevel: newLevelInfo.currentLevel,
+        levelName: newLevelInfo.levelName,
+        icon: newLevelInfo.icon,
+        totalXP: newXP,
+        nextLevel: newLevelInfo.nextLevel,
+        nextLevelName: newLevelInfo.nextLevelName,
+        timestamp: timestamp
+      });
+    }
+
+    realtimeService.broadcastLeaderboardUpdated();
+  } catch (rtErr) {
+    console.warn('[AdminGamificationService] Realtime broadcast notice:', rtErr.message);
+  }
+
+  return responsePayload;
 };
+
 
 module.exports = {
   getAdminGamificationUsers,

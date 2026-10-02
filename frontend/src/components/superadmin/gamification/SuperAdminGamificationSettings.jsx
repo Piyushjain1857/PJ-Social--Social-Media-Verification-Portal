@@ -3,6 +3,7 @@ import {
   fetchGamificationSettings,
   updateGamificationSettings
 } from '../../../services/superAdminGamificationApi';
+import { gamificationRealtimeClient } from '../../../services/gamificationRealtimeClient';
 
 export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
   const [settings, setSettings] = useState([]);
@@ -39,7 +40,17 @@ export default function SuperAdminGamificationSettings({ onSettingsUpdated }) {
 
   useEffect(() => {
     loadSettings();
+
+    // Real-time synchronization when rules are updated
+    const unsubscribe = gamificationRealtimeClient.subscribe((event) => {
+      if (event === 'rules_updated') {
+        loadSettings();
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
+
 
   const handleXPChange = (activity, val) => {
     const parsed = Math.max(0, parseInt(val, 10) || 0);

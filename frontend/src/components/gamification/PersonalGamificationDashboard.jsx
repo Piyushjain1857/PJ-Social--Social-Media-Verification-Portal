@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchMyGamification, fetchMyRank } from '../../services/gamificationApi';
+import { gamificationRealtimeClient } from '../../services/gamificationRealtimeClient';
 import UserXPChart from './UserXPChart';
 import PositionTimeline from './PositionTimeline';
 import DynamicLevelTimeline from './DynamicLevelTimeline';
 import XPHistoryLedger from './XPHistoryLedger';
 import Leaderboard from './Leaderboard';
+import LevelUpModal from './LevelUpModal';
 
 export default function PersonalGamificationDashboard({ onNavigateToNav = null }) {
   const { user } = useAuth();
@@ -14,6 +16,9 @@ export default function PersonalGamificationDashboard({ onNavigateToNav = null }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'leaderboard'
+  const [realtimeRefreshKey, setRealtimeRefreshKey] = useState(0);
+  const [realtimeNotification, setRealtimeNotification] = useState(null);
+  const [levelUpData, setLevelUpData] = useState(null);
 
   // If user is Admin or Super Admin, they manage points rather than participating as players
   const isManager = user?.role && user.role !== 'USER';
@@ -47,6 +52,63 @@ export default function PersonalGamificationDashboard({ onNavigateToNav = null }
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Real-time listener: updates Total XP, Level, Progress, Rank, and History Ledger live
+  useEffect(() => {
+    if (isManager || !user?.id) return;
+
+    const unsubscribe = gamificationRealtimeClient.subscribe((event, data) => {
+      if (event === 'xp_updated' && data.userId === user.id) {
+        setProfile((prev) => ({
+          ...(prev || {}),
+          totalXP: data.totalXP,
+          currentLevel: data.currentLevel ?? prev?.currentLevel,
+          levelName: data.levelName ?? prev?.levelName,
+          icon: data.icon ?? prev?.icon,
+          progressPercentage: data.progressPercentage ?? prev?.progressPercentage,
+          xpRemaining: data.xpRemaining ?? prev?.xpRemaining,
+          rank: data.rank ?? prev?.rank
+        }));
+
+        // Fetch fresh rank standing asynchronously
+        fetchMyRank().then((res) => {
+          if (res?.success && res.data) {
+            setRankData(res.data);
+          }
+        }).catch(() => {});
+
+        // Refresh child widgets (charts, timeline, ledger)
+        setRealtimeRefreshKey((k) => k + 1);
+
+        // Show live badge notice
+        const delta = data.deltaXP ? (data.deltaXP > 0 ? `+${data.deltaXP} XP` : `${data.deltaXP} XP`) : 'XP Updated';
+        setRealtimeNotification(`⚡ Real-time: ${delta} (${data.reason || 'Activity verified'})`);
+        setTimeout(() => setRealtimeNotification(null), 5000);
+      }
+
+      if (event === 'level_up' && data.userId === user.id) {
+        setLevelUpData({
+          currentLevel: data.currentLevel,
+          levelName: data.levelName,
+          icon: data.icon || '🏆',
+          totalXP: data.totalXP,
+          nextLevel: data.nextLevel,
+          nextLevelName: data.nextLevelName
+        });
+      }
+
+      if (event === 'leaderboard_updated') {
+        fetchMyRank().then((res) => {
+          if (res?.success && res.data) {
+            setRankData(res.data);
+          }
+        }).catch(() => {});
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isManager, user?.id]);
+
 
   if (isManager) {
     return (
@@ -187,11 +249,35 @@ export default function PersonalGamificationDashboard({ onNavigateToNav = null }
         </div>
       </div>
 
+      {/* Real-time live activity pill */}
+      {realtimeNotification && (
+        <div
+          style={{
+            margin: '1rem 0',
+            padding: '0.75rem 1.25rem',
+            background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15))',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            borderRadius: '10px',
+            color: '#38bdf8',
+            fontWeight: 600,
+            fontSize: '0.92rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+        >
+          <span style={{ fontSize: '1.2rem' }}>⚡</span>
+          <span>{realtimeNotification}</span>
+        </div>
+      )}
+
       {activeTab === 'leaderboard' ? (
         <div style={{ marginTop: '1.5rem' }}>
           <Leaderboard />
         </div>
       ) : (
+
         <>
           {/* ====================================================================
               2. Key Metrics & Personal KPI Cards Grid (Matches Requirements 2 & Example)
@@ -333,31 +419,40 @@ export default function PersonalGamificationDashboard({ onNavigateToNav = null }
               3. USER XP GRAPH (Requirement 3: 7D, 30D, 3M, 6M, All Time)
               ==================================================================== */}
           <div style={{ marginTop: '2rem' }}>
-            <UserXPChart />
+            <UserXPChart key={`chart-${realtimeRefreshKey}`} />
           </div>
 
           {/* ====================================================================
               4. POSITION / RANK TIMELINE (Requirement 4: My Position Over Time)
               ==================================================================== */}
           <div style={{ marginTop: '2rem' }}>
-            <PositionTimeline />
+            <PositionTimeline key={`pos-${realtimeRefreshKey}`} />
           </div>
 
           {/* ====================================================================
               5. LEVEL TIMELINE (Requirement 6: Dynamic Level Journey from DB)
               ==================================================================== */}
           <div style={{ marginTop: '2rem' }}>
-            <DynamicLevelTimeline />
+            <DynamicLevelTimeline key={`level-${realtimeRefreshKey}`} />
           </div>
 
           {/* ====================================================================
               6. XP HISTORY (Requirement 5: Itemized Ledger with Pagination)
               ==================================================================== */}
           <div style={{ marginTop: '2rem' }}>
-            <XPHistoryLedger />
+            <XPHistoryLedger key={`ledger-${realtimeRefreshKey}`} />
           </div>
         </>
+      )}
+
+      {/* Real-time Level Up Celebration Modal */}
+      {levelUpData && (
+        <LevelUpModal
+          levelData={levelUpData}
+          onClose={() => setLevelUpData(null)}
+        />
       )}
     </div>
   );
 }
+

@@ -211,6 +211,39 @@ const awardPoints = async ({
     }
   }
 
+  const leveledUp = newLevel.level > previousLevel.level;
+
+  try {
+    const realtimeService = require('./realtimeGamificationService');
+    realtimeService.broadcastUserXPUpdated(userId, {
+      userId,
+      totalXP: result.totalPoints,
+      currentLevel: newLevel.level,
+      levelName: newLevel.name,
+      icon: newLevel.badge,
+      progressPercentage: newLevel.progressPercentage || 0,
+      xpRemaining: newLevel.pointsToNextLevel || 0,
+      deltaXP: points,
+      reason: 'POINTS_AWARDED',
+      timestamp: new Date().toISOString()
+    });
+
+    if (leveledUp) {
+      realtimeService.broadcastLevelUp(userId, {
+        userId,
+        currentLevel: newLevel.level,
+        levelName: newLevel.name,
+        icon: newLevel.badge,
+        totalXP: result.totalPoints,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    realtimeService.broadcastLeaderboardUpdated();
+  } catch (rtErr) {
+    // Non-fatal
+  }
+
   return {
     awarded: true,
     alreadyAwarded: false,
@@ -220,9 +253,10 @@ const awardPoints = async ({
     totalPoints: result.totalPoints,
     totalXP: result.totalPoints,
     level: newLevel,
-    leveledUp: newLevel.level > previousLevel.level
+    leveledUp
   };
 };
+
 
 /**
  * Retrieve user points summary, balance, weekly/monthly points, and level breakdown.
@@ -387,6 +421,39 @@ const adjustPoints = async ({
     console.warn('[PointsService] Could not send adjustment notification:', notifErr.message);
   }
 
+  const leveledUp = newLevel.level > previousLevel.level;
+  try {
+    const realtimeService = require('./realtimeGamificationService');
+    realtimeService.broadcastUserXPUpdated(userId, {
+      userId,
+      totalXP: result.totalPoints,
+      currentLevel: newLevel.level,
+      levelName: newLevel.name,
+      icon: newLevel.badge,
+      progressPercentage: newLevel.progressPercentage || 0,
+      xpRemaining: newLevel.pointsToNextLevel || 0,
+      deltaXP: deltaPoints,
+      reason: cleanReason,
+      adjustedBy: adminName || 'Super Administrator',
+      timestamp: new Date().toISOString()
+    });
+
+    if (leveledUp) {
+      realtimeService.broadcastLevelUp(userId, {
+        userId,
+        currentLevel: newLevel.level,
+        levelName: newLevel.name,
+        icon: newLevel.badge,
+        totalXP: result.totalPoints,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    realtimeService.broadcastLeaderboardUpdated();
+  } catch (rtErr) {
+    // Non-fatal
+  }
+
   return {
     success: true,
     pointsAdjusted: deltaPoints,
@@ -395,6 +462,7 @@ const adjustPoints = async ({
     transaction: result.transaction,
     reason: cleanReason
   };
+
 };
 
 module.exports = {

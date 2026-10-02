@@ -58,6 +58,8 @@ import PointsSummary from './common/PointsSummary';
 import GamePointsView from './views/GamePointsView';
 import SuperAdminGamificationCenter from './views/SuperAdminGamificationCenter';
 import { fetchMyGamification } from '../services/gamificationApi';
+import { gamificationRealtimeClient } from '../services/gamificationRealtimeClient';
+
 
 /**
  * Role-Based Navigation Definitions strictly enforced from authenticated role data:
@@ -452,6 +454,69 @@ export default function MainLayout({
   useEffect(() => {
     refreshMetrics();
   }, [user?.role, user?.id]);
+
+  // Connect to real-time events for instant XP, level-up celebrations, and live updates
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    if (!token || !user?.id) return;
+
+    gamificationRealtimeClient.connect(token, user);
+
+    const unsubscribe = gamificationRealtimeClient.subscribe((event, data) => {
+      // 1. XP Updated for current user
+      if (event === 'xp_updated' && data.userId === user?.id) {
+        setUserPoints(data.totalXP);
+        setGamificationData(prev => ({
+          ...(prev || {}),
+          totalXP: data.totalXP,
+          currentLevel: data.currentLevel ?? prev?.currentLevel,
+          levelName: data.levelName ?? prev?.levelName,
+          icon: data.icon ?? prev?.icon,
+          progressPercentage: data.progressPercentage ?? prev?.progressPercentage,
+          xpRemaining: data.xpRemaining ?? prev?.xpRemaining,
+          rank: data.rank ?? prev?.rank
+        }));
+
+        // Refresh notifications list to immediately show the approval/adjustment notice
+        fetchNotifications().then(notifRes => {
+          if (notifRes?.success && notifRes.data) {
+            setNotificationsList(notifRes.data);
+            const unread = notifRes.unreadCount ?? notifRes.data.filter(n => !n.isRead).length;
+            setUnreadNotifCount(unread);
+            setNotificationCount(unread);
+          }
+        }).catch(() => {});
+      }
+
+      // 2. 🎉 Level Up! celebration for current user
+      if (event === 'level_up' && data.userId === user?.id) {
+        setLevelUpModalData({
+          currentLevel: data.currentLevel,
+          levelName: data.levelName,
+          icon: data.icon || '🏆',
+          totalXP: data.totalXP,
+          nextLevel: data.nextLevel,
+          nextLevelName: data.nextLevelName
+        });
+      }
+
+      // 3. Admin / Super Admin live updates
+      if (event === 'admin_user_xp_updated' && (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) {
+        // Refreshes pending review counts or notification count
+        fetchAllSubmissions().then(subsRes => {
+          if (subsRes.success && subsRes.data) {
+            const pending = subsRes.data.filter(s => s.status === 'PENDING').length;
+            setPendingReviewCount(pending);
+          }
+        }).catch(() => {});
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.id, user?.role]);
+
 
   // Mark a single notification as read
   const handleMarkSingleRead = async (notifId, e) => {

@@ -537,6 +537,86 @@ const getUserActivityDistributionById = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/gamification/events
+
+ * Real-time Server-Sent Events (SSE) stream for gamification updates.
+ * Sends live events when XP changes, level-ups occur, rules change, or leaderboard shifts.
+ */
+const streamGamificationEvents = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authentication required to subscribe to gamification events.'
+      });
+    }
+
+    // Set headers for standard Server-Sent Events
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (res.flushHeaders) {
+      res.flushHeaders();
+    }
+
+    const realtimeService = require('../services/realtimeGamificationService');
+    realtimeService.addClient(req, res, user);
+  } catch (err) {
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to establish event stream',
+        message: err.message
+      });
+    }
+  }
+};
+
+/**
+ * GET /api/gamification/sync-state
+ * Safe fallback API for environments where SSE might be disconnected or recovering.
+ * Allows client to quickly verify if their XP or rank state is stale compared to lastSync.
+ */
+const syncGamificationState = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { lastSync } = req.query;
+
+    const [profile, rankMetrics, latestTx] = await Promise.all([
+      getUserGamificationProfile(userId),
+      getUserRankMetrics(userId),
+      prisma.pointTransaction.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true }
+      })
+    ]);
+
+    const latestTxTime = latestTx?.createdAt ? new Date(latestTx.createdAt).toISOString() : null;
+    let hasChanged = true;
+    if (lastSync && latestTxTime) {
+      hasChanged = new Date(latestTxTime) > new Date(lastSync);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        hasChanged,
+        latestTransactionTime: latestTxTime,
+        serverTime: new Date().toISOString(),
+        profile,
+        rank: rankMetrics
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMyGamification,
   getMyXPChart,
@@ -551,5 +631,8 @@ module.exports = {
   getUserRankMetricsById,
   getUserRankHistoryById,
   getUserLevelJourneyById,
-  getUserActivityDistributionById
+  getUserActivityDistributionById,
+  streamGamificationEvents,
+  syncGamificationState
 };
+

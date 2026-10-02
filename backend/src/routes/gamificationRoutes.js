@@ -14,13 +14,22 @@ const {
   getUserRankMetricsById,
   getUserRankHistoryById,
   getUserLevelJourneyById,
-  getUserActivityDistributionById
+  getUserActivityDistributionById,
+  streamGamificationEvents,
+  syncGamificationState
 } = require('../controllers/gamificationController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
 
 /**
  * Gamification Routes (/api/gamification)
  */
+
+// Real-time Server-Sent Events (SSE) stream for gamification updates
+router.get('/events', authenticate, streamGamificationEvents);
+
+// Fallback polling synchronization endpoint to verify fresh state
+router.get('/sync-state', authenticate, syncGamificationState);
+
 
 // Authenticated user gamification profile (XP, level, progress, rank, thresholds)
 router.get('/me', authenticate, getMyGamification);

@@ -29,8 +29,10 @@ const testFiles = [
   'level_engine.test.js',
   'gamification_analytics_graphs.test.js',
   'gamification_authorization_audit.test.js',
-  'gamification_comprehensive_system.test.js'
+  'gamification_comprehensive_system.test.js',
+  'gamification_realtime_system.test.js'
 ];
+
 
 console.log('========================================================');
 console.log('   VeriSocial Full-Stack Verification Portal Test Suite  ');

@@ -194,6 +194,15 @@ export const generateAdminLevels = async (options = {}) => {
   });
 };
 
+/**
+ * Fetch synchronization state for fallback polling
+ * @param {string|null} lastSync - ISO timestamp of last sync
+ */
+export const fetchGamificationSyncState = async (lastSync = null) => {
+  const query = lastSync ? `?lastSync=${encodeURIComponent(lastSync)}` : '';
+  return await authFetch(`/gamification/sync-state${query}`);
+};
+
 export default {
   fetchMyGamification,
   fetchMyXPChart,
@@ -203,6 +212,7 @@ export default {
   fetchMyLevelJourney,
   fetchMyActivityDistribution,
   fetchGamificationLevels,
+  fetchGamificationSyncState,
   fetchUserGamification,
   fetchUserXPChart,
   fetchUserActivityDistribution,
@@ -216,4 +226,5 @@ export default {
   deleteAdminLevel,
   generateAdminLevels
 };
+
 

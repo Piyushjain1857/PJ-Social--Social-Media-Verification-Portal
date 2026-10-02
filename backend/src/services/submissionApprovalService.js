@@ -399,10 +399,52 @@ const processSubmissionVerdict = async ({
     } catch (e) {
       // In-memory sync non-fatal
     }
+
+    // Real-time UI synchronization: broadcast XP, level-up celebration, and leaderboard shift
+    try {
+      const realtimeService = require('./realtimeGamificationService');
+      const userId = result.submission.userId;
+      const pa = result.pointsAwarded;
+
+      if (pa && pa.awarded) {
+        realtimeService.broadcastUserXPUpdated(userId, {
+          userId,
+          totalXP: pa.totalXP,
+          currentLevel: pa.level.currentLevel,
+          levelName: pa.level.levelName,
+          icon: pa.level.icon,
+          progressPercentage: pa.level.progressPercentage,
+          xpRemaining: pa.level.xpRemaining,
+          deltaXP: pa.xp,
+          reason: 'SUBMISSION_APPROVED',
+          actionType: result.submission.actionType,
+          submissionId: result.submission.id,
+          timestamp: new Date().toISOString()
+        });
+
+        if (pa.leveledUp) {
+          realtimeService.broadcastLevelUp(userId, {
+            userId,
+            currentLevel: pa.level.currentLevel,
+            levelName: pa.level.levelName,
+            icon: pa.level.icon,
+            totalXP: pa.totalXP,
+            nextLevel: pa.level.nextLevel,
+            nextLevelName: pa.level.nextLevelName,
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        realtimeService.broadcastLeaderboardUpdated();
+      }
+    } catch (rtErr) {
+      console.warn('[SubmissionApproval] Realtime broadcast notice:', rtErr.message);
+    }
   }
 
   return result;
 };
+
 
 module.exports = {
   processSubmissionVerdict,
