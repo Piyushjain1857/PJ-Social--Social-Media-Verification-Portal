@@ -27,12 +27,16 @@ const AVATAR_GRADIENTS = [
 ];
 
 const METRIC_CONFIG = {
-  totalUsers: { icon: '👥', label: 'Total Creators', subtitle: 'Registered creators' },
+  totalUsers: { icon: '👥', label: 'Platform Users', subtitle: 'Registered accounts' },
+  totalCreators: { icon: '🚀', label: 'Verified Creators', subtitle: 'Active creators' },
   totalAdmins: { icon: '🛡️', label: 'Platform Admins', subtitle: 'Authorized moderators' },
-  totalSubmissions: { icon: '📊', label: 'Total Submissions', subtitle: 'Lifetime verifications' },
   pendingReview: { icon: '⏳', label: 'Pending Review', subtitle: 'Awaiting inspection' },
+  totalSubmissions: { icon: '📊', label: 'Total Submissions', subtitle: 'Lifetime verifications' },
+  approved: { icon: '✅', label: 'Approved Proofs', subtitle: 'Verified & cleared' },
   approvedSubmissions: { icon: '✅', label: 'Verified Proof', subtitle: 'Approved & credited' },
-  rejectedSubmissions: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs' }
+  rejectedSubmissions: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs' },
+  pending: { icon: '⏳', label: 'Pending Review', subtitle: 'Awaiting inspection' },
+  rejected: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs' }
 };
 
 const DEFAULT_PERSONALIZATION = {
