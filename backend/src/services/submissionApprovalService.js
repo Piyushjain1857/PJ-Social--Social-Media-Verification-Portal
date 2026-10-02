@@ -135,13 +135,33 @@ const processSubmissionVerdict = async ({
       throw err;
     }
 
-    // 4. Update submission status & create Review record
-    const updatedSubmission = await tx.submission.update({
-      where: { id: submissionId },
+    // 4. Atomic conditional update to prevent concurrent review race conditions
+    const updateResult = await tx.submission.updateMany({
+      where: {
+        id: submissionId,
+        status: currentStatus
+      },
       data: {
         status: cleanStatus,
         updatedAt: reviewTimestamp
-      },
+      }
+    });
+
+    if (updateResult.count === 0) {
+      const err = new Error('Submission is already approved or modified by another concurrent review.');
+      err.code = 'ALREADY_APPROVED';
+      err.statusCode = 400;
+      err.data = {
+        submissionId,
+        alreadyApproved: true,
+        duplicatePrevented: true,
+        pointsAwarded: { awarded: false, alreadyAwarded: true, points: 0, xp: 0 }
+      };
+      throw err;
+    }
+
+    const updatedSubmission = await tx.submission.findUnique({
+      where: { id: submissionId },
       include: {
         user: { select: { id: true, name: true, email: true, role: true, totalXP: true, totalPoints: true } }
       }
