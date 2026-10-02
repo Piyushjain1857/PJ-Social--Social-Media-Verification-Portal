@@ -714,6 +714,150 @@ Tokens are obtained via \`POST /api/auth/login\` or \`POST /api/auth/register\`.
           200: { description: 'User XP transactions' }
         }
       }
+    },
+    '/super-admin/gamification/overview': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'Super Admin Overview Telemetry',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'Full platform gamification overview metrics' },
+          403: { description: 'Super Admin privileges required' }
+        }
+      }
+    },
+    '/super-admin/gamification/users': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'All Platform Users Gamification Directory',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'role', in: 'query', schema: { type: 'string' } },
+          { name: 'status', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: {
+          200: { description: 'List of users with rank, level and weekly/monthly velocity' }
+        }
+      }
+    },
+    '/super-admin/gamification/admins': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'All Admins Gamification Activity',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'Moderator and admin gamification performance stats' }
+        }
+      }
+    },
+    '/super-admin/gamification/transactions': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'XP Transaction Explorer',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'action', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: {
+          200: { description: 'Every platform point transaction' }
+        }
+      }
+    },
+    '/super-admin/gamification/analytics': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'Super Admin Advanced Gamification Analytics',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'XP over time, users by level, activity contribution' }
+        }
+      }
+    },
+    '/super-admin/gamification/settings': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'Get Gamification Activity Points Configuration',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'Active points configuration for LIKE, COMMENT, STORY' }
+        }
+      },
+      put: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'Update Gamification Activity Points Configuration',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  updates: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        activity: { type: 'string', example: 'LIKE' },
+                        xp: { type: 'integer', example: 5 },
+                        isActive: { type: 'boolean', example: true }
+                      }
+                    }
+                  },
+                  reason: { type: 'string', example: 'Promotional advocacy campaign' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'Updated gamification settings' }
+        }
+      }
+    },
+    '/super-admin/gamification/users/{id}/adjust-xp': {
+      post: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'Super Admin Manual XP Adjustment with Explicit Reason',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['amount', 'reason'],
+                properties: {
+                  type: { type: 'string', enum: ['ADD', 'REMOVE'], default: 'ADD' },
+                  amount: { type: 'integer', example: 100 },
+                  reason: { type: 'string', example: 'Super Admin institutional merit award' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'XP adjusted and audit logged successfully' }
+        }
+      }
+    },
+    '/super-admin/gamification/audit-logs': {
+      get: {
+        tags: ['Super Admin Gamification Control Center'],
+        summary: 'Gamification Audit Logs',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'Gamification audit trail entries' }
+        }
+      }
     }
   }
 };

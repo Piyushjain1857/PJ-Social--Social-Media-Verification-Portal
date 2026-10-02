@@ -27,6 +27,8 @@ import './styles/gamification.css';
  */
 const AUTHENTICATED_SUB_VIEWS = [
   'dashboard',
+  'super-admin/game-points',
+  'admin/game-points',
   'game-points',
   'points',
   'gamification',
@@ -56,13 +58,14 @@ export default function App() {
     const pathname = window.location.pathname.replace(/^\//, '');
     const hasToken = !!localStorage.getItem('auth_token');
 
-    // Handle direct path /game-points and /admin/game-points
+    // Handle direct path /game-points, /admin/game-points, and /super-admin/game-points
     if (
       pathname === 'game-points' || pathname.startsWith('game-points') ||
-      pathname === 'admin/game-points' || pathname.startsWith('admin/game-points')
+      pathname === 'admin/game-points' || pathname.startsWith('admin/game-points') ||
+      pathname === 'super-admin/game-points' || pathname.startsWith('super-admin/game-points')
     ) {
       if (hasToken) {
-        window.location.hash = 'game-points';
+        window.location.hash = pathname.startsWith('super-admin/game-points') ? 'super-admin/game-points' : (pathname.startsWith('admin/game-points') ? 'admin/game-points' : 'game-points');
         return 'dashboard';
       }
       return 'login';

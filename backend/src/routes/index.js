@@ -52,6 +52,11 @@ router.use('/admin/gamification', adminGamificationRoutes);
 // Super Admin Exclusive Governance routes (/api/superadmin)
 router.use('/superadmin', superAdminRoutes);
 
+// Super Admin Gamification Control Center routes (/api/super-admin/gamification)
+const superAdminGamificationRoutes = require('./superAdminGamificationRoutes');
+router.use('/super-admin/gamification', superAdminGamificationRoutes);
+router.use('/superadmin/gamification', superAdminGamificationRoutes);
+
 // Official Social Accounts (active accounts for submission targeting) (/api/social-accounts)
 router.use('/social-accounts', socialAccountRoutes);
 

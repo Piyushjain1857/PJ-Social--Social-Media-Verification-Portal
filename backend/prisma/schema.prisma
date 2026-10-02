@@ -55,6 +55,8 @@ enum PointActionType {
   STORY
   BONUS
   ADJUSTMENT
+  ADMIN_ADJUSTMENT
+  SUPER_ADMIN_ADJUSTMENT
 }
 
 // ============================================================================
@@ -302,5 +304,21 @@ model AuditLog {
   @@index([entity])
   @@index([timestamp(sort: Desc)])
   @@map("audit_logs")
+}
+
+/// Gamification Activity XP Rules configured by Super Admin (e.g. LIKE: 1 XP, COMMENT: 2 XP, STORY: 2 XP)
+model GamificationSetting {
+  id          String   @id @default(uuid())
+  activity    String   @unique
+  xp          Int      @default(1)
+  isActive    Boolean  @default(true)
+  description String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([activity])
+  @@index([isActive])
+  @@map("gamification_settings")
 }
 

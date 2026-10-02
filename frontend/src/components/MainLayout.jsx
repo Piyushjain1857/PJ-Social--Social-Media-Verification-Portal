@@ -56,6 +56,7 @@ import GlobalSearchModal from './common/GlobalSearchModal';
 import GamificationSummary from './gamification/GamificationSummary';
 import PointsSummary from './common/PointsSummary';
 import GamePointsView from './views/GamePointsView';
+import SuperAdminGamificationCenter from './views/SuperAdminGamificationCenter';
 import { fetchMyGamification } from '../services/gamificationApi';
 
 /**
@@ -121,7 +122,9 @@ export default function MainLayout({
     if (
       hash === 'game-points' || pathname === '/game-points' ||
       hash === 'admin/game-points' || pathname === '/admin/game-points' ||
-      hash.startsWith('admin/game-points') || pathname.startsWith('/admin/game-points')
+      hash.startsWith('admin/game-points') || pathname.startsWith('/admin/game-points') ||
+      hash === 'super-admin/game-points' || pathname === '/super-admin/game-points' ||
+      hash.startsWith('super-admin/game-points') || pathname.startsWith('/super-admin/game-points')
     ) {
       return 'game-points';
     }
@@ -132,8 +135,12 @@ export default function MainLayout({
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
 
     // 1. If URL hash matches permitted navigation item for this role, prioritize it
-    if (hash && (roleItems.some(item => item.id === hash) || (hash.startsWith('admin/game-points') && role !== 'USER'))) {
-      return hash.startsWith('admin/game-points') ? 'game-points' : hash;
+    if (hash && (
+      roleItems.some(item => item.id === hash) ||
+      (hash.startsWith('super-admin/game-points') && role === 'SUPER_ADMIN') ||
+      (hash.startsWith('admin/game-points') && role !== 'USER')
+    )) {
+      return (hash.startsWith('super-admin/game-points') || hash.startsWith('admin/game-points')) ? 'game-points' : hash;
     }
 
     // 2. Otherwise check localStorage for previously active navigation
@@ -155,8 +162,11 @@ export default function MainLayout({
   const handleNavChange = (navId) => {
     const role = user?.role || 'USER';
     const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
-    const isValid = roleItems.some(item => item.id === navId) || navId === 'game-points' || navId === 'admin/game-points';
-    const targetNav = isValid ? (navId === 'admin/game-points' ? 'game-points' : navId) : 'dashboard';
+    const isValid = roleItems.some(item => item.id === navId) ||
+                    navId === 'game-points' ||
+                    navId === 'admin/game-points' ||
+                    navId === 'super-admin/game-points';
+    const targetNav = isValid ? (navId.includes('game-points') ? 'game-points' : navId) : 'dashboard';
 
     if (controlledOnNavChange) {
       controlledOnNavChange(targetNav);
@@ -165,8 +175,14 @@ export default function MainLayout({
     }
 
     // Keep URL hash and localStorage in sync so reload keeps the exact page!
-    const targetHash = (targetNav === 'game-points' && role !== 'USER') ? 'admin/game-points' : targetNav;
-    if (window.location.hash.replace('#', '') !== targetHash && !window.location.hash.includes('admin/game-points/user/')) {
+    let targetHash = targetNav;
+    if (targetNav === 'game-points') {
+      if (role === 'SUPER_ADMIN') targetHash = 'super-admin/game-points';
+      else if (role === 'ADMIN') targetHash = 'admin/game-points';
+    }
+
+    if (window.location.hash.replace('#', '') !== targetHash &&
+        !window.location.hash.includes('game-points/user/')) {
       window.location.hash = targetHash;
     }
     try {
@@ -180,11 +196,20 @@ export default function MainLayout({
   // Keep URL hash and localStorage updated with activeNav
   useEffect(() => {
     const currentHash = window.location.hash.replace('#', '');
-    if (activeNav === 'game-points' && (currentHash === 'admin/game-points' || currentHash.startsWith('admin/game-points'))) {
+    if (activeNav === 'game-points' && (
+      currentHash === 'super-admin/game-points' ||
+      currentHash.startsWith('super-admin/game-points') ||
+      currentHash === 'admin/game-points' ||
+      currentHash.startsWith('admin/game-points')
+    )) {
       return;
     }
-    const targetHash = (activeNav === 'game-points' && user?.role !== 'USER') ? 'admin/game-points' : activeNav;
-    if (currentHash !== targetHash && !currentHash.startsWith('admin/game-points/user/')) {
+    let targetHash = activeNav;
+    if (activeNav === 'game-points') {
+      if (user?.role === 'SUPER_ADMIN') targetHash = 'super-admin/game-points';
+      else if (user?.role === 'ADMIN') targetHash = 'admin/game-points';
+    }
+    if (currentHash !== targetHash && !currentHash.includes('game-points/user/')) {
       window.location.hash = targetHash;
     }
     try {
@@ -202,8 +227,12 @@ export default function MainLayout({
       }
       const role = user?.role || 'USER';
       const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
-      if (hash && (roleItems.some(item => item.id === hash) || (hash.startsWith('admin/game-points') && role !== 'USER'))) {
-        const effectiveNav = hash.startsWith('admin/game-points') ? 'game-points' : hash;
+      if (hash && (
+        roleItems.some(item => item.id === hash) ||
+        (hash.startsWith('super-admin/game-points') && role === 'SUPER_ADMIN') ||
+        (hash.startsWith('admin/game-points') && role !== 'USER')
+      )) {
+        const effectiveNav = (hash.startsWith('super-admin/game-points') || hash.startsWith('admin/game-points')) ? 'game-points' : hash;
         if (controlledOnNavChange) {
           controlledOnNavChange(effectiveNav);
         } else {
@@ -458,6 +487,9 @@ export default function MainLayout({
       case 'game-points':
       case 'points':
       case 'gamification':
+        if (currentRole === 'SUPER_ADMIN') {
+          return <SuperAdminGamificationCenter onNavigateToNav={handleNavChange} />;
+        }
         return <GamePointsView onNavigateToNav={handleNavChange} />;
       case 'levels':
       case 'super-admin/levels':

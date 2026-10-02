@@ -10,6 +10,8 @@ const {
 } = require('../repositories/pointTransactionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 
+const { prisma } = require('../config/db');
+
 /**
  * Standard Point Values for Institutional Activity Verifications:
  * - LIKE: 1 point
@@ -21,6 +23,36 @@ const POINT_VALUES = {
   COMMENT: 2,
   STORY: 2
 };
+
+// Dynamic in-memory points cache synced from database
+const ACTIVE_POINT_CONFIG = { ...POINT_VALUES };
+
+// Asynchronously sync from database gamification_settings table
+const syncPointConfigFromDB = async () => {
+  try {
+    if (prisma?.gamificationSetting) {
+      const settings = await prisma.gamificationSetting.findMany({
+        where: { isActive: true }
+      });
+      for (const s of settings) {
+        if (s.activity) {
+          ACTIVE_POINT_CONFIG[s.activity.toUpperCase()] = s.xp;
+        }
+      }
+    }
+  } catch (err) {
+    // Non-fatal fallback
+  }
+};
+syncPointConfigFromDB();
+
+const setActivityPointConfig = (activity, xp) => {
+  if (activity) {
+    ACTIVE_POINT_CONFIG[activity.toUpperCase()] = Math.max(0, parseInt(xp, 10) || 0);
+  }
+};
+
+const getActivityPointConfig = () => ({ ...ACTIVE_POINT_CONFIG });
 
 /**
  * Configurable Level System Definition:
@@ -87,6 +119,9 @@ const calculateUserLevel = (totalPoints = 0) => {
 const getPointsForAction = (actionType) => {
   if (!actionType || typeof actionType !== 'string') return 0;
   const upper = actionType.toUpperCase().trim();
+  if (ACTIVE_POINT_CONFIG[upper] !== undefined) {
+    return ACTIVE_POINT_CONFIG[upper];
+  }
   return POINT_VALUES[upper] !== undefined ? POINT_VALUES[upper] : 0;
 };
 
@@ -396,6 +431,9 @@ module.exports = {
   LEVEL_TIERS,
   calculateUserLevel,
   getPointsForAction,
+  setActivityPointConfig,
+  getActivityPointConfig,
+  syncPointConfigFromDB,
   preventDuplicateAward,
   awardPoints,
   getUserPoints,
