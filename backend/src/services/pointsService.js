@@ -62,58 +62,24 @@ const getActivityPointConfig = () => ({ ...ACTIVE_POINT_CONFIG });
  * 500–999:  Elite       (Level 4)
  * 1000+:    Champion    (Level 5)
  */
+const { calculateUserLevel: calculateLevelFromService } = require('./levelService');
+
 const LEVEL_TIERS = [
-  { level: 1, name: 'Beginner', badge: '🌱', minPoints: 0, maxPoints: 99, color: '#94a3b8' },
-  { level: 2, name: 'Active', badge: '⚡', minPoints: 100, maxPoints: 249, color: '#38bdf8' },
-  { level: 3, name: 'Contributor', badge: '🚀', minPoints: 250, maxPoints: 499, color: '#a855f7' },
-  { level: 4, name: 'Elite', badge: '💎', minPoints: 500, maxPoints: 999, color: '#ec4899' },
-  { level: 5, name: 'Champion', badge: '👑', minPoints: 1000, maxPoints: Infinity, color: '#facc15' }
+  { levelNumber: 1, level: 1, name: 'Beginner', badge: '🌱', icon: '🌱', xpRequired: 100, minPoints: 0, maxPoints: 99, color: '#94a3b8', isActive: true },
+  { levelNumber: 2, level: 2, name: 'Active', badge: '⚡', icon: '⚡', xpRequired: 150, minPoints: 100, maxPoints: 249, color: '#38bdf8', isActive: true },
+  { levelNumber: 3, level: 3, name: 'Contributor', badge: '🚀', icon: '🚀', xpRequired: 250, minPoints: 250, maxPoints: 499, color: '#a855f7', isActive: true },
+  { levelNumber: 4, level: 4, name: 'Elite', badge: '💎', icon: '💎', xpRequired: 500, minPoints: 500, maxPoints: 999, color: '#ec4899', isActive: true },
+  { levelNumber: 5, level: 5, name: 'Champion', badge: '👑', icon: '👑', xpRequired: 1000, minPoints: 1000, maxPoints: Infinity, color: '#facc15', isActive: true }
 ];
 
 /**
- * Calculate user level, current points, points required for next level, and progress percentage.
+ * Calculates user level using authoritative levelService.
  * @param {number} totalPoints
+ * @param {Array} [customLevels=null]
  * @returns {Object} Level computation object
  */
-const calculateUserLevel = (totalPoints = 0) => {
-  const points = Math.max(0, parseInt(totalPoints, 10) || 0);
-
-  const currentTier = LEVEL_TIERS.find(t => points >= t.minPoints && points <= t.maxPoints)
-    || LEVEL_TIERS[LEVEL_TIERS.length - 1];
-
-  const nextTierIndex = LEVEL_TIERS.findIndex(t => t.level === currentTier.level) + 1;
-  const nextTier = nextTierIndex < LEVEL_TIERS.length ? LEVEL_TIERS[nextTierIndex] : null;
-
-  let progressPercentage = 100;
-  let pointsToNextLevel = 0;
-
-  if (nextTier) {
-    const tierRange = nextTier.minPoints - currentTier.minPoints;
-    const progressInTier = points - currentTier.minPoints;
-    progressPercentage = Math.min(100, Math.max(0, Math.round((progressInTier / tierRange) * 100)));
-    pointsToNextLevel = Math.max(0, nextTier.minPoints - points);
-  }
-
-  return {
-    level: currentTier.level,
-    currentLevel: currentTier.level,
-    levelName: currentTier.name,
-    name: currentTier.name,
-    badge: currentTier.badge,
-    icon: currentTier.badge,
-    color: currentTier.color,
-    currentPoints: points,
-    totalXP: points,
-    nextLevel: nextTier ? nextTier.level : null,
-    nextLevelName: nextTier ? nextTier.name : null,
-    nextLevelBadge: nextTier ? nextTier.badge : null,
-    nextLevelMinPoints: nextTier ? nextTier.minPoints : null,
-    pointsToNextLevel,
-    xpRemaining: pointsToNextLevel,
-    progressPercentage,
-    description: `Level ${currentTier.level} — ${currentTier.name}`,
-    isMaxLevel: !nextTier
-  };
+const calculateUserLevel = (totalPoints = 0, customLevels = null) => {
+  return calculateLevelFromService(totalPoints, customLevels || LEVEL_TIERS);
 };
 
 /**

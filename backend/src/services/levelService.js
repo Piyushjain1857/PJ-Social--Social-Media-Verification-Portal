@@ -71,31 +71,77 @@ const getActiveLevels = async (forceRefresh = false) => {
  * @param {Array} levels - Sorted active level records
  * @returns {Array} Levels enriched with cumulativeStartXP and cumulativeEndXP
  */
+/**
+ * Computes cumulative XP thresholds for each active level.
+ * Handles variable/dynamic XP requirements per level.
+ * 
+ * Example:
+ * Level 1 = 100 XP -> cumulativeStartXP: 0,   cumulativeEndXP: 99
+ * Level 2 = 150 XP -> cumulativeStartXP: 100, cumulativeEndXP: 249
+ * Level 3 = 250 XP -> cumulativeStartXP: 250, cumulativeEndXP: 499
+ * Level 4 = 500 XP -> cumulativeStartXP: 500, cumulativeEndXP: 999
+ * 
+ * Deactivated levels (isActive: false) are excluded.
+ * 
+ * @param {Array} levels - Level records
+ * @returns {Array} Active levels enriched with cumulativeStartXP and cumulativeEndXP
+ */
 const buildLevelThresholds = (levels) => {
-  if (!levels || levels.length === 0) {
+  if (!levels || !Array.isArray(levels) || levels.length === 0) {
+    return [];
+  }
+
+  // Filter only active levels and sort by levelNumber ascending
+  const activeLevels = levels
+    .filter(lvl => lvl && lvl.isActive !== false)
+    .sort((a, b) => (parseInt(a.levelNumber, 10) || 0) - (parseInt(b.levelNumber, 10) || 0));
+
+  if (activeLevels.length === 0) {
     return [];
   }
 
   let runningXP = 0;
-  return levels.map((lvl, index) => {
+  return activeLevels.map((lvl, index) => {
     const startXP = runningXP;
-    const reqXP = Math.max(1, parseInt(lvl.xpRequired, 10) || 250);
+    const reqXP = Math.max(1, parseInt(lvl.xpRequired, 10) || 100);
     const endXP = startXP + reqXP - 1;
     runningXP += reqXP;
 
     return {
       ...lvl,
+      levelNumber: parseInt(lvl.levelNumber, 10) || (index + 1),
       xpRequired: reqXP,
       cumulativeStartXP: startXP,
       cumulativeEndXP: endXP,
-      isLast: index === levels.length - 1
+      isLast: index === activeLevels.length - 1
     };
   });
 };
 
 /**
- * Calculate user level, current XP into level, XP remaining, and progress percentage.
+ * Authoritative single backend function for level calculation.
  * Fully dynamic and supports arbitrary XP requirements per level.
+ * 
+ * Returns all required fields:
+ * - currentLevel
+ * - levelName
+ * - currentLevelStartXP
+ * - currentLevelEndXP
+ * - nextLevel
+ * - nextLevelStartXP
+ * - xpIntoLevel
+ * - xpRequiredForLevel
+ * - xpRemaining
+ * - progressPercentage
+ * 
+ * Handles:
+ * - 0 XP
+ * - exact threshold
+ * - one XP before threshold
+ * - one XP after threshold
+ * - maximum level
+ * - no active levels
+ * - deactivated levels
  * 
  * @param {number} xp - User total XP
  * @param {Array} [customLevels=null] - Optional pre-loaded levels
@@ -103,22 +149,42 @@ const buildLevelThresholds = (levels) => {
  */
 const calculateUserLevel = (xp = 0, customLevels = null) => {
   const totalXP = Math.max(0, parseInt(xp, 10) || 0);
-  const levels = customLevels && customLevels.length > 0 ? customLevels : (cachedLevels || DEFAULT_FALLBACK_LEVELS);
-  const thresholds = buildLevelThresholds(levels);
+  const rawLevels = (customLevels && Array.isArray(customLevels))
+    ? customLevels
+    : (cachedLevels && cachedLevels.length > 0 ? cachedLevels : DEFAULT_FALLBACK_LEVELS);
 
-  if (thresholds.length === 0) {
+  const thresholds = buildLevelThresholds(rawLevels);
+
+  // Handle: no active levels (or empty level records)
+  if (!thresholds || thresholds.length === 0) {
     return {
-      totalXP,
       currentLevel: 1,
       levelName: 'Novice',
-      icon: '🌱',
       currentLevelStartXP: 0,
+      currentLevelEndXP: 0,
       nextLevel: null,
-      nextLevelName: null,
-      nextLevelRequiredXP: 250,
-      xpIntoCurrentLevel: 0,
-      xpRemaining: 250,
+      nextLevelStartXP: null,
+      xpIntoLevel: 0,
+      xpRequiredForLevel: 0,
+      xpRemaining: 0,
       progressPercentage: 0,
+
+      // Backward compatibility aliases
+      totalXP,
+      level: 1,
+      name: 'Novice',
+      icon: '🌱',
+      badge: '🌱',
+      color: '#94a3b8',
+      description: 'Default tier (no active levels configured)',
+      nextLevelName: null,
+      nextLevelRequiredXP: null,
+      nextLevelDeltaXP: 0,
+      nextLevelTargetXP: null,
+      targetNextLevelXP: null,
+      xpIntoCurrentLevel: 0,
+      pointsToNextLevel: 0,
+      currentPoints: totalXP,
       isMaxLevel: false
     };
   }
@@ -142,57 +208,70 @@ const calculateUserLevel = (xp = 0, customLevels = null) => {
   }
 
   const currentIndex = thresholds.findIndex(t => t.levelNumber === currentLevelObj.levelNumber);
-  const isMaxLevel = currentLevelObj.isLast && totalXP > currentLevelObj.cumulativeEndXP;
   const nextLevelObj = !currentLevelObj.isLast && currentIndex + 1 < thresholds.length
     ? thresholds[currentIndex + 1]
     : null;
 
-  const currentLevelStartXP = currentLevelObj.cumulativeStartXP;
-  const xpIntoCurrentLevel = Math.max(0, totalXP - currentLevelStartXP);
-  const nextLevelDeltaXP = currentLevelObj.xpRequired;
+  const isMaxLevel = !nextLevelObj; // User has reached the maximum configured level
 
-  // Next level cumulative threshold (e.g. 4,250 XP for level 18)
-  const targetNextLevelXP = nextLevelObj
-    ? nextLevelObj.cumulativeStartXP
-    : currentLevelObj.cumulativeEndXP + 1;
+  const currentLevelStartXP = currentLevelObj.cumulativeStartXP;
+  const currentLevelEndXP = currentLevelObj.cumulativeEndXP;
+  const xpRequiredForLevel = currentLevelObj.xpRequired;
+
+  const nextLevel = nextLevelObj ? nextLevelObj.levelNumber : null;
+  const nextLevelStartXP = nextLevelObj ? nextLevelObj.cumulativeStartXP : null;
+
+  const xpIntoLevel = Math.max(0, totalXP - currentLevelStartXP);
 
   let xpRemaining = 0;
-  let progressPercentage = 100;
+  let progressPercentage = 0;
 
   if (nextLevelObj) {
-    xpRemaining = Math.max(0, nextLevelDeltaXP - xpIntoCurrentLevel);
-    progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoCurrentLevel / nextLevelDeltaXP) * 100)));
+    // Normal progression towards next level
+    xpRemaining = Math.max(0, nextLevelStartXP - totalXP);
+    progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoLevel / xpRequiredForLevel) * 100)));
   } else {
-    // Highest level reached
-    if (totalXP <= currentLevelObj.cumulativeEndXP) {
-      xpRemaining = Math.max(0, currentLevelObj.cumulativeEndXP + 1 - totalXP);
-      progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoCurrentLevel / nextLevelDeltaXP) * 100)));
+    // Maximum level reached
+    if (totalXP <= currentLevelEndXP) {
+      xpRemaining = Math.max(0, (currentLevelEndXP + 1) - totalXP);
+      progressPercentage = Math.min(100, Math.max(0, Math.floor((xpIntoLevel / xpRequiredForLevel) * 100)));
     } else {
+      // User has overflowed / completed maximum level
       xpRemaining = 0;
       progressPercentage = 100;
     }
   }
 
   return {
-    totalXP,
-    level: currentLevelObj.levelNumber,
+    // 10 Authoritative Return Properties (explicitly required)
     currentLevel: currentLevelObj.levelNumber,
     levelName: currentLevelObj.name,
+    currentLevelStartXP,
+    currentLevelEndXP,
+    nextLevel,
+    nextLevelStartXP,
+    xpIntoLevel,
+    xpRequiredForLevel,
+    xpRemaining,
+    progressPercentage,
+
+    // Backward-compatible properties & aliases
+    totalXP,
+    level: currentLevelObj.levelNumber,
     name: currentLevelObj.name,
     icon: currentLevelObj.icon || '⭐',
     badge: currentLevelObj.icon || '⭐',
+    color: currentLevelObj.color || '#38bdf8',
     description: currentLevelObj.description,
-    currentLevelStartXP,
-    nextLevel: nextLevelObj ? nextLevelObj.levelNumber : null,
     nextLevelName: nextLevelObj ? nextLevelObj.name : null,
-    nextLevelRequiredXP: nextLevelObj ? nextLevelDeltaXP : null,
-    nextLevelDeltaXP,
-    nextLevelTargetXP: nextLevelObj ? targetNextLevelXP : null,
-    targetNextLevelXP: nextLevelObj ? targetNextLevelXP : null,
-    xpIntoCurrentLevel,
-    xpRemaining,
-    progressPercentage,
-    isMaxLevel: !nextLevelObj && totalXP > currentLevelObj.cumulativeEndXP
+    nextLevelRequiredXP: nextLevelObj ? nextLevelObj.xpRequired : null,
+    nextLevelDeltaXP: nextLevelObj ? nextLevelObj.xpRequired : xpRequiredForLevel,
+    nextLevelTargetXP: nextLevelStartXP,
+    targetNextLevelXP: nextLevelStartXP,
+    xpIntoCurrentLevel: xpIntoLevel,
+    pointsToNextLevel: xpRemaining,
+    currentPoints: totalXP,
+    isMaxLevel
   };
 };
 
@@ -204,7 +283,9 @@ const calculateUserLevel = (xp = 0, customLevels = null) => {
  */
 const getNextLevel = (currentLevelNumber, levels = null) => {
   const activeLevels = levels || cachedLevels || DEFAULT_FALLBACK_LEVELS;
-  const sorted = [...activeLevels].sort((a, b) => a.levelNumber - b.levelNumber);
+  const sorted = [...activeLevels]
+    .filter(l => l && l.isActive !== false)
+    .sort((a, b) => a.levelNumber - b.levelNumber);
   const idx = sorted.findIndex(l => l.levelNumber === parseInt(currentLevelNumber, 10));
   if (idx !== -1 && idx + 1 < sorted.length) {
     return sorted[idx + 1];
@@ -216,7 +297,7 @@ const getNextLevel = (currentLevelNumber, levels = null) => {
  * Get progress details toward the next level for given XP
  * @param {number} xp
  * @param {Array} [levels=null]
- * @returns {Object} { progressPercentage, xpIntoCurrentLevel, xpRemaining, currentLevelStartXP, nextLevelRequiredXP }
+ * @returns {Object} Progress details
  */
 const getLevelProgress = (xp = 0, levels = null) => {
   const result = calculateUserLevel(xp, levels);
@@ -224,9 +305,13 @@ const getLevelProgress = (xp = 0, levels = null) => {
     currentLevel: result.currentLevel,
     levelName: result.levelName,
     currentLevelStartXP: result.currentLevelStartXP,
+    currentLevelEndXP: result.currentLevelEndXP,
     nextLevel: result.nextLevel,
+    nextLevelStartXP: result.nextLevelStartXP,
     nextLevelRequiredXP: result.nextLevelRequiredXP,
+    xpIntoLevel: result.xpIntoLevel,
     xpIntoCurrentLevel: result.xpIntoCurrentLevel,
+    xpRequiredForLevel: result.xpRequiredForLevel,
     xpRemaining: result.xpRemaining,
     progressPercentage: result.progressPercentage,
     isMaxLevel: result.isMaxLevel
@@ -402,10 +487,14 @@ const getUserGamificationProfile = async (userId) => {
     currentLevel: levelData.currentLevel,
     levelName: levelData.levelName,
     currentLevelStartXP: levelData.currentLevelStartXP,
+    currentLevelEndXP: levelData.currentLevelEndXP,
     nextLevel: levelData.nextLevel,
+    nextLevelStartXP: levelData.nextLevelStartXP,
     nextLevelRequiredXP: levelData.nextLevelRequiredXP,
     nextLevelTargetXP: levelData.nextLevelTargetXP,
+    xpIntoLevel: levelData.xpIntoLevel,
     xpIntoCurrentLevel: levelData.xpIntoCurrentLevel,
+    xpRequiredForLevel: levelData.xpRequiredForLevel,
     xpRemaining: levelData.xpRemaining,
     progressPercentage: levelData.progressPercentage,
     icon: levelData.icon,
