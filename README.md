@@ -650,6 +650,6 @@ cd backend && node src/tests/gamification_production_e2e.test.js
 
 ## 📄 License & Copyright
 
-Copyright © 2026 **Piyush Jain** ([@piyushjain1857](https://linkedin.com/in/piyushjain1857)). All rights reserved.
+Copyright © 2026 ([**Piyush Jain**](https://linkedin.com/in/piyushjain1857)). All rights reserved.
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for complete license terms and permissions.
