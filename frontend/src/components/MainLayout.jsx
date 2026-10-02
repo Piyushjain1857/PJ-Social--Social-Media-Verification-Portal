@@ -833,7 +833,18 @@ export default function MainLayout({
           <button
             type="button"
             className="sidebar-logout-btn"
-            onClick={() => { logout(); if (onNavigate) onNavigate('portal'); }}
+            onClick={async () => {
+              await logout();
+              if (onNavigate) {
+                onNavigate('portal');
+              } else {
+                try {
+                  window.history.replaceState(null, '', window.location.pathname);
+                } catch (e) {
+                  window.location.hash = '';
+                }
+              }
+            }}
             title="Log out of your session"
           >
             <span>⎋</span>
@@ -953,7 +964,19 @@ export default function MainLayout({
           <button
             type="button"
             className="sidebar-logout-btn"
-            onClick={() => { setIsMobileDrawerOpen(false); logout(); if (onNavigate) onNavigate('portal'); }}
+            onClick={async () => {
+              setIsMobileDrawerOpen(false);
+              await logout();
+              if (onNavigate) {
+                onNavigate('portal');
+              } else {
+                try {
+                  window.history.replaceState(null, '', window.location.pathname);
+                } catch (e) {
+                  window.location.hash = '';
+                }
+              }
+            }}
           >
             <span>⎋</span>
             <span>Sign Out</span>
@@ -1390,10 +1413,18 @@ export default function MainLayout({
                     <button
                       type="button"
                       className="dropdown-logout-btn"
-                      onClick={() => {
+                      onClick={async () => {
                         setIsProfileMenuOpen(false);
-                        logout();
-                        if (onNavigate) onNavigate('portal');
+                        await logout();
+                        if (onNavigate) {
+                          onNavigate('portal');
+                        } else {
+                          try {
+                            window.history.replaceState(null, '', window.location.pathname);
+                          } catch (e) {
+                            window.location.hash = '';
+                          }
+                        }
                       }}
                     >
                       <span>⎋</span>

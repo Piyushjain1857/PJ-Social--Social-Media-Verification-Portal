@@ -108,16 +108,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // 1. Immediately revoke local tokens and user state synchronously
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('active_portal_nav');
+    setToken(null);
+    setUser(null);
+    setError(null);
+
+    // 2. Notify backend to revoke session
     try {
       await logoutUser();
     } catch {
       // Continue cleanup regardless
-    } finally {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('active_portal_nav');
-      setToken(null);
-      setUser(null);
-      setError(null);
     }
   };
 

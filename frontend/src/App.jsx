@@ -193,6 +193,24 @@ export default function App() {
     }
   }, [isAuthenticated, currentView]);
 
+  // When user logs out / unauthenticates, ensure view and hash are reset to portal
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading) {
+      const hash = window.location.hash.replace('#', '').split('?')[0];
+      if (isAuthSubView(hash) || currentView === 'dashboard') {
+        setCurrentView('portal');
+        try {
+          localStorage.removeItem('active_portal_nav');
+        } catch (e) {}
+        try {
+          window.history.replaceState(null, '', window.location.pathname);
+        } catch (e) {
+          window.location.hash = '';
+        }
+      }
+    }
+  }, [isAuthenticated, authLoading, currentView]);
+
   const handleNavigate = (view) => {
     const isAuthed = isAuthenticated || !!localStorage.getItem('auth_token');
     if (isAuthSubView(view)) {
@@ -214,7 +232,11 @@ export default function App() {
 
     setCurrentView(view);
     if (view === 'portal') {
-      window.location.hash = '';
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch (e) {
+        window.location.hash = '';
+      }
     } else {
       window.location.hash = view;
     }
@@ -259,8 +281,8 @@ export default function App() {
       <Header apiStatus={apiStatus} currentView={currentView} onToggleView={handleNavigate} />
 
       <main className="main-content">
-        {/* Public portal landing */}
-        {currentView === 'portal' && (
+        {/* Public portal landing (safe fallback if not login, unauthorized, or dev-dashboard) */}
+        {(currentView === 'portal' || !['login', 'unauthorized', 'dev-dashboard'].includes(currentView)) && (
           <>
             <Hero
               onRoleClick={() => scrollToSection('roles')}

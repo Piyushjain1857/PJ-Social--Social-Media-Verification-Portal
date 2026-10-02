@@ -1763,9 +1763,14 @@ export default function ProfileView({ onNavigateToNav }) {
               <button
                 type="button"
                 className="btn-danger"
-                onClick={() => {
+                onClick={async () => {
                   setShowLogoutConfirm(false);
-                  logout();
+                  await logout();
+                  try {
+                    window.history.replaceState(null, '', window.location.pathname);
+                  } catch (e) {
+                    window.location.hash = '';
+                  }
                 }}
                 style={{ padding: '0.55rem 1.25rem', fontSize: '0.85rem' }}
               >
