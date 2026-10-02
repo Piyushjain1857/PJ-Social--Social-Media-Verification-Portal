@@ -222,7 +222,7 @@ export default function LevelJourneySection({ userId = null }) {
           background: 'rgba(250, 204, 21, 0.08)', border: '1px solid rgba(250, 204, 21, 0.25)',
           color: '#facc15', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center'
         }}>
-          👑 Maximum Level Achieved — You have mastered the VeriSocial platform!
+          👑 Maximum Level Achieved — You have mastered the PJ Social platform!
         </div>
       )}
     </div>

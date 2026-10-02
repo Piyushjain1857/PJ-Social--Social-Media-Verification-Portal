@@ -1,5 +1,5 @@
 /**
- * Seed 50 Default Gamification Levels for VeriSocial Portal
+ * Seed 50 Default Gamification Levels for PJ Social Portal
  * Configured dynamically: 50 levels, each requiring 250 XP.
  * Controlled by the database so Super Admin can modify thresholds, names, and icons.
  */
@@ -57,7 +57,7 @@ const LEVEL_NAMES = [
   { level: 47, name: 'Supreme', icon: '🔱' },
   { level: 48, name: 'Overseer', icon: '👁️' },
   { level: 49, name: 'Principal Legend', icon: '🏅' },
-  { level: 50, name: 'VeriSocial Legend', icon: '🏆' }
+  { level: 50, name: 'PJ Social Legend', icon: '🏆' }
 ];
 
 async function seedLevels() {

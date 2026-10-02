@@ -63,7 +63,7 @@ const login = async (email, password) => {
 
 async function runSecurityAudit() {
   console.log('========================================================');
-  console.log('       VeriSocial Full-Stack Security Audit Suite       ');
+  console.log('       PJ Social Full-Stack Security Audit Suite        ');
   console.log('========================================================\n');
 
   // Authenticate base test accounts

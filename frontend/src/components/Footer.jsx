@@ -10,7 +10,7 @@ export default function Footer() {
               🛡️
             </div>
             <div className="brand-title" style={{ fontSize: '1rem' }}>
-              Veri<span>Social</span> Portal
+              PJ <span>Social</span> Portal
             </div>
           </div>
 

@@ -49,7 +49,7 @@ export default function Header({ apiStatus, currentView, onToggleView }) {
               🛡️
             </div>
             <div className="brand-title">
-              Veri<span>Social</span>
+              PJ <span>Social</span>
             </div>
           </div>
 

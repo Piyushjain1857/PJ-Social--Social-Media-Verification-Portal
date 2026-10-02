@@ -704,7 +704,7 @@ export default function MainLayout({
           >
             <div className="sidebar-brand-icon">🛡️</div>
             <div className="sidebar-brand-text">
-              <span className="sidebar-brand-title">Veri<span>Social</span></span>
+              <span className="sidebar-brand-title">PJ <span>Social</span></span>
               <span className="sidebar-brand-subtitle">Verification Engine</span>
             </div>
           </button>
@@ -902,7 +902,7 @@ export default function MainLayout({
           <div className="sidebar-brand">
             <div className="sidebar-brand-icon">🛡️</div>
             <div className="sidebar-brand-text">
-              <span className="sidebar-brand-title">Veri<span>Social</span></span>
+              <span className="sidebar-brand-title">PJ <span>Social</span></span>
               <span className="sidebar-brand-subtitle">{getRoleLabel(currentRole)}</span>
             </div>
           </div>

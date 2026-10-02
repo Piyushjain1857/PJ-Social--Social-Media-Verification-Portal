@@ -142,7 +142,7 @@ const getPendingReviews = async (req, res, next) => {
             search: search || null,
           },
           disclaimer:
-            'Human verification required: VeriSocial does not claim or perform automated platform scraping. Verify evidence screenshot authenticity manually.',
+            'Human verification required: PJ Social does not claim or perform automated platform scraping. Verify evidence screenshot authenticity manually.',
         });
       } catch (prismaErr) {
         console.warn(
@@ -219,7 +219,7 @@ const getPendingReviews = async (req, res, next) => {
         search: search || null,
       },
       disclaimer:
-        'Human verification required: VeriSocial does not claim or perform automated platform scraping. Verify evidence screenshot authenticity manually.',
+        'Human verification required: PJ Social does not claim or perform automated platform scraping. Verify evidence screenshot authenticity manually.',
     });
   } catch (err) {
     next(err);

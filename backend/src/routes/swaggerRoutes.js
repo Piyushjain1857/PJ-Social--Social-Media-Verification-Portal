@@ -66,7 +66,7 @@ const customCss = `
 
 const swaggerUiOptions = {
   customCss,
-  customSiteTitle: 'VeriSocial API Explorer & Documentation',
+  customSiteTitle: 'PJ Social API Explorer & Documentation',
   customfavIcon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🛡️</text></svg>',
   swaggerOptions: {
     persistAuthorization: true,

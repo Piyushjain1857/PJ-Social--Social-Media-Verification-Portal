@@ -1,6 +1,6 @@
-# 🛡️ VeriSocial: Social Media Activity Verification Portal
+# 🛡️ PJ Social : Social Media Activity Verification Portal
 
-VeriSocial is an enterprise-grade full-stack platform engineered to verify creator campaign activities across major social media platforms (**Instagram**, **LinkedIn**, and **Facebook**) under a strict **3-Tier Role-Based Access Control (RBAC)** architecture: **Super Admin**, **Admin Moderator**, and **Normal User (Creator)**.
+**PJ Social** (**PJ Social : Social Media Activity Verification Portal**) is an enterprise-grade full-stack platform engineered to verify creator campaign activities across major social media platforms (**Instagram**, **LinkedIn**, and **Facebook**) under a strict **3-Tier Role-Based Access Control (RBAC)** architecture: **Super Admin**, **Admin Moderator**, and **Normal User (Creator)**.
 
 The platform includes a real-time verification pipeline, deep audit dossiers, institutional accounts registry, profile personalization with avatar photo uploads, and a comprehensive **Dynamic Gamification, Level & Game Points Engine** featuring real-time event updates, interactive trajectory graphs, automated level progression, community rankings with deterministic tie-breaking, and celebratory level-up animations.
 
@@ -37,7 +37,7 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 
 ## 🌟 Overview
 
-VeriSocial provides an audited verification and reward pipeline for campus and brand campaigns:
+**PJ Social** provides an audited verification and reward pipeline for campus and brand campaigns:
 1. **Creators (`USER`)**: Browse verified institutional social media accounts, submit proofs (post permalinks, activity type like Like, Comment, or Story, and screenshot evidence), track submissions in real time, view authoritative level progression cards, explore the interactive Level Journey map, celebrate level-ups with animations, inspect historical XP progression graphs over multiple timeframes, track verified leaderboard rankings, customize their profile with avatar photos, and manage security credentials.
 2. **Moderators (`ADMIN`)**: Access a high-throughput **Professional Verification Workspace** featuring a two-pane layout (filterable queue on left, deep verification dossier on right), keyboard shortcuts (`A` Approve, `R` Reject, `N` Next, `P` Previous), confirmation modals, internal auditor notes, creator clarification requests, human verification checklists, and audit history. In addition, admins manage creator game points via a dedicated **Admin Points Management Suite** (`/admin/game-points`) with server-side filtering, user dossiers, and audited manual XP adjustments (+/-).
 3. **Super Administrators (`SUPER_ADMIN`)**: Retain full system governance. Manage official accounts (Instagram, LinkedIn, Facebook with domain validation), administer platform users and moderator appointments, dynamically configure level thresholds and XP requirements, generate levels, configure future XP earning rules without retroactively mutating history, inspect immutable platform transaction ledgers, view system audit logs, and analyze platform-wide gamification telemetry.

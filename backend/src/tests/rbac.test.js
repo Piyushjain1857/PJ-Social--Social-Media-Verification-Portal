@@ -61,7 +61,7 @@ const login = async (email, password) => {
 
 async function runTests() {
   console.log('\n========================================');
-  console.log('VeriSocial RBAC Automated Test Runner');
+  console.log('PJ Social RBAC Automated Test Runner');
   console.log('========================================\n');
 
   let passed = 0;

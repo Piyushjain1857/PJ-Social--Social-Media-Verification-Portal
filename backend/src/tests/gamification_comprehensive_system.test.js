@@ -1,5 +1,5 @@
 /**
- * Comprehensive Backend Test Suite for the VeriSocial Gamification System
+ * Comprehensive Backend Test Suite for the PJ Social Gamification System
  * 
  * Verifies all 32 critical requirements across 7 core domains:
  * - XP Mechanics (1-7)

@@ -1734,7 +1734,7 @@ export default function ProfileView({ onNavigateToNav }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ fontSize: '1.4rem' }}>⎋</span>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-highlight)' }}>
-                  Sign Out of VeriSocial?
+                  Sign Out of PJ Social?
                 </h3>
               </div>
               <button

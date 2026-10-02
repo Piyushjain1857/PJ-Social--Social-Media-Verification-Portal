@@ -13,7 +13,7 @@ async function testSwagger() {
   assert.strictEqual(docsRes.status, 200, 'Swagger UI should return 200 OK');
   const html = await docsRes.text();
   assert.ok(html.includes('swagger-ui'), 'Swagger UI HTML must contain swagger-ui');
-  assert.ok(html.includes('VeriSocial'), 'Swagger UI must contain custom title/branding');
+  assert.ok(html.includes('PJ Social'), 'Swagger UI must contain custom title/branding');
   console.log('✓ /api/docs/ successfully serves interactive Swagger UI HTML');
 
   // 2. Test OpenAPI JSON specification
@@ -22,7 +22,7 @@ async function testSwagger() {
   assert.strictEqual(jsonRes.status, 200, 'Swagger JSON should return 200 OK');
   const spec = await jsonRes.json();
   assert.strictEqual(spec.openapi, '3.0.0');
-  assert.ok(spec.info && spec.info.title.includes('VeriSocial'));
+  assert.ok(spec.info && spec.info.title.includes('PJ Social'));
   assert.ok(spec.paths['/gamification/me'], 'OpenAPI spec must document /gamification/me');
   assert.ok(spec.paths['/gamification/me/rank'], 'OpenAPI spec must document /gamification/me/rank');
   assert.ok(spec.paths['/gamification/me/chart'], 'OpenAPI spec must document /gamification/me/chart');

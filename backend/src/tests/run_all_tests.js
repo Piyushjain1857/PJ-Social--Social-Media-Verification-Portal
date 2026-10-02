@@ -1,5 +1,5 @@
 /**
- * Master Test Runner for VeriSocial Full-Stack Verification Portal
+ * Master Test Runner for PJ Social Full-Stack Verification Portal
  * Runs all integration, RBAC, and security test suites sequentially.
  */
 
@@ -36,7 +36,7 @@ const testFiles = [
 
 
 console.log('========================================================');
-console.log('   VeriSocial Full-Stack Verification Portal Test Suite  ');
+console.log('   PJ Social Full-Stack Verification Portal Test Suite  ');
 console.log('========================================================\n');
 
 let passedCount = 0;

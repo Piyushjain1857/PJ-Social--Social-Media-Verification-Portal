@@ -5,7 +5,7 @@
 const swaggerSpec = {
   openapi: '3.0.0',
   info: {
-    title: 'VeriSocial | Social Media Activity Verification & Gamification Portal API',
+    title: 'PJ Social | Social Media Activity Verification & Gamification Portal API',
     version: '1.0.0',
     description: `
 ### Overview
@@ -21,8 +21,8 @@ Authenticate requests using the **Authorize** button with a JSON Web Token (JWT)
 Tokens are obtained via \`POST /api/auth/login\` or \`POST /api/auth/register\`.
     `,
     contact: {
-      name: 'VeriSocial Platform Engineering',
-      email: 'engineering@verisocial.portal'
+      name: 'PJ Social Platform Engineering',
+      email: 'engineering@pjsocial.portal'
     }
   },
   servers: [

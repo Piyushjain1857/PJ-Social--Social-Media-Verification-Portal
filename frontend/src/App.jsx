@@ -235,7 +235,7 @@ export default function App() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 4rem' }}>
           <div className="status-dot checking" style={{ width: '18px', height: '18px', margin: '0 auto 1.5rem auto', display: 'block' }} />
-          <h3>Initializing VeriSocial Portal…</h3>
+          <h3>Initializing PJ Social Portal…</h3>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Verifying session credentials &amp; role permissions</p>
         </div>
       </div>

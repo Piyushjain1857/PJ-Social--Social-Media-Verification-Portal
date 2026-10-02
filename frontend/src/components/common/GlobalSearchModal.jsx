@@ -354,7 +354,7 @@ export default function GlobalSearchModal({ isOpen, onClose, onNavigateToNav }) 
             <span><kbd>↵</kbd> Select</span>
             <span><kbd>ESC</kbd> Close</span>
           </div>
-          <span>VeriSocial Global Index</span>
+          <span>PJ Social Global Index</span>
         </div>
       </div>
     </div>

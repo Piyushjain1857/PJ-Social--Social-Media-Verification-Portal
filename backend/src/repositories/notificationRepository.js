@@ -28,7 +28,7 @@ const initializeInMemoryNotifications = () => {
       id: 'notif-003',
       userId: 'usr-user-003',
       type: 'SYSTEM',
-      title: 'Welcome to VeriSocial Creator Portal',
+      title: 'Welcome to PJ Social Creator Portal',
       message: 'Your creator account is active. Connect your social channels and start verifying activities.',
       isRead: true,
       createdAt: new Date('2026-02-01T00:00:00Z')

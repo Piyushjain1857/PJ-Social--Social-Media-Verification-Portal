@@ -6,7 +6,7 @@ const DEFAULT_FALLBACK_LEVELS = Array.from({ length: 50 }, (_, i) => {
   return {
     id: `level-${levelNum}`,
     levelNumber: levelNum,
-    name: levelNum === 16 ? 'Contributor' : levelNum === 1 ? 'Novice' : levelNum === 50 ? 'VeriSocial Legend' : `Level ${levelNum}`,
+    name: levelNum === 16 ? 'Contributor' : levelNum === 1 ? 'Novice' : levelNum === 50 ? 'PJ Social Legend' : `Level ${levelNum}`,
     xpRequired: 250,
     icon: levelNum === 16 ? '🚀' : levelNum >= 40 ? '👑' : levelNum >= 25 ? '💎' : levelNum >= 10 ? '⚡' : '🌱',
     description: `Level ${levelNum} rank achievement`,

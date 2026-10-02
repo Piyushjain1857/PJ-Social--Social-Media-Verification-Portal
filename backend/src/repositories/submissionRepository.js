@@ -16,7 +16,7 @@ const initializeInMemorySubmissions = () => {
       actionType: 'LIKE',
       postUrl: 'https://instagram.com/p/DF123abc456',
       screenshotUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop&q=60',
-      description: 'Liked the official product announcement post on @VeriSocialApp',
+      description: 'Liked the official product announcement post on @PJSocialApp',
       status: 'PENDING',
       createdAt: new Date('2026-02-10T11:30:00Z'),
       updatedAt: new Date('2026-02-10T11:30:00Z'),
