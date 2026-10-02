@@ -2,7 +2,7 @@
 
 VeriSocial is an enterprise-grade full-stack platform engineered to verify creator campaign activities across major social media platforms (**Instagram**, **LinkedIn**, and **Facebook**) under a strict **3-Tier Role-Based Access Control (RBAC)** architecture: **Super Admin**, **Admin Moderator**, and **Normal User (Creator)**.
 
-The platform includes a real-time verification pipeline, deep audit dossiers, institutional accounts registry, profile personalization with avatar photo uploads, and a comprehensive **Dynamic Gamification & Level Engine** with interactive user journey tracking and celebratory level-up animations.
+The platform includes a real-time verification pipeline, deep audit dossiers, institutional accounts registry, profile personalization with avatar photo uploads, and a comprehensive **Dynamic Gamification, Level & Game Points Engine** featuring real-time event updates, interactive trajectory graphs, automated level progression, community rankings with deterministic tie-breaking, and celebratory level-up animations.
 
 ---
 
@@ -21,44 +21,55 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 - [Production Build Instructions](#-production-build-instructions)
 - [Default Roles, Accounts & Permissions](#-default-roles-accounts--permissions)
 - [Security Guardrails & IDOR Protection](#-security-guardrails--idor-protection)
-- [User Level Experience & Gamification](#-user-level-experience--gamification)
+- [Game Points & Gamification Architecture](#-game-points--gamification-architecture)
+  - [1. Normal User Command Center (`/game-points`)](#1-normal-user-command-center-game-points)
+  - [2. Admin Moderation & Points Management (`/admin/game-points`)](#2-admin-moderation--points-management-admingame-points)
+  - [3. Super Admin Gamification Governance (`/super-admin/game-points`)](#3-super-admin-gamification-governance-super-admingame-points)
+  - [4. Real-Time Event Synchronization & WebSockets](#4-real-time-event-synchronization--websockets)
 - [Super Admin Dynamic Level Engine](#-super-admin-dynamic-level-engine)
 - [Profile Customization & Avatar Uploads](#-profile-customization--avatar-uploads)
 - [Global Search & Filtering Architecture](#-global-search--filtering-architecture)
 - [API Reference Matrix](#-api-reference-matrix)
-- [Automated Testing Suite (13 Test Suites)](#-automated-testing-suite-13-test-suites)
+- [Automated Testing Suite (25 Test Suites)](#-automated-testing-suite-25-test-suites)
+- [License](#-license)
 
 ---
 
 ## 🌟 Overview
 
 VeriSocial provides an audited verification and reward pipeline for campus and brand campaigns:
-1. **Creators (`USER`)**: Browse verified institutional social media accounts, submit proofs (post permalinks, activity type like Like, Comment, or Story, and screenshot evidence), track submissions in real time, view authoritative level progression cards, explore the interactive Level Journey map, celebrate level-ups with animations, customize their profile with avatar photos, and manage security credentials.
-2. **Moderators (`ADMIN`)**: Access a high-throughput **Professional Verification Workspace** featuring a two-pane layout (filterable queue on left, deep verification dossier on right), keyboard shortcuts (`A` Approve, `R` Reject, `N` Next, `P` Previous), confirmation modals, internal auditor notes, creator clarification requests, human verification checklists, and audit history.
-3. **Super Administrators (`SUPER_ADMIN`)**: Retain full system governance. Manage official accounts (Instagram, LinkedIn, Facebook with domain validation), administer platform users and moderator appointments, dynamically configure level thresholds and XP requirements, generate levels, execute manual point adjustments with audit justifications, inspect audit trails, and inspect platform telemetry.
+1. **Creators (`USER`)**: Browse verified institutional social media accounts, submit proofs (post permalinks, activity type like Like, Comment, or Story, and screenshot evidence), track submissions in real time, view authoritative level progression cards, explore the interactive Level Journey map, celebrate level-ups with animations, inspect historical XP progression graphs over multiple timeframes, track verified leaderboard rankings, customize their profile with avatar photos, and manage security credentials.
+2. **Moderators (`ADMIN`)**: Access a high-throughput **Professional Verification Workspace** featuring a two-pane layout (filterable queue on left, deep verification dossier on right), keyboard shortcuts (`A` Approve, `R` Reject, `N` Next, `P` Previous), confirmation modals, internal auditor notes, creator clarification requests, human verification checklists, and audit history. In addition, admins manage creator game points via a dedicated **Admin Points Management Suite** (`/admin/game-points`) with server-side filtering, user dossiers, and audited manual XP adjustments (+/-).
+3. **Super Administrators (`SUPER_ADMIN`)**: Retain full system governance. Manage official accounts (Instagram, LinkedIn, Facebook with domain validation), administer platform users and moderator appointments, dynamically configure level thresholds and XP requirements, generate levels, configure future XP earning rules without retroactively mutating history, inspect immutable platform transaction ledgers, view system audit logs, and analyze platform-wide gamification telemetry.
 
 ---
 
 ## ✨ Key Features
 
-- **Strict 3-Tier RBAC**: Granular permissions enforced on every backend route and frontend view.
+- **Strict 3-Tier RBAC**: Granular permissions enforced on every backend route and frontend view (Super Admin, Admin, Normal User).
 - **Evidence Verification Workspace**: Split-screen moderation console with full-resolution screenshot inspection, creator profile dossier, and verified audit history.
-- **Dynamic Gamification Engine**:
+- **Authoritative Gamification Engine**:
   - Authoritative backend calculations (`calculateUserLevel`). Zero client-side computation.
   - Variable XP thresholds per level, contiguous threshold verification, and database-backed configuration.
-  - Multi-tier level rewards: 🌱 Beginner, ⚡ Active, 🚀 Contributor, 💎 Elite, 👑 Champion, and Legend ranks.
-- **User-Facing Level Experience**:
-  - **Level Progress Card**: Shows Level badge, level name, current XP, next level target, remaining XP, and percentage progress with glowing gradient fills.
-  - **Level Journey Map**: Visual progression roadmap showing completed (`✓`), current (`→`), and locked (`🔒`) levels across all 50 tiers with auto-scroll to active level.
-  - **Level-Up Celebration Modal**: Celebratory popup with spinning light rays, rising particle bursts, pulsing rings, and level statistics upon level advancement.
-  - **Sidebar & Profile Integration**: Compact level status widget embedded into navigation sidebar and profile view.
+  - Multi-tier level rewards: 🌱 Novice, ⭐ Scout, 🚀 Pathfinder, ⚡ Pioneer, 💎 Champion, 👑 Legend.
+  - Deterministic tie-breaking for rankings: (1) Higher Total XP, (2) Earlier Timestamp of reaching that XP, (3) Stable User ID.
+- **Dynamic XP Graphs & Visual Telemetry**:
+  - Interactive XP trajectory charts supporting **7 Days**, **30 Days**, **3 Months**, **6 Months**, and **All Time** granularities.
+  - Responsive charts rendered via Pure CSS/SVG with automatic date boundary handling, zero-state fallbacks, and single-transaction handling.
+- **Real-Time Live Event Synchronization**:
+  - Server-Sent Events (SSE) and persistent WebSocket streams push live updates for:
+    - User XP gains upon submission approval.
+    - 🎉 Level-Up modal celebrations upon crossing level thresholds.
+    - Admin manual XP adjustments reflected instantly on client dashboards.
+    - Super Admin XP rule updates with zero retroactive modifications.
+  - Graceful reconnection and automatic stale-state synchronization (`/api/gamification/realtime/sync-state`).
 - **Profile Personalization & Media Uploads**:
   - Upload custom profile avatar pictures with client validation and preview.
   - Avatar emblem badges and radiant gradient background selection.
   - Theme color presets (Cyber Indigo, Emerald Aura, Radiant Gold, Rose Quartz).
   - 1-click navigation to profile by clicking avatars in header or sidebar.
 - **Command Palette Search (`⌘K` / `Ctrl+K`)**: Unified modal search with keyboard navigation across submissions, users, admins, official accounts, and notifications.
-- **Automated Verification Testing**: 13 comprehensive backend test suites covering 100% of core APIs, security policies, and gamification math.
+- **Automated Verification Testing**: **25 comprehensive backend test suites** covering 100% of core APIs, security policies, real-time broadcasts, and gamification math.
 
 ---
 
@@ -72,6 +83,7 @@ VeriSocial provides an audited verification and reward pipeline for campus and b
 | **Database** | PostgreSQL | Robust relational database hosting models for users, accounts, submissions, reviews, levels, and notifications |
 | **ORM** | Prisma 6 | Declarative data modeling, automated SQL migrations, and type-safe client |
 | **Security & Auth** | JWT (`jsonwebtoken`) + `bcryptjs` | Stateless signed tokens, salt rounds of 12, IDOR protections, and server-side role gating |
+| **Real-Time Engine** | SSE + Event Broker | Server-Sent Events with fallback state synchronization and heartbeat liveness |
 | **File Storage** | `multer` + Storage Service | Auth-gated screenshot & avatar storage with magic-byte MIME validation and path traversal defenses |
 
 ---
@@ -103,10 +115,11 @@ Social Media Verification Portal/
 │       │   ├── db.js                     # PrismaClient singleton with connection diagnostics
 │       │   └── env.js                    # Validated environment loader
 │       ├── controllers/
+│       │   ├── adminGamificationController.js # Admin users points directory, user dossier, and manual XP adjustments
 │       │   ├── adminLevelController.js   # Super Admin dynamic level CRUD & generation
 │       │   ├── authController.js         # Register, login, me, logout handlers
 │       │   ├── dashboardController.js    # Scoped telemetry for user, admin, super-admin
-│       │   ├── gamificationController.js # Authoritative XP, Level Journey & history APIs
+│       │   ├── gamificationController.js # Authoritative XP, Level Journey, Rank, Chart & history APIs
 │       │   ├── healthController.js       # Health and database telemetry endpoints
 │       │   ├── notificationController.js # Read / read-all notification handlers
 │       │   ├── pointsController.js       # Points ledger, rank, and manual adjustments
@@ -114,6 +127,7 @@ Social Media Verification Portal/
 │       │   ├── socialAccountController.js# Official accounts registry and management
 │       │   ├── submissionController.js   # User activity submission & query handlers
 │       │   ├── superAdminController.js   # Super Admin user CRUD, stats & audit logs
+│       │   ├── superAdminGamificationController.js # Super Admin governance: overview, ledger, rules, analytics
 │       │   ├── uploadController.js       # Auth-gated screenshot stream handler
 │       │   └── userController.js         # Profile management & password updates
 │       ├── middlewares/
@@ -128,6 +142,7 @@ Social Media Verification Portal/
 │       │   ├── submissionRepository.js   # Submissions & moderation reviews store
 │       │   └── userRepository.js         # User store with password-hash sanitization
 │       ├── routes/
+│       │   ├── adminGamificationRoutes.js# /api/admin/gamification
 │       │   ├── adminLevelRoutes.js       # /api/admin/levels
 │       │   ├── authRoutes.js             # /api/auth
 │       │   ├── dashboardRoutes.js        # /api/dashboard
@@ -139,27 +154,44 @@ Social Media Verification Portal/
 │       │   ├── searchRoutes.js           # /api/search
 │       │   ├── socialAccountRoutes.js    # /api/social-accounts
 │       │   ├── submissionRoutes.js       # /api/submissions
+│       │   ├── superAdminGamificationRoutes.js # /api/superadmin/gamification
 │       │   ├── superAdminRoutes.js       # /api/superadmin
 │       │   ├── uploadRoutes.js           # /api/uploads
 │       │   ├── userRoutes.js             # /api/users
 │       │   └── index.js                  # Central router registration
 │       ├── services/
+│       │   ├── adminGamificationService.js # Admin users directory & manual adjustment business logic
+│       │   ├── gamificationRealtimeService.js # SSE real-time broadcast and subscription manager
+│       │   ├── gamificationService.js    # XP calculation, rank calculation, and graph aggregations
 │       │   ├── levelService.js           # Dynamic level thresholds calculation engine
-│       │   └── pointsService.js          # Points awarding & idempotency service
+│       │   ├── pointsService.js          # Points awarding & idempotency service
+│       │   └── superAdminGamificationService.js # Super Admin transactions, audit logs, and settings logic
 │       ├── tests/
+│       │   ├── admin_gamification.test.js
 │       │   ├── admin_review_workspace.test.js
+│       │   ├── complete_gamification_audit.test.js
+│       │   ├── game_points_verification.test.js
+│       │   ├── gamification_analytics_graphs.test.js
+│       │   ├── gamification_authorization_audit.test.js
+│       │   ├── gamification_comprehensive_system.test.js
 │       │   ├── gamification_level_system.test.js
+│       │   ├── gamification_production_e2e.test.js
+│       │   ├── gamification_realtime_system.test.js
+│       │   ├── level_engine.test.js
 │       │   ├── notification.test.js
 │       │   ├── official_social_accounts.test.js
 │       │   ├── points_system.test.js
 │       │   ├── profile_management.test.js
 │       │   ├── rbac.test.js
-│       │   ├── run_all_tests.js
+│       │   ├── run_all_tests.js          # Master test runner (25 suites)
 │       │   ├── search_and_filter.test.js
 │       │   ├── security_audit.test.js
+│       │   ├── submission_xp_awarding.test.js
 │       │   ├── superadmin_dashboard.test.js
+│       │   ├── superadmin_gamification.test.js
 │       │   ├── superadmin_levels.test.js
 │       │   ├── superadmin_users.test.js
+│       │   ├── swagger.test.js
 │       │   └── workflow.test.js
 │       └── utils/
 │           ├── hash.js                   # bcrypt helper functions
@@ -179,11 +211,14 @@ Social Media Verification Portal/
         ├── context/
         │   └── AuthContext.jsx           # Global auth provider, session state & listeners
         ├── services/
+        │   ├── adminGamificationApi.js   # Admin gamification API client
         │   ├── api.js                    # Universal API abstraction client
-        │   └── gamificationApi.js        # Dedicated gamification client
+        │   ├── gamificationApi.js        # Dedicated gamification client
+        │   ├── gamificationRealtimeClient.js # Frontend SSE real-time client & event emitter
+        │   └── superAdminGamificationApi.js # Super Admin gamification API client
         ├── styles/
         │   ├── app.css                   # Component-level layout rules & badges
-        │   ├── gamification.css          # Level cards, journey track, modals, leaderboard
+        │   ├── gamification.css          # Level cards, journey track, modals, leaderboard, charts
         │   ├── index.css                 # Color tokens, typography, glassmorphism
         │   └── layout.css                # Responsive sidebar, drawer, and grids
         ├── pages/
@@ -203,6 +238,11 @@ Social Media Verification Portal/
             ├── Unauthorized403.jsx       # Dedicated 403 Forbidden page
             ├── HealthCheckWidget.jsx     # Live backend connectivity tester
             ├── DevDatabaseDashboard.jsx  # Interactive database telemetry console
+            ├── admin/gamification/
+            │   ├── AdminGamificationAnalytics.jsx # Admin telemetry & XP distribution charts
+            │   ├── AdminUserGamificationDossier.jsx # In-depth creator gamification dossier
+            │   ├── AdminUsersPointsTable.jsx # Creator points directory with filters & pagination
+            │   └── AdminXPAdjustmentModal.jsx # Manual XP adjustment modal with live validation
             ├── common/
             │   ├── EmptyState.jsx        # Zero-state empty cards
             │   ├── FilterBar.jsx         # Debounced search & filter bar
@@ -210,19 +250,28 @@ Social Media Verification Portal/
             │   ├── LoadingSkeleton.jsx   # Shimmer table skeletons
             │   └── Pagination.jsx        # Ellipsis pagination & page size selector
             ├── gamification/
-            │   ├── GamificationSummary.jsx # Comprehensive gamification tab hub
-            │   ├── Leaderboard.jsx       # Portal-wide ranked leaderboard
+            │   ├── DynamicLevelTimeline.jsx # Visual 50-level milestone journey
+            │   ├── Leaderboard.jsx       # Portal-wide ranked leaderboard with tie-breaking
             │   ├── LevelBadge.jsx        # Tier icons & glowing badges
-            │   ├── LevelJourneySection.jsx # Full interactive level journey roadmap
-            │   ├── LevelProgress.jsx     # Visual level bar
-            │   ├── LevelProgressCard.jsx # Premium Level Progress Card
             │   ├── LevelUpModal.jsx      # Animated level-up celebration modal
-            │   ├── PointHistory.jsx      # Paginated transaction ledger
-            │   ├── PointsCard.jsx        # Points balance & activity breakdown
-            │   └── RankCard.jsx          # Current rank & gap to next rank
+            │   ├── PersonalGamificationDashboard.jsx # Normal user gamification command center
+            │   ├── PositionTimeline.jsx  # Creator leaderboard position timeline
+            │   ├── UserXPChart.jsx       # Dynamic SVG/CSS XP trajectory chart
+            │   └── XPHistoryLedger.jsx   # Itemized transaction ledger with pagination
+            ├── superadmin/gamification/
+            │   ├── SuperAdminAdminsView.jsx # Staff administrator point governance
+            │   ├── SuperAdminAuditLogsView.jsx # Gamification compliance & audit trail
+            │   ├── SuperAdminGamificationAnalytics.jsx # Global platform telemetry & breakdown
+            │   ├── SuperAdminGamificationOverview.jsx # Super Admin KPI dashboard & quick stats
+            │   ├── SuperAdminGamificationSettings.jsx # Dynamic XP earning rules configuration
+            │   ├── SuperAdminTransactionsExplorer.jsx # Global transaction explorer ledger
+            │   ├── SuperAdminUsersTable.jsx # System-wide user directory & points
+            │   └── SuperAdminXPAdjustmentModal.jsx # Super Admin override adjustment modal
             └── views/
                 ├── AdminsView.jsx        # Staff directory & moderator appointments
                 ├── DashboardView.jsx     # Role-tailored dashboards with gamification
+                ├── GamePointsView.jsx    # Unified Game Points routing view
+                ├── LevelManagementView.jsx # Dynamic Level configuration & generation console
                 ├── MySubmissionsView.jsx # Creator submission history & status modal
                 ├── NotificationsView.jsx # User notifications & mark-all-read
                 ├── ProfileView.jsx       # Avatar upload, color customization, password change
@@ -230,7 +279,7 @@ Social Media Verification Portal/
                 ├── SettingsView.jsx      # System policies & anti-abuse thresholds
                 ├── SocialAccountsView.jsx# Official accounts management & stats
                 ├── SubmissionsView.jsx   # Global submissions directory
-                ├── SuperAdminLevelsView.jsx # Dynamic Level configuration & generation console
+                ├── SuperAdminGamificationCenter.jsx # 9-tab Super Admin governance console
                 └── UsersView.jsx         # Super Admin user CRUD & status control
 ```
 
@@ -242,7 +291,7 @@ Social Media Verification Portal/
 
 | Variable | Default Value | Description |
 |---|---|---|
-| `PORT` | `5001` | TCP port on which Express API listens (with auto-fallback) |
+| `PORT` | `5001` | TCP port on which Express API listens (with auto-fallback to 5002+) |
 | `NODE_ENV` | `development` | Environment mode (`development` or `production`) |
 | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/social_verification_portal?schema=public` | PostgreSQL connection string |
 | `JWT_SECRET` | `super_secret_jwt_key_verification_portal_2026` | Secret key used to sign and verify Bearer JWT tokens |
@@ -349,7 +398,7 @@ npm run dev:backend
 # Run only Frontend in development mode (vite)
 npm run dev:frontend
 
-# Execute all automated backend test suites (13 suites)
+# Execute all automated backend test suites (25 suites)
 npm test
 
 # Build Frontend production bundle
@@ -382,9 +431,9 @@ The portal provides 3 pre-seeded demo accounts ready for testing:
 
 | Role | Demo Email | Password | Allowed Capabilities |
 |---|---|---|---|
-| **`SUPER_ADMIN`** | `superadmin@portal.com` | `SuperAdmin123!` | Full system governance, configure dynamic levels & thresholds, manage users/admins, create official accounts, manual point adjustments, review all submissions, view audit logs |
-| **`ADMIN`** | `admin@portal.com` | `Admin123!` | Access moderator dashboard, two-pane review queue, approve/reject submissions with feedback, add auditor notes, request clarifications, view user directories |
-| **`USER`** | `user@portal.com` | `User123!` | View creator dashboard, submit activity evidence with screenshot proof, track personal submissions, view Level Progress Card & Journey, receive instant notifications, customize avatar |
+| **`SUPER_ADMIN`** | `superadmin@portal.com` | `SuperAdmin123!` | Full system governance, configure dynamic levels & thresholds, manage users/admins, create official accounts, manual point adjustments, configure future XP earning rules, explore global transaction ledgers, review all submissions, view audit logs |
+| **`ADMIN`** | `admin@portal.com` | `Admin123!` | Access moderator dashboard, two-pane review queue, approve/reject submissions with feedback, add auditor notes, request clarifications, view user directories, inspect creator gamification dossiers, adjust creator XP (+/-) with audit logs |
+| **`USER`** | `user@portal.com` | `User123!` | View creator dashboard, submit activity evidence with screenshot proof, track personal submissions, view Game Points command center, Level Progress Card & Journey, receive instant notifications, celebrate level-ups, customize avatar |
 
 ---
 
@@ -395,6 +444,8 @@ The portal provides 3 pre-seeded demo accounts ready for testing:
 3. **IDOR (Insecure Direct Object Reference) Protection**:
    - `GET /api/submissions/:id`: Creators can only access their own submissions. Unauthorized access returns `403 Forbidden` (`FORBIDDEN_OWNERSHIP`).
    - `PATCH /api/notifications/:id/read`: Users can only mark their own notifications as read.
+   - `GET /api/admin/gamification/users/:id`: Normal users cannot inspect other creators' dossiers.
+   - `POST /api/admin/gamification/users/:id/adjust-xp`: Normal users cannot adjust XP.
 4. **Auth-Gated Screenshot Delivery**:
    - `/api/uploads/screenshots/:filename` strictly enforces that Normal Users can only stream screenshots associated with their own submissions. Unauthorized attempts return `404 Not Found` without disclosing file existence.
 5. **No Password Leakage**: Password hashes are strictly omitted (`select` exclusion) across all user listing, search, profile, and audit endpoints.
@@ -403,46 +454,73 @@ The portal provides 3 pre-seeded demo accounts ready for testing:
 
 ---
 
-## 🏆 User Level Experience & Gamification
+## 🏆 Game Points & Gamification Architecture
 
-### 1. Authoritative Backend Calculation
-All level computations originate strictly from the backend via `levelService.js` and `calculateUserLevel`:
-- **Current XP**: Authoritative verified XP derived from approved activities.
-- **Current Level**: Active tier number (1 to 50).
-- **Next Level**: Targeted level number.
-- **XP Required**: Authoritative cumulative milestone to reach the next level.
-- **XP Remaining**: Direct difference (`targetNextLevelXP - currentXP`).
-- **Progress Percentage**: Authoritative precision calculation (`(currentXP / targetNextLevelXP) * 100`).
+The Gamification & Game Points engine provides role-tailored workspaces and real-time synchronization across all three tiers of the platform:
 
-### 2. User Level Card (`LevelProgressCard.jsx`)
-Features a high-end glassmorphic presentation:
-- **Badge**: `🏆 LEVEL 17` with level-themed glowing aura.
-- **Name**: `Explorer` (or configured title).
-- **Stats Grid**:
-  - `⚡ Current XP`: e.g. `4,120 XP`
-  - `🎯 Next Level`: e.g. `Level 18`
-  - `🎯 XP Required`: e.g. `4,250 XP`
-  - `⏳ Remaining`: e.g. `130 XP`
-  - `📈 Progress`: Animated gradient bar with shimmer effect and `96.9%` badge.
-- **Action**: Dedicated `🗺️ View Level Journey` button to expand the roadmap.
+```
+                            ┌───────────────────────────────────┐
+                            │    Admin Approves Submission      │
+                            └─────────────────┬─────────────────┘
+                                              │
+                      ┌───────────────────────┴───────────────────────┐
+                      ▼                                               ▼
+          Atomic XP Transaction (+XP)                    Prisma Level Recalculation
+                      │                                               │
+                      └───────────────────────┬───────────────────────┘
+                                              │
+                         ┌────────────────────┴────────────────────┐
+                         ▼                                         ▼
+            Real-Time Broadcast (SSE)                  In-App Notification
+                         │                                         │
+             ┌───────────┴───────────┐                             │
+             ▼                       ▼                             ▼
+     User UI Updated         Admin UI Updated              Creator Notified
+  (XP, Level, Rank, Graph)   (Points Directory)          (Approval Feedback)
+```
 
-### 3. Interactive Level Journey (`LevelJourneySection.jsx`)
-- Visual roadmap for all 50 tiers fetched from `/api/gamification/me/journey`.
-- **Completed**: Marked with soft green background and `✓` badge.
-- **Current**: Highlighted with cyan neon border, drop glow, and pulsing active dot. Automatically scrolls into viewport on load.
-- **Locked**: Semi-transparent card with required milestone and rank title.
-- Expand/collapse control to toggle full journey view.
+### 1. Normal User Command Center (`/game-points`)
+Component: [`PersonalGamificationDashboard.jsx`](file:///Users/piyush/Documents/Social%20Media%20Verification%20Portal/frontend/src/components/gamification/PersonalGamificationDashboard.jsx)
+- **Authoritative Progress Card**: Displays active level tier, badge icon, current XP, threshold to next tier, XP remaining, and smooth progress percentage.
+- **Rank & Percentile**: Real-time position (e.g., `#28 out of 100 creators`) computed via PostgreSQL with deterministic tie-breaking. Shows points needed to overtake the creator ahead.
+- **Interactive XP Trajectory Chart** (`UserXPChart.jsx`): Date-aggregated chart supporting `7D`, `30D`, `3M`, `6M`, and `All Time` views with clean zero-states and SVG rendering.
+- **Position Timeline** (`PositionTimeline.jsx`): Tracks rank changes over time.
+- **Level Milestone Journey** (`DynamicLevelTimeline.jsx`): Visual progression roadmap mapping past, current, and locked tiers across 50 dynamic levels.
+- **Itemized History Ledger** (`XPHistoryLedger.jsx`): Paginated transaction log showing source, date, delta XP, and activity status.
 
-### 4. Level-Up Celebration Modal (`LevelUpModal.jsx`)
-- Automatically triggered upon level increment detected by metrics polling or manual refresh.
-- Displays animated spinning light rays, rising particle effects, pulsing concentric tier rings, and next level preview.
-- Closes with celebration CTA button or `Escape` key.
+### 2. Admin Moderation & Points Management (`/admin/game-points`)
+Component: [`GamePointsView.jsx`](file:///Users/piyush/Documents/Social%20Media%20Verification%20Portal/frontend/src/components/views/GamePointsView.jsx)
+- **Creators Points Directory Table** (`AdminUsersPointsTable.jsx`): Server-side search, level filtering, activity status filtering, min/max XP bounds, and sorting.
+- **User Dossier View** (`/admin/game-points/user/:id` / `AdminUserGamificationDossier.jsx`): Deep creator inspect view showing XP trajectory, submission history, activity distribution, and audit log events.
+- **Manual XP Adjustments** (`AdminXPAdjustmentModal.jsx`): Allows administrators to manually grant or deduct XP (+/-) with mandatory audit justifications. Recalculates level and creates immutable audit entries automatically.
+- **Admin Telemetry & Analytics** (`AdminGamificationAnalytics.jsx`): Live metrics for total XP distributed, average XP per user, active creators, and level distributions.
+
+### 3. Super Admin Gamification Governance (`/super-admin/game-points`)
+Component: [`SuperAdminGamificationCenter.jsx`](file:///Users/piyush/Documents/Social%20Media%20Verification%20Portal/frontend/src/components/views/SuperAdminGamificationCenter.jsx)
+- **9-Tab Command Center**:
+  1. 📊 **Overview**: Platform KPI metrics, top-tier distributions, and system health.
+  2. 👥 **All Users**: Comprehensive creator directory with points and level status.
+  3. 🛡️ **All Admins**: Staff governance and moderation activity overview.
+  4. 🧾 **Transactions Explorer** (`/super-admin/game-points/transactions`): Global searchable ledger of all historical point awards, deductions, and adjustments.
+  5. ⚡ **Levels**: Direct link to Level Management console for tier curve tuning.
+  6. ⚙️ **XP Rules & Settings**: Configure dynamic XP earning rules (e.g. `LIKE = 1 XP`, `COMMENT = 2 XP`, `STORY = 2 XP`). *Historical transactions are strictly immutable; new rules only apply to future approvals.*
+  7. 🏆 **Leaderboard**: Portal-wide community standings with timeframes (`all_time`, `this_month`, `this_week`).
+  8. 📈 **Analytics**: Global platform growth charts, level cohorts, and activity breakdowns.
+  9. 📋 **Audit Logs**: Filterable audit trail tracking all level edits, XP adjustments, and rule modifications.
+
+### 4. Real-Time Event Synchronization & WebSockets
+- **Event Broker Service** (`gamificationRealtimeService.js`): Uses Server-Sent Events (SSE) and WebSocket channels to stream events:
+  - `xp_updated`: Pushes delta XP, updated total XP, new level, and progress to the affected user.
+  - `level_up`: Triggers the 🎉 Level-Up Celebration Modal on the user's screen in real time.
+  - `admin_user_xp_updated`: Pushes balance changes to admin points tables without requiring a manual browser refresh.
+  - `rules_updated`: Broadcasts rule configuration updates to connected administrative clients.
+- **Fallback State Synchronization** (`/api/gamification/realtime/sync-state`): When a client reconnects or detects a missed event, this endpoint compares local cached timestamps and hydrates the latest authoritative state.
 
 ---
 
 ## ⚙️ Super Admin Dynamic Level Engine
 
-Super Administrators have full authority over the platform's progression structure via `SuperAdminLevelsView.jsx` and `/api/admin/levels`:
+Super Administrators have full authority over the platform's progression structure via `LevelManagementView.jsx` and `/api/admin/levels`:
 - **Dynamic Level Definitions**: Levels are stored as database entities (`Level` model) with custom XP requirement, badge icon, rank name, description, and active status.
 - **Contiguous Cumulative Calculation**: `buildLevelThresholds` continuously re-computes start and end bounds without gaps or overlaps.
 - **Bulk Level Generation**: Safely generates 1–100 levels with linear or exponential XP curves.
@@ -480,14 +558,25 @@ The user profile section (`ProfileView.jsx`) supports full creator personalizati
 | `/api/users/me` | `PUT` | Authenticated | Update user name (role/email/status protected) |
 | `/api/users/change-password` | `PUT` | Authenticated | Change authenticated user's password |
 | `/api/gamification/me` | `GET` | Authenticated | Authoritative level status, total XP, and progress |
+| `/api/gamification/me/rank` | `GET` | Authenticated | Current rank, total participants, percentile, and rank change |
+| `/api/gamification/me/rank-history` | `GET` | Authenticated | Verified position timeline history |
+| `/api/gamification/me/chart` | `GET` | Authenticated | XP progression over time (7D, 30D, 3M, 6M, All Time) |
 | `/api/gamification/me/journey` | `GET` | Authenticated | Full interactive 50-level progression roadmap |
 | `/api/gamification/me/history` | `GET` | Authenticated | Paginated XP transaction ledger with filters |
-| `/api/gamification/levels` | `GET` | Authenticated | Active dynamic level configurations |
-| `/api/gamification/user/:id` | `GET` | `ADMIN`, `SUPER_ADMIN` | Inspect any user's authoritative gamification dossier |
-| `/api/points/me` | `GET` | Authenticated | Fetch caller's points summary and activity breakdown |
-| `/api/points/me/rank` | `GET` | Authenticated | Fetch caller's leaderboard rank and distance to next rank |
-| `/api/leaderboard` | `GET` | Authenticated | Portal-wide leaderboard with timeframe filtering |
-| `/api/points/adjust` | `POST` | `SUPER_ADMIN` | Manual point adjustment with audit justification |
+| `/api/gamification/leaderboard` | `GET` | Authenticated | Verified ranked leaderboard with deterministic tie-breaking |
+| `/api/gamification/realtime/stream` | `GET` | Authenticated | Server-Sent Events (SSE) live event channel |
+| `/api/gamification/realtime/sync-state` | `POST` | Authenticated | Reconnection & stale-state synchronization |
+| `/api/admin/gamification/users` | `GET` | `ADMIN`, `SUPER_ADMIN` | Filterable and paginated creator points directory |
+| `/api/admin/gamification/users/:id` | `GET` | `ADMIN`, `SUPER_ADMIN` | Detailed user gamification dossier |
+| `/api/admin/gamification/users/:id/adjust-xp` | `POST` | `ADMIN`, `SUPER_ADMIN` | Manual XP adjustment (+/-) with audit logging |
+| `/api/admin/gamification/analytics` | `GET` | `ADMIN`, `SUPER_ADMIN` | Admin gamification telemetry & XP distributions |
+| `/api/superadmin/gamification/overview` | `GET` | `SUPER_ADMIN` | High-level governance KPIs and summary stats |
+| `/api/superadmin/gamification/users` | `GET` | `SUPER_ADMIN` | System-wide user directory with XP and role filtering |
+| `/api/superadmin/gamification/admins` | `GET` | `SUPER_ADMIN` | Staff administrator directory & audit governance |
+| `/api/superadmin/gamification/transactions` | `GET` | `SUPER_ADMIN` | Global transactions ledger explorer with filters |
+| `/api/superadmin/gamification/settings` | `GET`, `PUT` | `SUPER_ADMIN` | View and modify dynamic XP earning rules |
+| `/api/superadmin/gamification/analytics` | `GET` | `SUPER_ADMIN` | Global analytics, cohorts, and daily/weekly trends |
+| `/api/superadmin/gamification/audit-logs` | `GET` | `SUPER_ADMIN` | Gamification audit trail & rule change log |
 | `/api/social-accounts/active` | `GET` | Authenticated | List official active institutional accounts |
 | `/api/submissions` | `POST` | `USER` | Submit activity proof with screenshot evidence |
 | `/api/submissions/my` | `GET` | Authenticated | List submissions owned by the authenticated caller |
@@ -503,13 +592,10 @@ The user profile section (`ProfileView.jsx`) supports full creator personalizati
 | `/api/notifications/:id/read`| `PATCH`| Authenticated | Mark a notification as read (ownership protected) |
 | `/api/notifications/read-all`| `PATCH`| Authenticated | Mark all notifications as read for current user |
 | `/api/uploads/screenshots/:fn`| `GET` | Authenticated | Auth-gated screenshot stream (ownership validated) |
-| `/api/admin/levels` | `GET` | `SUPER_ADMIN` | List all dynamic levels and engine telemetry |
-| `/api/admin/levels` | `POST` | `SUPER_ADMIN` | Create dynamic level entity |
-| `/api/admin/levels/:id` | `PUT` | `SUPER_ADMIN` | Edit dynamic level thresholds and attributes |
-| `/api/admin/levels/:id` | `DELETE`| `SUPER_ADMIN` | Safely remove level with audit log |
+| `/api/admin/levels` | `GET`, `POST` | `SUPER_ADMIN` | List and create dynamic levels |
+| `/api/admin/levels/:id` | `PUT`, `DELETE`| `SUPER_ADMIN` | Edit or delete dynamic level entities |
 | `/api/admin/levels/generate` | `POST` | `SUPER_ADMIN` | Bulk generate level progression curves |
-| `/api/superadmin/users` | `GET` | `SUPER_ADMIN` | Paginated user directory with search and filter |
-| `/api/superadmin/users` | `POST`| `SUPER_ADMIN` | Create user or administrator account |
+| `/api/superadmin/users` | `GET`, `POST` | `SUPER_ADMIN` | Paginated user directory & account creation |
 | `/api/superadmin/users/:id` | `PATCH`| `SUPER_ADMIN` | Update user details or reset password |
 | `/api/superadmin/users/:id/status`| `PATCH`| `SUPER_ADMIN` | Toggle user status (Active / Inactive / Suspended) |
 | `/api/superadmin/system-stats`| `GET` | `SUPER_ADMIN` | Platform analytics and distribution telemetry |
@@ -517,28 +603,48 @@ The user profile section (`ProfileView.jsx`) supports full creator personalizati
 
 ---
 
-## 🧪 Automated Testing Suite (13 Test Suites)
+## 🧪 Automated Testing Suite (25 Test Suites)
 
-The repository features a comprehensive 13-suite automated test harness verifying every layer of the platform:
+The repository includes a comprehensive 25-suite automated test harness verifying every layer of the platform:
 
 ```bash
+# Run all 25 test suites sequentially
 npm test
+
+# Run all test suites directly from backend
+cd backend && node src/tests/run_all_tests.js
+
+# Run a specific test suite
+cd backend && node src/tests/gamification_production_e2e.test.js
 ```
 
 ### Included Test Suites:
-1. **`rbac.test.js`**: 42 automated tests validating the role-based permission matrix across all endpoints.
-2. **`security_audit.test.js`**: Tests security headers, payload limits, JWT tamper resistance, IDOR protections, and file path traversal.
+
+1. **`rbac.test.js`**: Automated tests validating the role-based permission matrix across all platform endpoints.
+2. **`security_audit.test.js`**: Tests security headers, payload limits, JWT tamper resistance, IDOR protections, and file path traversal defenses.
 3. **`workflow.test.js`**: Tests the complete submission lifecycle: creation, review, approval, rejection, state transitions, and creator notifications.
 4. **`admin_review_workspace.test.js`**: Validates the professional Admin Review Workspace: RBAC on review APIs, dossier retrieval, queue navigation, internal notes, clarification requests, and human verification integrity.
-5. **`notification.test.js`**: Validates notification delivery, unread count tracking, cross-user isolation, and bulk read operations.
-6. **`official_social_accounts.test.js`**: Validates official accounts CRUD, domain checks, handle formatting, and creator targeting.
-7. **`profile_management.test.js`**: Validates password changes, policy checks, name updates, and privilege escalation prevention.
-8. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
-9. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
-10. **`search_and_filter.test.js`**: Validates server-side searching, multi-criteria filtering (status, platform, role, date range), sorting (asc/desc), pagination, and strict RBAC enforcement.
+5. **`search_and_filter.test.js`**: Validates server-side searching, multi-criteria filtering (status, platform, role, date range), sorting (asc/desc), pagination, and strict RBAC enforcement.
+6. **`notification.test.js`**: Validates notification delivery, unread count tracking, cross-user isolation, and bulk read operations.
+7. **`official_social_accounts.test.js`**: Validates official accounts CRUD, domain checks, handle formatting, and creator targeting.
+8. **`profile_management.test.js`**: Validates password changes, policy checks, name updates, and privilege escalation prevention.
+9. **`superadmin_dashboard.test.js`**: Tests superadmin metrics, arithmetic consistency, platform breakdown, and audit trails.
+10. **`superadmin_users.test.js`**: Tests user management, pagination, role assignment, password hashing, and sole superadmin safeguards.
 11. **`points_system.test.js`**: Validates point calculations (LIKE = 1, COMMENT = 2, STORY = 2), approval-triggered point awards, duplicate award prevention, 0 points on rejection, and points ledger consistency.
 12. **`gamification_level_system.test.js`**: Validates authoritative 50-level calculations, dynamic variable thresholds, `/api/gamification/me`, XP transaction ledger, and guardrails against direct XP manipulation.
 13. **`superadmin_levels.test.js`**: Validates Super Admin level management APIs, strict RBAC, CRUD operations, dynamic cumulative threshold recalculations, bulk level generation, and user XP baseline safety.
+14. **`game_points_verification.test.js`**: End-to-end verification of points issuance, transaction ledger entries, and creator dashboard integration.
+15. **`swagger.test.js`**: Validates Swagger / OpenAPI documentation endpoints and route definitions.
+16. **`admin_gamification.test.js`**: Validates admin users points directory, user dossiers, manual XP adjustments (+/-), and admin telemetry.
+17. **`superadmin_gamification.test.js`**: Validates super admin governance APIs: overview telemetry, global transaction ledger, dynamic XP earning rules, and audit logs.
+18. **`complete_gamification_audit.test.js`**: Complete audit of transaction immutability, points ledger balance reconciliation, and level boundary compliance.
+19. **`submission_xp_awarding.test.js`**: Tests automated XP awarding on submission approval, rejection handling, and duplicate approval prevention.
+20. **`level_engine.test.js`**: Mathematical tests for the dynamic level curve: non-uniform thresholds, maximum level handling, deactivated tiers, and edge cases.
+21. **`gamification_analytics_graphs.test.js`**: Tests backend chart aggregation across 7D, 30D, 3M, 6M, and All Time, single transactions, empty datasets, and date boundary handling.
+22. **`gamification_authorization_audit.test.js`**: Rigorous penetration test suite attempting privilege escalations, IDOR attacks, and unauthorized access across user, admin, and superadmin endpoints (verifies `401 Unauthorized` and `403 Forbidden`).
+23. **`gamification_comprehensive_system.test.js`**: 32-point specification test suite covering XP math, level engine, ranking, RBAC, audit logging, notifications, and database transaction atomicity.
+24. **`gamification_realtime_system.test.js`**: Tests real-time SSE / WebSocket event streams, live XP broadcasts, level-up celebrations, admin table refreshes, and stale-state synchronization.
+25. **`gamification_production_e2e.test.js`**: Comprehensive 18-step production lifecycle test verifying the entire workflow from user registration and submission approval to manual adjustment, rule updates, historical immutability, mobile pagination, and authorization defense.
 
 ---
 
