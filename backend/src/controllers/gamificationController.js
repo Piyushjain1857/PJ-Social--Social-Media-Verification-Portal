@@ -130,6 +130,25 @@ const getMyRankHistory = async (req, res, next) => {
 const getMyXPHistory = async (req, res, next) => {
   try {
     const userId = req.user.id;
+
+    if (req.user.role !== 'USER') {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        isParticipant: false,
+        message: 'Administrators and Super Administrators manage points and do not participate in creator XP activities.',
+        pagination: {
+          page: 1,
+          limit: 10,
+          totalCount: 0,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
+        }
+      });
+    }
+
     const {
       page = 1,
       limit = 10,

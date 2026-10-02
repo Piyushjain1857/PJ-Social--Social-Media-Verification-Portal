@@ -257,6 +257,14 @@ const adjustUserPoints = async (req, res, next) => {
       });
     }
 
+    if (targetUser.role !== 'USER') {
+      return res.status(400).json({
+        success: false,
+        code: 'ADMIN_CANNOT_HAVE_POINTS',
+        message: 'Game points can only be awarded to normal creator users. Administrators and Super Administrators manage points and cannot hold game points.'
+      });
+    }
+
     const result = await adjustPoints({
       userId,
       points: deltaPoints,

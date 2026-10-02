@@ -155,6 +155,59 @@ async function runGamePointsTests() {
   assert.strictEqual(inspectData.data.totalXP, meData.totalXP);
   console.log(`✓ Admin inspected user ${user.user.name}: ${inspectData.data.totalXP} XP, Level ${inspectData.data.currentLevel}`);
 
+  // 9. Verifying Admin & Super Admin Do Not Have Game Points
+  console.log('\n--- 9. Verifying Admin & Super Admin Do Not Have Game Points ---');
+  
+  // 9a. Admin calling /api/gamification/me
+  const adminMeRes = await fetch(`${API_BASE}/gamification/me`, {
+    headers: { Authorization: `Bearer ${admin.token}` }
+  });
+  assert.strictEqual(adminMeRes.status, 200);
+  const adminMe = await adminMeRes.json();
+  assert.strictEqual(adminMe.data.isParticipant, false, 'Admin must not be a gamification participant');
+  assert.strictEqual(adminMe.data.totalXP, 0, 'Admin totalXP must be 0');
+  assert.strictEqual(adminMe.data.rank, null, 'Admin must not have a player rank');
+  console.log('✓ Admin /api/gamification/me returns isParticipant: false, totalXP: 0, rank: null');
+
+  // 9b. Super Admin calling /api/gamification/me/rank
+  const superAdminRankRes = await fetch(`${API_BASE}/gamification/me/rank`, {
+    headers: { Authorization: `Bearer ${superAdmin.token}` }
+  });
+  assert.strictEqual(superAdminRankRes.status, 200);
+  const superAdminRank = await superAdminRankRes.json();
+  assert.strictEqual(superAdminRank.data.isParticipant, false, 'Super Admin must not have a player rank');
+  assert.strictEqual(superAdminRank.data.rank, null);
+  console.log('✓ Super Admin /api/gamification/me/rank returns isParticipant: false, rank: null');
+
+  // 9c. Super Admin attempting to allocate points to Admin account
+  const adjustAdminRes = await fetch(`${API_BASE}/points/adjust`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${superAdmin.token}`
+    },
+    body: JSON.stringify({
+      userId: admin.user.id,
+      points: 100,
+      reason: 'Testing admin points protection'
+    })
+  });
+  assert.strictEqual(adjustAdminRes.status, 400, 'Attempting to allocate points to an Admin must fail with 400');
+  const adjustAdminJson = await adjustAdminRes.json();
+  assert.strictEqual(adjustAdminJson.code, 'ADMIN_CANNOT_HAVE_POINTS');
+  console.log('✓ Blocked awarding points to Admin: ADMIN_CANNOT_HAVE_POINTS');
+
+  // 9d. Leaderboard verification: Only normal USER accounts appear on the leaderboard
+  const lbRes = await fetch(`${API_BASE}/points/leaderboard?limit=100`, {
+    headers: { Authorization: `Bearer ${user.token}` }
+  });
+  assert.strictEqual(lbRes.status, 200);
+  const lbJson = await lbRes.json();
+  const rows = lbJson.data?.leaderboard || (Array.isArray(lbJson.data) ? lbJson.data : []);
+  const nonUsersOnLeaderboard = rows.filter(u => u.role && u.role !== 'USER');
+  assert.strictEqual(nonUsersOnLeaderboard.length, 0, 'Leaderboard must contain 0 non-USER accounts');
+  console.log('✓ Leaderboard verification: 100% of ranked participants are normal USER accounts');
+
   console.log('\n======================================================');
   console.log('🎉 ALL GAME POINTS VERIFICATION TESTS PASSED!');
   console.log('======================================================\n');

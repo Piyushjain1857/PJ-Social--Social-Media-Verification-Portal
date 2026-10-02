@@ -331,8 +331,34 @@ const getUserGamificationProfile = async (userId) => {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, totalXP: true, totalPoints: true }
+        select: { id: true, name: true, role: true, totalXP: true, totalPoints: true }
       });
+
+      if (user && user.role !== 'USER') {
+        const totalParticipants = await prisma.user.count({ where: { role: 'USER', status: 'ACTIVE' } });
+        return {
+          userId,
+          name: user.name,
+          role: user.role,
+          isParticipant: false,
+          totalXP: 0,
+          currentLevel: 0,
+          levelName: user.role === 'SUPER_ADMIN' ? 'Super Administrator' : 'Administrator',
+          message: 'Administrators and Super Administrators manage game points and do not participate as players.',
+          rank: null,
+          totalParticipants,
+          percentileAhead: null,
+          recentXP: 0,
+          currentLevelStartXP: 0,
+          nextLevel: null,
+          nextLevelName: null,
+          nextLevelMinXP: 0,
+          xpIntoCurrentLevel: 0,
+          xpRemaining: 0,
+          progressPercentage: 0,
+          isMaxLevel: true
+        };
+      }
 
       if (user) {
         totalXP = user.totalXP ?? user.totalPoints ?? 0;
@@ -416,12 +442,29 @@ const getUserRankMetrics = async (userId) => {
         throw new Error('User not found.');
       }
 
-      const userXP = Math.max(0, user.totalXP ?? user.totalPoints ?? 0);
-
       // Total eligible participants
       const totalParticipants = await prisma.user.count({
         where: { role: 'USER', status: 'ACTIVE' }
       });
+
+      // Administrators and Super Administrators do not have a player rank
+      if (user.role !== 'USER') {
+        return {
+          rank: null,
+          totalParticipants,
+          usersBehind: 0,
+          usersAhead: 0,
+          percentileAhead: null,
+          totalXP: 0,
+          pointsToNextRank: 0,
+          nextRank: null,
+          isParticipant: false,
+          role: user.role,
+          message: 'Administrative roles manage game points and do not participate in rankings'
+        };
+      }
+
+      const userXP = Math.max(0, user.totalXP ?? user.totalPoints ?? 0);
 
       // Users ahead: higher totalXP, or same XP but created earlier (tie-breaker)
       const usersAhead = await prisma.user.count({
@@ -536,7 +579,7 @@ const getUserXPChartData = async (userId, timeframe = '30d') => {
       const [user, txs] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
-          select: { createdAt: true, totalXP: true, totalPoints: true }
+          select: { role: true, createdAt: true, totalXP: true, totalPoints: true }
         }),
         prisma.pointTransaction.findMany({
           where: { userId },
@@ -544,6 +587,15 @@ const getUserXPChartData = async (userId, timeframe = '30d') => {
           select: { id: true, xp: true, points: true, createdAt: true, actionType: true }
         })
       ]);
+
+      if (user && user.role !== 'USER') {
+        return {
+          isParticipant: false,
+          role: user.role,
+          message: 'Administrators manage game points and do not generate player XP graphs.',
+          data: []
+        };
+      }
 
       if (user) {
         userCreatedAt = user.createdAt;
@@ -693,6 +745,19 @@ const getUserRankHistory = async (userId) => {
 
       if (!currentUser) {
         throw new Error('User not found.');
+      }
+
+      if (currentUser.role !== 'USER') {
+        return {
+          isParticipant: false,
+          role: currentUser.role,
+          trend: 'not_applicable',
+          initialRank: null,
+          currentRank: null,
+          rankDiff: 0,
+          timeline: [],
+          message: 'Administrators and Super Administrators manage game points and do not participate in rankings.'
+        };
       }
 
       const now = new Date();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { fetchMyGamification, fetchMyRank } from '../../services/gamificationApi';
 import UserXPChart from './UserXPChart';
 import PositionTimeline from './PositionTimeline';
@@ -7,13 +8,21 @@ import XPHistoryLedger from './XPHistoryLedger';
 import Leaderboard from './Leaderboard';
 
 export default function PersonalGamificationDashboard({ onNavigateToNav = null }) {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [rankData, setRankData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'leaderboard'
 
+  // If user is Admin or Super Admin, they manage points rather than participating as players
+  const isManager = user?.role && user.role !== 'USER';
+
   const loadData = useCallback(async () => {
+    if (isManager) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -33,11 +42,47 @@ export default function PersonalGamificationDashboard({ onNavigateToNav = null }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isManager]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  if (isManager) {
+    return (
+      <div className="layout-content-area" style={{ maxWidth: '820px', margin: '2rem auto' }}>
+        <div className="glass-panel" style={{ padding: '3rem 2rem', textAlign: 'center', borderRadius: '16px' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🛡️</div>
+          <h2 style={{ color: 'var(--text-highlight)', margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.6rem' }}>
+            Administrative Governance Account
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '580px', margin: '0 auto 1.75rem auto', lineHeight: 1.6, fontSize: '0.95rem' }}>
+            As a <strong>{user?.role === 'SUPER_ADMIN' ? 'Super Administrator' : 'Administrator'}</strong>, your role is to configure, audit, and manage game points and level progression for creators. Administrative accounts manage the ecosystem and do not hold personal player points or compete on the leaderboard.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {onNavigateToNav && (
+              <>
+                <button
+                  type="button"
+                  className="btn-portal-primary"
+                  onClick={() => onNavigateToNav('game-points')}
+                >
+                  🎮 Open Game Points Manager
+                </button>
+                <button
+                  type="button"
+                  className="btn-portal-secondary"
+                  onClick={() => onNavigateToNav('dashboard')}
+                >
+                  📊 Go to Dashboard
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

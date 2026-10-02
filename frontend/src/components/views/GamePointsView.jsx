@@ -156,15 +156,6 @@ export default function GamePointsView({ onNavigateToNav = null }) {
             >
               <span>👥</span> Creators Directory
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={adminTab === 'my-stats'}
-              className={`gamepoints-subnav-btn ${adminTab === 'my-stats' ? 'active' : ''}`}
-              onClick={() => setAdminTab('my-stats')}
-            >
-              <span>👤</span> My Game Points
-            </button>
             {selectedUserId && (
               <button
                 type="button"
@@ -189,6 +180,24 @@ export default function GamePointsView({ onNavigateToNav = null }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Governance & Administration Advisory Notice */}
+      <div style={{
+        margin: '1.25rem 0',
+        padding: '0.85rem 1.25rem',
+        borderRadius: '12px',
+        background: 'rgba(99, 102, 241, 0.08)',
+        border: '1px solid rgba(99, 102, 241, 0.25)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.85rem',
+        fontSize: '0.88rem'
+      }}>
+        <span style={{ fontSize: '1.25rem' }}>🛡️</span>
+        <span style={{ color: 'var(--text-secondary)' }}>
+          <strong style={{ color: 'var(--text-highlight)' }}>Management Account:</strong> Administrators and Super Administrators configure, audit, and allocate game points for creators. Administrative accounts manage the ecosystem and do not hold personal player points or compete on the leaderboard.
+        </span>
       </div>
 
       {/* Tab: Community Leaderboard */}
@@ -382,12 +391,6 @@ export default function GamePointsView({ onNavigateToNav = null }) {
         </div>
       )}
 
-      {/* Tab: My Personal Stats (for Admin / Super Admin) */}
-      {adminTab === 'my-stats' && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <PersonalGamificationDashboard onNavigateToNav={onNavigateToNav} />
-        </div>
-      )}
 
       {/* Tab: Super Admin Level Engine Controls */}
       {adminTab === 'engine' && isSuperAdmin && (
