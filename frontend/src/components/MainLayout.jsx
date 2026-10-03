@@ -60,6 +60,7 @@ import SuperAdminGamificationCenter from './views/SuperAdminGamificationCenter';
 import { fetchMyGamification } from '../services/gamificationApi';
 import { gamificationRealtimeClient } from '../services/gamificationRealtimeClient';
 import UserSpace from '../pages/UserSpace';
+import SuperAdminEmailCenter from './views/SuperAdminEmailCenter';
 
 
 /**
@@ -77,6 +78,7 @@ import UserSpace from '../pages/UserSpace';
 export const ROLE_NAVIGATION = {
   SUPER_ADMIN: [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', description: 'Platform analytics & system overview' },
+    { id: 'email-management', label: 'Email Management', icon: '📧', description: 'Transactional email control center, logs & analytics' },
     { id: 'game-points', label: 'Game Points', icon: '🎮', description: 'Gamification engine, XP progression & leaderboard' },
     { id: 'levels', label: 'Levels', icon: '⚡', description: 'Level progression & XP engine manager' },
     { id: 'users', label: 'Users', icon: '👥', description: 'User directory & RBAC assignment' },
@@ -124,6 +126,12 @@ export default function MainLayout({
 
     if (hash === 'super-admin/levels' || pathname === '/super-admin/levels') {
       hash = 'levels';
+    }
+
+    if (hash === 'super-admin/email' || pathname === '/super-admin/email' || hash === 'email-management' || pathname === '/email-management') {
+      if (role === 'SUPER_ADMIN') {
+        return 'email-management';
+      }
     }
 
     // Handle any game-points route
@@ -224,6 +232,18 @@ export default function MainLayout({
       return;
     }
 
+    if (activeNav === 'email-management') {
+      if (role === 'SUPER_ADMIN') {
+        if (cleanHash !== 'super-admin/email') {
+          window.location.hash = 'super-admin/email';
+        }
+      }
+      try {
+        localStorage.setItem('active_portal_nav', 'email-management');
+      } catch (e) {}
+      return;
+    }
+
     let targetHash = activeNav;
     if (currentHash !== targetHash) {
       window.location.hash = targetHash;
@@ -242,6 +262,20 @@ export default function MainLayout({
       if (hash === 'gamification') {
         window.location.hash = 'dashboard';
         return;
+      }
+
+      if (hash === 'super-admin/email' || hash === 'email-management') {
+        if (role === 'SUPER_ADMIN') {
+          if (controlledOnNavChange) {
+            controlledOnNavChange('email-management');
+          } else {
+            setInternalNav('email-management');
+          }
+          return;
+        } else {
+          window.location.hash = 'dashboard';
+          return;
+        }
       }
 
       const role = user?.role || 'USER';
@@ -617,6 +651,13 @@ export default function MainLayout({
 
     switch (activeNav) {
       case 'dashboard':
+        return <DashboardView onNavigateToNav={handleNavChange} />;
+      case 'email-management':
+      case 'super-admin/email':
+      case 'email':
+        if (currentRole === 'SUPER_ADMIN') {
+          return <SuperAdminEmailCenter />;
+        }
         return <DashboardView onNavigateToNav={handleNavChange} />;
       case 'user-space':
         return <UserSpace onNavigate={onNavigate} onNavigateToNav={handleNavChange} />;

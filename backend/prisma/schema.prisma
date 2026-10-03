@@ -380,3 +380,43 @@ model EmailPreference {
   @@map("email_preferences")
 }
 
+/// System-wide Email Configuration & Template Customizations managed by Super Admin
+model EmailTemplateConfig {
+  id           String   @id @default(uuid())
+  templateKey  String   @unique
+  name         String
+  subject      String
+  category     String   @default("GENERAL")
+  isEnabled    Boolean  @default(true)
+  isSecurity   Boolean  @default(false)
+  customHeader String?
+  customNotes  String?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([templateKey])
+  @@index([category])
+  @@map("email_template_configs")
+}
+
+/// Global Email Event Toggles configured by Super Admin
+model EmailSystemSetting {
+  id                  String   @id @default(uuid())
+  key                 String   @unique @default("GLOBAL_EVENT_TOGGLES")
+  loginNotification   Boolean  @default(true)
+  submissionApproval  Boolean  @default(true)
+  submissionRejection Boolean  @default(true)
+  xpEarned            Boolean  @default(true)
+  levelUp             Boolean  @default(true)
+  announcements       Boolean  @default(true)
+  passwordReset       Boolean  @default(true)
+  passwordChanged     Boolean  @default(true)
+  accountSecurity     Boolean  @default(true)
+  updatedBy           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("email_system_settings")
+}
+

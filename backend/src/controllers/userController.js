@@ -367,14 +367,16 @@ const changeUserEmail = async (req, res, next) => {
     }
 
     // Send transactional security email notifications (dual: old + new)
-    sendEmailChangedNotification({
-      user: updatedUser,
-      oldEmail,
-      newEmail: normalizedNewEmail,
-      ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown'
-    }).catch(mailErr => {
+    try {
+      await sendEmailChangedNotification({
+        user: updatedUser,
+        oldEmail,
+        newEmail: normalizedNewEmail,
+        ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown'
+      });
+    } catch (mailErr) {
       console.warn('[changeUserEmail] Email change notifications skipped:', mailErr.message);
-    });
+    }
 
     return res.status(200).json({
       success: true,

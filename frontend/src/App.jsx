@@ -32,6 +32,9 @@ const AUTHENTICATED_SUB_VIEWS = [
   'gamification',
   'levels',
   'super-admin/levels',
+  'super-admin/email',
+  'email-management',
+  'email',
   'users',
   'admins',
   'submissions',
@@ -67,7 +70,18 @@ export default function App() {
       return 'login';
     }
 
-    // Handle direct paths: /game-points, /admin/game-points, /super-admin/game-points, /super-admin/levels
+    // Handle direct paths: /game-points, /admin/game-points, /super-admin/game-points, /super-admin/levels, /super-admin/email
+    if (
+      pathname === 'super-admin/email' || pathname.startsWith('super-admin/email/') ||
+      pathname === 'email-management'
+    ) {
+      if (hasToken) {
+        window.location.hash = 'super-admin/email';
+        return 'dashboard';
+      }
+      return 'login';
+    }
+
     if (
       pathname === 'game-points' || pathname.startsWith('game-points/') ||
       pathname === 'admin/game-points' || pathname.startsWith('admin/game-points/') ||

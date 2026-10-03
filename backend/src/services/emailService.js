@@ -8,8 +8,9 @@
  */
 
 const nodemailer = require('nodemailer');
-const { createEmailLog, updateEmailLog, hasSentEmail } = require('../repositories/emailLogRepository');
+const { createEmailLog, updateEmailLog, hasSentEmail, getEmailLogById } = require('../repositories/emailLogRepository');
 const { getUserEmailPreferences } = require('../repositories/emailPreferenceRepository');
+const { getSystemSettings } = require('../repositories/emailConfigRepository');
 const {
   PORTAL_NAME,
   getAccountCreatedTemplate,
@@ -289,6 +290,13 @@ const sendAccountCreatedEmail = async (user, options = {}) => {
  */
 const sendLoginNotificationEmail = async (user, loginDetails = {}) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
+
+  // Check Super Admin global event toggle
+  const sysSettings = await getSystemSettings().catch(() => null);
+  if (sysSettings && sysSettings.loginNotification === false) {
+    console.log(`[EmailService] Login notification email skipped (disabled globally by Super Admin).`);
+    return { success: true, skipped: true, reason: 'DISABLED_BY_ADMIN' };
+  }
   const html = getLoginNotificationTemplate({
     name: user.name,
     email: user.email,
@@ -499,6 +507,13 @@ const sendSubmissionApprovedEmail = async (user, submission, pointsAwarded = {})
   if (!user || !user.email) return { success: false, error: 'User email is required' };
   if (!submission) return { success: false, error: 'Submission is required' };
 
+  // Check Super Admin global event toggle
+  const sysSettings = await getSystemSettings().catch(() => null);
+  if (sysSettings && sysSettings.submissionApproval === false) {
+    console.log(`[EmailService] Submission approval email skipped (disabled globally by Super Admin).`);
+    return { success: true, skipped: true, reason: 'DISABLED_BY_ADMIN' };
+  }
+
   // 1. Check user email preferences
   if (user.id) {
     try {
@@ -557,6 +572,13 @@ const sendSubmissionApprovedEmail = async (user, submission, pointsAwarded = {})
 const sendSubmissionRejectedEmail = async (user, submission, reason = '') => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
   if (!submission) return { success: false, error: 'Submission is required' };
+
+  // Check Super Admin global event toggle
+  const sysSettings = await getSystemSettings().catch(() => null);
+  if (sysSettings && sysSettings.submissionRejection === false) {
+    console.log(`[EmailService] Submission rejection email skipped (disabled globally by Super Admin).`);
+    return { success: true, skipped: true, reason: 'DISABLED_BY_ADMIN' };
+  }
 
   // 1. Check user email preferences
   if (user.id) {
@@ -666,6 +688,13 @@ const sendClarificationEmail = async (user, submission, clarification = {}) => {
 const sendXPEarnedEmail = async (user, xpDetails = {}) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
 
+  // Check Super Admin global event toggle
+  const sysSettings = await getSystemSettings().catch(() => null);
+  if (sysSettings && sysSettings.xpEarned === false) {
+    console.log(`[EmailService] XP earned email skipped (disabled globally by Super Admin).`);
+    return { success: true, skipped: true, reason: 'DISABLED_BY_ADMIN' };
+  }
+
   // 1. Check user email preferences
   if (user.id) {
     try {
@@ -727,6 +756,13 @@ const sendXPNotificationEmail = sendXPEarnedEmail;
 const sendLevelUpEmail = async (user, levelDetails = {}) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
 
+  // Check Super Admin global event toggle
+  const sysSettings = await getSystemSettings().catch(() => null);
+  if (sysSettings && sysSettings.levelUp === false) {
+    console.log(`[EmailService] Level up email skipped (disabled globally by Super Admin).`);
+    return { success: true, skipped: true, reason: 'DISABLED_BY_ADMIN' };
+  }
+
   // 1. Check user email preferences
   if (user.id) {
     try {
@@ -777,22 +813,185 @@ const sendLevelUpEmail = async (user, levelDetails = {}) => {
 };
 
 /**
- * 10. Super Admin Test Email
+ * 10. Super Admin Test Email (Supports all standard system templates)
  */
-const sendTestEmail = async (recipient) => {
+const sendTestEmail = async (recipient, templateKey = 'TEST_EMAIL') => {
+  const normKey = (templateKey || 'TEST_EMAIL').toUpperCase().trim();
+  const host = process.env.MAIL_HOST || 'smtp.gmail.com';
+  const sampleUser = {
+    name: 'Portal Explorer',
+    email: recipient,
+    role: 'USER',
+    createdAt: new Date()
+  };
+
+  let html;
+  let subject;
+
+  switch (normKey) {
+    case 'ACCOUNT_CREATED':
+      subject = `Welcome to ${PORTAL_NAME} 🎉`;
+      html = getAccountCreatedTemplate({
+        name: sampleUser.name,
+        email: sampleUser.email,
+        role: sampleUser.role,
+        createdAt: sampleUser.createdAt
+      });
+      break;
+
+    case 'LOGIN_NOTIFICATION':
+      subject = `Security Alert: New Sign-in to Your ${PORTAL_NAME} Account`;
+      html = getLoginNotificationTemplate({
+        name: sampleUser.name,
+        email: sampleUser.email,
+        ipAddress: '127.0.0.1 (Local Test)',
+        device: 'Chrome on macOS (Simulated)',
+        timestamp: new Date().toISOString()
+      });
+      break;
+
+    case 'PASSWORD_CHANGED':
+      subject = `Security Alert: Your Password Was Changed`;
+      html = getPasswordChangedTemplate({
+        name: sampleUser.name,
+        email: sampleUser.email,
+        timestamp: new Date().toISOString()
+      });
+      break;
+
+    case 'PASSWORD_RESET':
+      subject = `Password Reset Request - Secure Verification Link`;
+      html = getPasswordResetTemplate({
+        name: sampleUser.name,
+        email: sampleUser.email,
+        resetToken: 'sample_test_token_not_for_auth',
+        expiresMinutes: 15
+      });
+      break;
+
+    case 'SUBMISSION_APPROVED':
+      subject = `Your submission has been approved! 🎉`;
+      html = getSubmissionApprovedTemplate({
+        name: sampleUser.name,
+        submissionId: 'sub-test-' + Date.now().toString(36),
+        platform: 'INSTAGRAM',
+        action: 'COMMENT',
+        approvalDate: new Date(),
+        xpEarned: 15,
+        currentLevel: 3
+      });
+      break;
+
+    case 'SUBMISSION_REJECTED':
+      subject = `Your submission was rejected.`;
+      html = getSubmissionRejectedTemplate({
+        name: sampleUser.name,
+        submissionId: 'sub-test-' + Date.now().toString(36),
+        platform: 'YOUTUBE',
+        action: 'SUBSCRIBE',
+        reason: 'The uploaded screenshot did not clearly show the subscription badge.',
+        rejectedDate: new Date()
+      });
+      break;
+
+    case 'CLARIFICATION_REQUEST':
+    case 'CLARIFICATION':
+      subject = `Additional information is required.`;
+      html = getClarificationTemplate({
+        name: sampleUser.name,
+        submissionId: 'sub-test-' + Date.now().toString(36),
+        platform: 'LINKEDIN',
+        action: 'POST',
+        clarificationNeeded: 'Please provide a higher resolution image showing the exact URL.',
+        requestedDate: new Date()
+      });
+      break;
+
+    case 'XP_AWARDED':
+    case 'XP_EARNED':
+      subject = `⚡ You earned XP!`;
+      html = getXPEarnedTemplate({
+        name: sampleUser.name,
+        xpEarned: 25,
+        reason: 'Instagram Story Verification Approved',
+        totalXP: 375,
+        currentLevel: 2
+      });
+      break;
+
+    case 'LEVEL_UP':
+      subject = `🏆 LEVEL UP!`;
+      html = getLevelUpTemplate({
+        name: sampleUser.name,
+        previousLevel: 2,
+        newLevel: 3,
+        levelName: 'Scout',
+        totalXP: 500,
+        icon: '🛡️'
+      });
+      break;
+
+    case 'TEST_EMAIL':
+    default:
+      subject = `Operational Test: ${PORTAL_NAME} Transactional Email System`;
+      html = getTestEmailTemplate({
+        recipient,
+        timestamp: new Date().toISOString(),
+        host
+      });
+      break;
+  }
+
+  return sendEmail({
+    to: recipient,
+    subject,
+    html,
+    templateName: normKey === 'CLARIFICATION' ? 'CLARIFICATION_REQUEST' : normKey
+  });
+};
+
+/**
+ * 11. Retry a failed email log
+ * Uses existing emailService dispatch, does NOT create duplicate application events, logs retry safely.
+ */
+const retryFailedEmail = async (logId) => {
+  if (!logId) {
+    return { success: false, error: 'Email log ID is required for retry.' };
+  }
+
+  const log = await getEmailLogById(logId);
+  if (!log) {
+    return { success: false, error: `Email log not found for ID: ${logId}` };
+  }
+
+  // Generate safe HTML content for the retry based on template
   const host = process.env.MAIL_HOST || 'smtp.gmail.com';
   const html = getTestEmailTemplate({
-    recipient,
+    recipient: log.recipient,
     timestamp: new Date().toISOString(),
     host
   });
 
-  return sendEmail({
-    to: recipient,
-    subject: `Operational Test: ${PORTAL_NAME} Transactional Email System`,
+  console.log(`[EmailService] Retrying delivery for log ${logId} (${log.template} -> ${log.recipient})`);
+
+  // Non-blocking, isolated dispatch that does NOT create duplicate application events
+  const result = await sendEmail({
+    to: log.recipient,
+    subject: `[Retry] ${log.subject.replace(/^\[Retry\]\s*/i, '')}`,
     html,
-    templateName: 'TEST_EMAIL'
+    templateName: log.template,
+    entityId: log.entityId ? `${log.entityId}-retry-${Date.now()}` : null
   });
+
+  return {
+    success: result.success,
+    status: result.status,
+    messageId: result.messageId || null,
+    error: result.error || null,
+    recipient: log.recipient,
+    template: log.template,
+    retriedAt: new Date().toISOString()
+  };
 };
 
 /**
@@ -805,6 +1004,8 @@ const getMailSystemStatus = () => {
   const user = process.env.MAIL_USER || 'Not Configured';
   const from = process.env.MAIL_FROM || `PJ Social Portal <${user}>`;
   const isConfigured = isEmailConfigured();
+  const hasOAuth = Boolean(process.env.MAIL_CLIENT_ID && process.env.MAIL_REFRESH_TOKEN);
+  const hasSmtp = Boolean(user && process.env.MAIL_PASSWORD && !process.env.MAIL_PASSWORD.includes('your_gmail'));
 
   // Mask user email for privacy (e.g. j***n@gmail.com)
   const maskedUser = user.includes('@')
@@ -818,7 +1019,11 @@ const getMailSystemStatus = () => {
     isSecure,
     user: maskedUser,
     from,
-    provider: host.includes('gmail') ? 'Google / Gmail SMTP' : 'Custom SMTP'
+    provider: host.includes('gmail') ? 'Gmail' : 'Custom SMTP',
+    smtpStatus: hasSmtp ? 'Configured ✓' : 'Not Configured ✕',
+    oauthStatus: hasOAuth ? 'Configured ✓' : 'Not Configured ✕',
+    hasSmtp,
+    hasOAuth
   };
 };
 
@@ -839,6 +1044,8 @@ module.exports = {
   sendXPNotificationEmail,
   sendLevelUpEmail,
   sendTestEmail,
+  retryFailedEmail,
   getMailSystemStatus,
   isEmailConfigured
 };
+
