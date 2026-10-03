@@ -3144,37 +3144,9 @@ div:hover > .profile-photo-hover-badge {
     display: none; /* Hide latency pill on small screens to conserve navbar space */
   }
 
-  /* Compact Navbar Search Trigger on Mobile */
-  .layout-navbar-center {
-    flex: 0 0 auto !important;
-    max-width: none !important;
-    margin: 0 0.15rem !important;
-  }
-
+  /* Hide Navbar Search on Mobile */
+  .layout-navbar-center,
   .navbar-search-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #94a3b8 !important;
-    flex-shrink: 0 !important;
-  }
-
-  .navbar-search-btn:hover,
-  .navbar-search-btn:active {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #f8fafc !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
-  }
-
-  .navbar-search-placeholder,
-  .navbar-search-btn kbd {
     display: none !important;
   }
 
@@ -5835,7 +5807,8 @@ input[type="text"]:hover {
 
 @media (max-width: 480px) {
   .user-hero-stats-ribbon {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
   }
 }
 
@@ -13497,41 +13470,86 @@ input[type="date"] {
     min-height: 38px !important;
   }
 
+  /* ── Tactile Tap Feedback on Mobile ── */
+  button:active,
+  .btn-primary:active,
+  .btn-secondary:active,
+  .btn-hero-primary:active,
+  .btn-hero-glass:active,
+  .platform-card-btn:active,
+  .action-card-btn:active,
+  .user-tab-btn:active,
+  .user-filter-pill:active,
+  .user-stat-card:active {
+    transform: scale(0.97) !important;
+    transition: transform 0.12s ease !important;
+  }
+
   /* 3 metric boxes: Total Points, This Week, This Month */
   .points-card-stats-grid {
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0.45rem !important;
+    gap: 0.5rem !important;
   }
 
   .points-stat-box {
-    padding: 0.6rem 0.45rem !important;
+    padding: 0.75rem 0.55rem !important;
+    background: linear-gradient(135deg, rgba(16, 24, 40, 0.8) 0%, rgba(13, 20, 36, 0.7) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: var(--radius-sm, 10px) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
   }
 
   .points-stat-box-label {
-    font-size: 0.62rem !important;
-    gap: 0.2rem !important;
+    font-size: 0.64rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    gap: 0.25rem !important;
+    justify-content: center !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
   .points-stat-box-value {
-    font-size: 1.15rem !important;
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    margin-top: 0.25rem !important;
+    letter-spacing: -0.02em !important;
   }
 
   /* Action breakdown row (Likes, Comments, Stories) */
   .points-breakdown-row {
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 0.35rem !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
   }
 
   .points-action-pill {
-    padding: 0.25rem 0.45rem !important;
-    font-size: 0.72rem !important;
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
   }
 
-  /* Activity feeds under points card */
+  /* Activity feeds under points card (Recent Point Activity & Latest Approved Proofs) */
   .glass-panel:has(.points-card-stats-grid) > div[style*="minmax(280px, 1fr)"] {
     grid-template-columns: 1fr !important;
     gap: 0.75rem !important;
+  }
+
+  .glass-panel:has(.points-card-stats-grid) div[style*="background: 'rgba(255, 255, 255, 0.02)'"],
+  .glass-panel:has(.points-card-stats-grid) div[style*="background: rgba(255, 255, 255, 0.02)"] {
+    padding: 0.85rem !important;
+    border-radius: var(--radius-sm, 10px) !important;
   }
 
   /* ── 5. Creator Compliance & Platform Breakdown ── */
@@ -13543,6 +13561,11 @@ input[type="date"] {
   div[style*="minmax(260px, 1fr)"] > .glass-panel {
     padding: 1.15rem 1rem !important;
     border-radius: var(--radius-md, 14px) !important;
+  }
+
+  div[style*="minmax(260px, 1fr)"] svg {
+    max-width: 110px !important;
+    max-height: 110px !important;
   }
 
   /* ── 6. Recent Submissions + Recent Notifications ── */
@@ -13560,6 +13583,13 @@ input[type="date"] {
   div[style*="minmax(min(100%, 280px), 1fr)"] .glass-panel div[style*="justify-content: space-between"][style*="border: 1px solid"] {
     padding: 0.65rem 0.75rem !important;
     gap: 0.5rem !important;
+    border-radius: var(--radius-sm, 10px) !important;
+    background: rgba(15, 23, 42, 0.55) !important;
+  }
+
+  div[style*="minmax(min(100%, 280px), 1fr)"] a[style*="word-break"] {
+    font-size: 0.76rem !important;
+    word-break: break-all !important;
   }
 
   /* ── 7. Quick Actions Grid (DashboardView) ── */
@@ -13571,62 +13601,133 @@ input[type="date"] {
   div[style*="minmax(180px, 1fr)"] > button {
     padding: 0.75rem 0.65rem !important;
     gap: 0.55rem !important;
-    min-height: 52px !important;
+    min-height: 54px !important;
     border-radius: var(--radius-sm, 10px) !important;
+    text-align: left !important;
   }
 
   div[style*="minmax(180px, 1fr)"] > button > span:first-child {
-    width: 1.85rem !important;
-    height: 1.85rem !important;
-    font-size: 1.1rem !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    font-size: 1.15rem !important;
+    flex-shrink: 0 !important;
   }
 
   div[style*="minmax(180px, 1fr)"] > button div > div:first-child {
     font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    color: #f8fafc !important;
   }
 
   div[style*="minmax(180px, 1fr)"] > button div > div:last-child {
     font-size: 0.68rem !important;
+    color: #94a3b8 !important;
+    line-height: 1.25 !important;
   }
 
   /* ── 8. UserSpace (Creator Studio Workspace Tab) ── */
   .user-space-wrapper {
+    padding: 0.25rem 0 calc(2rem + env(safe-area-inset-bottom, 16px)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
     gap: 1.15rem !important;
   }
 
+  .user-space-wrapper::before,
+  .user-space-wrapper::after {
+    display: none !important;
+  }
+
   .user-hero-card {
-    padding: 1.25rem 1rem !important;
+    padding: 1.15rem 0.95rem 1rem !important;
     border-radius: var(--radius-md, 14px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .user-hero-inner {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 1rem !important;
+    gap: 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .user-hero-identity {
     min-width: 0 !important;
     width: 100% !important;
-    gap: 0.85rem !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    box-sizing: border-box !important;
   }
 
   .user-hero-avatar-wrap {
-    width: 52px !important;
-    height: 52px !important;
+    width: 48px !important;
+    height: 48px !important;
+    flex-shrink: 0 !important;
   }
 
   .user-hero-avatar {
-    font-size: 1.35rem !important;
+    font-size: 1.25rem !important;
+  }
+
+  .user-hero-status-pip {
+    width: 12px !important;
+    height: 12px !important;
+    border-width: 2px !important;
+  }
+
+  .user-hero-details {
+    min-width: 0 !important;
+    flex: 1 1 0% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
   .user-hero-details h1 {
-    font-size: 1.25rem !important;
-    line-height: 1.25 !important;
+    font-size: 1.2rem !important;
+    line-height: 1.3 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem 0.4rem !important;
+    word-break: break-word !important;
+    width: 100% !important;
+  }
+
+  .user-hero-details h1 .creator-name-highlight {
+    word-break: break-word !important;
   }
 
   .user-hero-badges {
-    gap: 0.35rem !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.35rem !important;
+    width: 100% !important;
+  }
+
+  .user-badge-chip {
+    padding: 0.2rem 0.55rem !important;
+    font-size: 0.66rem !important;
+    gap: 0.3rem !important;
+    white-space: nowrap !important;
+    border-radius: 14px !important;
+  }
+
+  .user-hero-email {
+    font-size: 0.74rem !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem 0.4rem !important;
+    word-break: break-all !important;
+    line-height: 1.35 !important;
+    color: #94a3b8 !important;
   }
 
   .user-hero-actions {
@@ -13634,51 +13735,421 @@ input[type="date"] {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
+    box-sizing: border-box !important;
+    margin-top: 0.25rem !important;
   }
 
-  .user-hero-actions button {
+  .btn-hero-primary,
+  .btn-hero-glass {
     width: 100% !important;
-    min-height: 40px !important;
+    min-height: 42px !important;
+    padding: 0.5rem 0.6rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
     justify-content: center !important;
+    text-align: center !important;
+    gap: 0.4rem !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    border-radius: var(--radius-full, 9999px) !important;
+  }
+
+  .btn-hero-primary {
+    color: #07090e !important;
+  }
+
+  .btn-hero-glass {
+    color: #f8fafc !important;
   }
 
   .user-hero-actions .telemetry-pill {
     grid-column: 1 / -1 !important;
     justify-content: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 32px !important;
+    padding: 0.3rem 0.75rem !important;
+    font-size: 0.72rem !important;
   }
 
-  .user-tabs-bar {
-    padding: 0.35rem 0.5rem !important;
+  /* Dynamic XP Progress Ribbon inside Hero */
+  .hero-xp-track-wrap {
+    margin-top: 0.85rem !important;
+    padding-top: 0.75rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .hero-xp-track-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
     gap: 0.35rem !important;
+    width: 100% !important;
+  }
+
+  .hero-xp-track-label {
+    flex-wrap: wrap !important;
+    font-size: 0.72rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .hero-xp-track-values {
+    font-size: 0.74rem !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+  }
+
+  /* Metric stat ribbon */
+  .user-hero-stats-ribbon {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+    margin-top: 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-stat-card {
+    min-height: 94px !important;
+    padding: 0.85rem 0.85rem 0.75rem !important;
+    border-radius: var(--radius-md, 12px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-stat-card:nth-child(5) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .stat-card-label {
+    font-size: 0.66rem !important;
+  }
+
+  .stat-card-icon-orb {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.95rem !important;
+    border-radius: 8px !important;
+  }
+
+  .stat-card-value {
+    font-size: 1.45rem !important;
+  }
+
+  .stat-card-footer {
+    font-size: 0.66rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+    margin-top: 0.35rem !important;
+  }
+
+  .stat-card-tag {
+    font-size: 0.62rem !important;
+    padding: 0.1rem 0.4rem !important;
+  }
+
+  /* Segmented Tab Navigation */
+  .user-tabs-bar {
+    display: flex !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
-  }
-
-  .user-tab-btn {
-    padding: 0.55rem 0.85rem !important;
-    font-size: 0.8rem !important;
-  }
-
-  .user-pane-card {
-    padding: 1.15rem 1rem !important;
+    scrollbar-width: none !important;
+    padding: 0.35rem 0.45rem !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
     border-radius: var(--radius-md, 14px) !important;
   }
 
+  .user-tabs-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .user-tab-btn {
+    flex-shrink: 0 !important;
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.78rem !important;
+    white-space: nowrap !important;
+    border-radius: 10px !important;
+    gap: 0.45rem !important;
+  }
+
+  .user-tab-badge {
+    font-size: 0.66rem !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    padding: 0 0.35rem !important;
+  }
+
+  /* Content Panes */
+  .user-pane-card {
+    padding: 1.15rem 0.95rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .user-pane-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.85rem !important;
+    margin-bottom: 1.15rem !important;
+    padding-bottom: 0.85rem !important;
+    width: 100% !important;
+  }
+
+  .user-pane-title-group h2 {
+    font-size: 1.15rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+
+  .user-pane-title-group p {
+    font-size: 0.8rem !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Submissions Feed Controls & Cards */
+  .user-subs-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 0.85rem !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-search-input-wrap {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .user-search-input {
+    font-size: 16px !important;
+    min-height: 42px !important;
+  }
+
+  .user-filter-groups {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    width: 100% !important;
+  }
+
+  .user-filter-pills {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 3px !important;
+  }
+
+  .user-filter-pills::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .user-filter-pill {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 0.3rem 0.65rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .user-sub-card {
+    padding: 1.15rem 0.95rem !important;
+    gap: 0.85rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-sub-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.65rem !important;
+  }
+
+  .user-sub-platform-badges {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+  }
+
+  .user-sub-link-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    padding: 0.75rem 0.85rem !important;
+  }
+
+  .target-url-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+
+  .target-url-link {
+    font-size: 0.76rem !important;
+    word-break: break-all !important;
+  }
+
+  .btn-copy-target {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+  }
+
+  .evidence-image-frame {
+    max-width: 110px !important;
+    border-radius: 8px !important;
+  }
+
+  .moderator-feedback-box {
+    padding: 0.85rem 1rem !important;
+    border-radius: 0 10px 10px 0 !important;
+  }
+
+  .moderator-feedback-text {
+    font-size: 0.82rem !important;
+  }
+
+  .user-sub-card-footer {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .creator-quest-launchpad {
+    padding: 1.75rem 1rem !important;
+  }
+
+  .launchpad-hero-orb {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 1.8rem !important;
+  }
+
+  .launchpad-title {
+    font-size: 1.25rem !important;
+  }
+
+  .launchpad-roadmap {
+    grid-template-columns: 1fr !important;
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+
+  .quest-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Submit Activity Form */
   .platform-select-grid {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 0.5rem !important;
   }
 
   .platform-card-btn {
-    padding: 0.75rem 0.5rem !important;
+    padding: 0.75rem 0.35rem !important;
+    min-width: 0 !important;
   }
 
   .platform-card-btn .p-icon {
-    font-size: 1.4rem !important;
+    font-size: 1.35rem !important;
   }
 
   .platform-card-btn .p-name {
-    font-size: 0.76rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .action-select-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .action-card-btn {
+    padding: 0.75rem 0.85rem !important;
+  }
+
+  .proof-dropzone {
+    padding: 1.35rem 1rem !important;
+  }
+
+  .live-preview-box {
+    position: static !important;
+    margin-top: 1rem !important;
+    padding: 1.15rem 1rem !important;
+  }
+
+  /* Profile, Gamification & RBAC Test */
+  .level-milestone-track {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .milestone-node:nth-child(5) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .milestone-node {
+    padding: 0.75rem 0.6rem !important;
+  }
+
+  .milestone-icon {
+    font-size: 1.35rem !important;
+  }
+
+  .rbac-probe-btn {
+    width: 100% !important;
+    font-size: 0.78rem !important;
+    padding: 0.65rem 0.85rem !important;
+  }
+
+  .rbac-terminal-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+    padding: 0.65rem 0.85rem !important;
+  }
+
+  .rbac-terminal-body {
+    padding: 1rem 0.85rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .rbac-terminal-body pre {
+    font-size: 0.72rem !important;
+    padding: 0.75rem !important;
+    border-radius: 6px !important;
+  }
+
+  /* Notifications item in UserSpace */
+  .user-pane-card div:has(> div > span:first-child):has(> button.btn-hero-glass) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+    padding: 0.95rem 0.85rem !important;
+  }
+
+  .user-pane-card div:has(> div > span:first-child):has(> button.btn-hero-glass) > button.btn-hero-glass {
+    align-self: flex-start !important;
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+  }
+
+  /* Profile Tab Grid */
+  div[style*="minmax(320px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
 }
 
@@ -13697,11 +14168,28 @@ input[type="date"] {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 0.6rem 0.85rem !important;
+    padding: 0.65rem 0.85rem !important;
+    text-align: left !important;
+  }
+
+  .points-stat-box-value {
+    margin-top: 0 !important;
+  }
+
+  .user-hero-details h1 {
+    font-size: 1.12rem !important;
   }
 
   .user-hero-actions {
     grid-template-columns: 1fr !important;
+  }
+
+  .level-milestone-track {
+    grid-template-columns: 1fr !important;
+  }
+
+  .milestone-node:nth-child(5) {
+    grid-column: auto !important;
   }
 
   .lpc-stats-grid {
@@ -13721,6 +14209,18 @@ input[type="date"] {
 
   .glass-panel:has(.badge-user) + div[style*="grid"],
   .glass-panel:has(.role-creator) + div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-hero-stats-ribbon {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-stat-card:nth-child(5) {
+    grid-column: auto !important;
+  }
+
+  .platform-select-grid {
     grid-template-columns: 1fr !important;
   }
 }
