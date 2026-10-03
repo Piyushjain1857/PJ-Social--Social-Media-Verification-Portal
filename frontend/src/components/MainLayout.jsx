@@ -1534,58 +1534,18 @@ export default function MainLayout({
 
           {/* Internal Dashboard Workspace Footer */}
           <footer className="layout-workspace-footer">
-            <div className="layout-workspace-footer-inner">
-              <div className="layout-footer-left">
-                <span className="layout-footer-brand">
-                  <span className="layout-footer-brand-shield">🛡️</span>
-                  <strong>PJ Social</strong> Portal
-                </span>
-                <span className="layout-footer-sep">•</span>
-                <span className="layout-footer-session-role">
-                  Active Role: <span className={`badge ${currentRole === 'SUPER_ADMIN' ? 'badge-superadmin' : currentRole === 'ADMIN' ? 'badge-admin' : 'badge-user'}`} style={{ fontSize: '0.68rem', padding: '0.12rem 0.5rem' }}>{currentRole}</span>
-                </span>
-                <span className="layout-footer-sep">•</span>
-                <span className="layout-footer-status">
-                  <span className="footer-status-mini-dot online" /> Systems Synced
-                </span>
-              </div>
-
-              <div className="layout-footer-center">
-                <span>© {new Date().getFullYear()} PJ Social Portal</span>
-                <span className="layout-footer-sep">•</span>
-                <span>Enterprise Activity Proof Verification</span>
-              </div>
-
-              <div className="layout-footer-right">
-                {onNavigate && (
-                  <button
-                    type="button"
-                    className="layout-footer-action-btn"
-                    onClick={() => onNavigate('portal')}
-                    title="Return to public portal landing page"
-                  >
-                    🌐 Public Landing
-                  </button>
-                )}
-                <a
-                  href="https://linkedin.com/in/piyushjain1857"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="layout-footer-author-pill"
-                  title="Architected by Piyush Jain"
-                >
-                  <span>Piyush Jain ↗</span>
-                </a>
-                <button
-                  type="button"
-                  className="layout-footer-top-btn"
-                  onClick={() => document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
-                  title="Scroll to top of view"
-                >
-                  ↑ Top
-                </button>
-              </div>
-            </div>
+            <span className="footer-copyright-text">
+              © {new Date().getFullYear()} PJ Social : Social Media Activity Verification Portal. Built by{' '}
+              <a
+                href="https://linkedin.com/in/piyushjain1857"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-credit-link"
+              >
+                Piyush Jain
+              </a>
+              . All rights reserved.
+            </span>
           </footer>
         </main>
       </div>

@@ -5068,116 +5068,13 @@ div:hover > .profile-photo-hover-badge {
   background: rgba(7, 9, 14, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  padding: 1rem 1.75rem;
+  padding: 1.25rem 1.75rem;
   margin-top: 3rem;
   border-radius: var(--radius-lg);
-}
-
-.layout-workspace-footer-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.layout-footer-left {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.layout-footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--text-highlight);
-}
-
-.layout-footer-brand-shield {
-  font-size: 0.9rem;
-}
-
-.layout-footer-sep {
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 0.75rem;
-}
-
-.layout-footer-center {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.layout-footer-right {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.layout-footer-action-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  padding: 0.25rem 0.6rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.layout-footer-action-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text-highlight);
-}
-
-.layout-footer-author-pill {
-  font-size: 0.74rem;
-  color: #38bdf8;
-  text-decoration: none;
-  font-weight: 600;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-sm);
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  transition: all 0.2s ease;
-}
-
-.layout-footer-author-pill:hover {
-  background: rgba(56, 189, 248, 0.18);
-  color: #7dd3fc;
-}
-
-.layout-footer-top-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.layout-footer-top-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text-highlight);
-}
-
-.footer-status-mini-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.footer-status-mini-dot.online {
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
+  justify-content: center;
+  text-align: center;
 }
 
 /* Animations */
