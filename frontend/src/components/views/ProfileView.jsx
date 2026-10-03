@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchMyProfile, updateMyProfile, changeUserPassword, changeUserEmail } from '../../services/api';
+import {
+  fetchMyProfile,
+  updateMyProfile,
+  changeUserPassword,
+  changeUserEmail,
+  fetchEmailPreferences,
+  updateEmailPreferences
+} from '../../services/api';
 import { fetchMyGamification } from '../../services/gamificationApi';
 import LevelProgressCard from '../gamification/LevelProgressCard';
 
@@ -103,8 +110,20 @@ export default function ProfileView({ onNavigateToNav }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Active Tab: 'details' | 'personalization' | 'security'
+  // Active Tab: 'details' | 'personalization' | 'notifications' | 'security'
   const [activeTab, setActiveTab] = useState('details');
+
+  // Email Notification Preferences State
+  const [emailPrefs, setEmailPrefs] = useState({
+    accountSecurity: true,
+    submissionUpdates: true,
+    gamificationUpdates: true,
+    announcements: true
+  });
+  const [isLoadingEmailPrefs, setIsLoadingEmailPrefs] = useState(false);
+  const [isSavingEmailPrefs, setIsSavingEmailPrefs] = useState(false);
+  const [emailPrefsSuccessMsg, setEmailPrefsSuccessMsg] = useState(null);
+  const [emailPrefsErrorMsg, setEmailPrefsErrorMsg] = useState(null);
 
   // Personalization State
   const [personalization, setPersonalization] = useState(() => {
@@ -206,6 +225,56 @@ export default function ProfileView({ onNavigateToNav }) {
   useEffect(() => {
     loadProfile();
   }, [user?.id, user?.role]);
+
+  // Load user email preferences from PostgreSQL
+  const loadEmailPreferences = useCallback(async () => {
+    setIsLoadingEmailPrefs(true);
+    try {
+      const res = await fetchEmailPreferences();
+      if (res && res.data) {
+        setEmailPrefs({
+          accountSecurity: res.data.accountSecurity !== false,
+          submissionUpdates: res.data.submissionUpdates !== false,
+          gamificationUpdates: res.data.gamificationUpdates !== false,
+          announcements: res.data.announcements !== false
+        });
+      }
+    } catch (err) {
+      console.warn('[ProfileView] Could not load email preferences:', err.message);
+    } finally {
+      setIsLoadingEmailPrefs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEmailPreferences();
+  }, [loadEmailPreferences]);
+
+  const handleTogglePref = (key) => {
+    setEmailPrefs(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handleSaveEmailPreferences = async (e) => {
+    if (e) e.preventDefault();
+    setIsSavingEmailPrefs(true);
+    setEmailPrefsSuccessMsg(null);
+    setEmailPrefsErrorMsg(null);
+    try {
+      const res = await updateEmailPreferences(emailPrefs);
+      if (res && res.success) {
+        setEmailPrefsSuccessMsg('Email notification preferences saved successfully.');
+        showToast('✉️ Email preferences updated successfully!');
+        setTimeout(() => setEmailPrefsSuccessMsg(null), 4000);
+      }
+    } catch (err) {
+      setEmailPrefsErrorMsg(err.message || 'Failed to update email preferences.');
+    } finally {
+      setIsSavingEmailPrefs(false);
+    }
+  };
 
   // Apply theme accent to CSS root variables
   const applyThemeAccent = (themeObj) => {
@@ -920,6 +989,14 @@ export default function ProfileView({ onNavigateToNav }) {
           onClick={() => setActiveTab('personalization')}
         >
           <span>🎨</span> Preferences &amp; Personalization
+        </button>
+
+        <button
+          type="button"
+          className={`profile-tab-pill ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notifications')}
+        >
+          <span>✉️</span> Email Preferences
         </button>
 
         <button
@@ -1885,6 +1962,293 @@ export default function ProfileView({ onNavigateToNav }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Audit Stream:</span>
                 <span style={{ color: '#fbbf24', fontWeight: 600 }}>Immutable DB Persistence</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 6b. TAB 4: User Email Notification Preferences ── */}
+      {activeTab === 'notifications' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+          {/* Main Controls Card */}
+          <div className="settings-section-card">
+            <div className="settings-section-header">
+              <div className="settings-section-title">
+                <span style={{ fontSize: '1.35rem' }}>✉️</span>
+                <div>
+                  <h3>Email Notification Preferences</h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Customize which optional automated emails are sent to <strong style={{ color: 'var(--primary-light)' }}>{profileData?.email || user?.email}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Success & Error Banners */}
+            {emailPrefsSuccessMsg && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  marginBottom: '1.25rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#34d399',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <span>✅</span> {emailPrefsSuccessMsg}
+              </div>
+            )}
+
+            {emailPrefsErrorMsg && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  marginBottom: '1.25rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <span>⚠️</span> {emailPrefsErrorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEmailPreferences}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                {/* 1. Account & Security */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={emailPrefs.accountSecurity}
+                    onChange={() => handleTogglePref('accountSecurity')}
+                    style={{ marginTop: '0.2rem', width: '1.15rem', height: '1.15rem', accentColor: 'var(--primary)' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Account &amp; Security Alerts
+                      </strong>
+                      <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', fontWeight: 600 }}>
+                        Security
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Receive email alerts whenever a new sign-in or login session is established from a new browser, device, or IP address.
+                    </div>
+                  </div>
+                </label>
+
+                {/* 2. Submission Updates */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={emailPrefs.submissionUpdates}
+                    onChange={() => handleTogglePref('submissionUpdates')}
+                    style={{ marginTop: '0.2rem', width: '1.15rem', height: '1.15rem', accentColor: 'var(--primary)' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Submission Updates
+                      </strong>
+                      <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontWeight: 600 }}>
+                        Verifications
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Receive transactional emails when your activity evidence is received, approved (+XP), rejected with moderator feedback, or requires additional clarification.
+                    </div>
+                  </div>
+                </label>
+
+                {/* 3. Gamification Updates */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={emailPrefs.gamificationUpdates}
+                    onChange={() => handleTogglePref('gamificationUpdates')}
+                    style={{ marginTop: '0.2rem', width: '1.15rem', height: '1.15rem', accentColor: 'var(--primary)' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Gamification Updates
+                      </strong>
+                      <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', fontWeight: 600 }}>
+                        XP &amp; Badges
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Receive celebratory emails when verified institutional XP is awarded and when your account unlocks a higher Level tier.
+                    </div>
+                  </div>
+                </label>
+
+                {/* 4. Announcements */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={emailPrefs.announcements}
+                    onChange={() => handleTogglePref('announcements')}
+                    style={{ marginTop: '0.2rem', width: '1.15rem', height: '1.15rem', accentColor: 'var(--primary)' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--text-highlight)' }}>
+                        Platform Announcements
+                      </strong>
+                      <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '12px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', fontWeight: 600 }}>
+                        Campaigns
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Receive university social campaigns, high-multiplier bonus announcements, and portal feature updates.
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isSavingEmailPrefs || isLoadingEmailPrefs}
+                  style={{ padding: '0.65rem 1.6rem', fontSize: '0.88rem' }}
+                >
+                  {isSavingEmailPrefs ? 'Saving Preferences…' : 'Save Email Preferences'}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Right Column: Policy & Security Integrity */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Mandatory Emails Policy Card */}
+            <div className="settings-section-card">
+              <div className="settings-section-header">
+                <div className="settings-section-title">
+                  <span style={{ fontSize: '1.35rem' }}>🔒</span>
+                  <div>
+                    <h3>Security-Critical Emails</h3>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Non-disablable system security safeguards
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                <p style={{ margin: '0 0 0.85rem 0' }}>
+                  To guarantee absolute account integrity, the following security-critical notifications are <strong>permanently active</strong> and cannot be disabled:
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-highlight)' }}>
+                    <span style={{ color: '#10b981' }}>✔</span> Password Reset &amp; Recovery Token emails
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-highlight)' }}>
+                    <span style={{ color: '#10b981' }}>✔</span> Password Changed confirmation alerts
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-highlight)' }}>
+                    <span style={{ color: '#10b981' }}>✔</span> Account Email Address update notices (old &amp; new addresses)
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-highlight)' }}>
+                    <span style={{ color: '#10b981' }}>✔</span> Administrative account deactivation or policy notices
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Architecture Card */}
+            <div className="settings-section-card">
+              <div className="settings-section-header">
+                <div className="settings-section-title">
+                  <span style={{ fontSize: '1.35rem' }}>⚙️</span>
+                  <div>
+                    <h3>Email Architecture &amp; Delivery</h3>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      PostgreSQL Persistence &amp; Google SMTP Engine
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Persistence Engine:</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 600 }}>PostgreSQL (email_preferences)</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Transactional Transporter:</span>
+                  <span style={{ color: '#34d399', fontWeight: 600 }}>Google App Password SMTP</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Notification Sync:</span>
+                  <span style={{ color: '#a855f7', fontWeight: 600 }}>Dual Dispatch (In-App + Email)</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Retry Deduplication:</span>
+                  <span style={{ color: '#fbbf24', fontWeight: 600 }}>Active (0 Duplicate Emails)</span>
+                </div>
               </div>
             </div>
           </div>

@@ -17,6 +17,7 @@ const createEmailLog = async (data) => {
           template: data.template || 'GENERAL',
           status: data.status || 'PENDING',
           messageId: data.messageId || null,
+          entityId: data.entityId || null,
           error: data.error || null,
           sentAt: data.sentAt || null,
         }
@@ -33,6 +34,7 @@ const createEmailLog = async (data) => {
     template: data.template || 'GENERAL',
     status: data.status || 'PENDING',
     messageId: data.messageId || null,
+    entityId: data.entityId || null,
     error: data.error || null,
     sentAt: data.sentAt || null,
     createdAt: new Date()
@@ -53,6 +55,7 @@ const updateEmailLog = async (id, data) => {
         data: {
           status: data.status,
           messageId: data.messageId !== undefined ? data.messageId : undefined,
+          entityId: data.entityId !== undefined ? data.entityId : undefined,
           error: data.error !== undefined ? data.error : undefined,
           sentAt: data.sentAt !== undefined ? data.sentAt : undefined
         }
@@ -110,7 +113,8 @@ const getEmailLogs = async ({
           { recipient: { contains: q, mode: 'insensitive' } },
           { subject: { contains: q, mode: 'insensitive' } },
           { template: { contains: q, mode: 'insensitive' } },
-          { messageId: { contains: q, mode: 'insensitive' } }
+          { messageId: { contains: q, mode: 'insensitive' } },
+          { entityId: { contains: q, mode: 'insensitive' } }
         ];
       }
 
@@ -173,7 +177,8 @@ const getEmailLogs = async ({
       (l.recipient && l.recipient.toLowerCase().includes(q)) ||
       (l.subject && l.subject.toLowerCase().includes(q)) ||
       (l.template && l.template.toLowerCase().includes(q)) ||
-      (l.messageId && l.messageId.toLowerCase().includes(q))
+      (l.messageId && l.messageId.toLowerCase().includes(q)) ||
+      (l.entityId && l.entityId.toLowerCase().includes(q))
     );
   }
 
@@ -211,6 +216,45 @@ const getEmailLogs = async ({
 };
 
 /**
+ * Checks whether an email for this recipient and template/entity has already been sent or is pending
+ * Used to prevent duplicate emails when APIs or actions are retried.
+ */
+const hasSentEmail = async ({ recipient, template, entityId, subjectContains }) => {
+  const normRecipient = (recipient || '').trim().toLowerCase();
+  const dbStatus = await checkDatabaseConnection();
+  if (dbStatus.isConnected && prisma?.emailLog) {
+    try {
+      const where = {
+        recipient: { equals: normRecipient, mode: 'insensitive' },
+        status: { in: ['SENT', 'PENDING'] }
+      };
+      if (template) {
+        where.template = template;
+      }
+      if (entityId) {
+        where.entityId = entityId;
+      }
+      if (subjectContains) {
+        where.subject = { contains: subjectContains, mode: 'insensitive' };
+      }
+      const existing = await prisma.emailLog.findFirst({ where });
+      return Boolean(existing);
+    } catch (err) {
+      console.warn('[EmailLogRepo] hasSentEmail query failed:', err.message);
+    }
+  }
+
+  // Memory fallback
+  return inMemoryEmailLogs.some(l => 
+    l.recipient && l.recipient.toLowerCase() === normRecipient &&
+    (l.status === 'SENT' || l.status === 'PENDING') &&
+    (!template || l.template === template) &&
+    (!entityId || l.entityId === entityId) &&
+    (!subjectContains || (l.subject && l.subject.toLowerCase().includes(subjectContains.toLowerCase())))
+  );
+};
+
+/**
  * Get distinct email templates used
  */
 const getDistinctTemplates = async () => {
@@ -235,6 +279,7 @@ module.exports = {
   createEmailLog,
   updateEmailLog,
   getEmailLogs,
+  hasSentEmail,
   getDistinctTemplates,
   inMemoryEmailLogs
 };

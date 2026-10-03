@@ -90,6 +90,7 @@ model User {
   internalNotes     ReviewNote[]     @relation("AdminNotes")
   clarifications    ClarificationRequest[] @relation("AdminClarifications")
   pointTransactions PointTransaction[] @relation("UserPointTransactions")
+  emailPreference   EmailPreference?
 
   @@index([email])
   @@index([role])
@@ -336,6 +337,7 @@ model EmailLog {
   template  String
   status    EmailStatus @default(PENDING)
   messageId String?
+  entityId  String?
   error     String?     @db.Text
   sentAt    DateTime?
   createdAt DateTime    @default(now())
@@ -343,6 +345,7 @@ model EmailLog {
   @@index([recipient])
   @@index([status])
   @@index([template])
+  @@index([entityId])
   @@index([createdAt(sort: Desc)])
   @@map("email_logs")
 }
@@ -359,5 +362,21 @@ model PasswordResetToken {
   @@index([userId])
   @@index([tokenHash])
   @@map("password_reset_tokens")
+}
+
+/// User Email Notification Preferences stored in PostgreSQL
+model EmailPreference {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  accountSecurity     Boolean  @default(true)
+  submissionUpdates   Boolean  @default(true)
+  gamificationUpdates Boolean  @default(true)
+  announcements       Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_preferences")
 }
 

@@ -77,7 +77,7 @@ async function runSubmissionXPAwardingTests() {
 
     testCreator = await prisma.user.findUnique({ where: { email: 'user@portal.com' } });
     assert(testCreator, 'Normal creator user must exist');
-    officialAccount = await prisma.socialAccount.findFirst({ where: { isActive: true } });
+    officialAccount = await prisma.socialAccount.findFirst({ where: { isActive: true, platform: 'INSTAGRAM' } }) || await prisma.socialAccount.findFirst({ where: { isActive: true } });
     assert(officialAccount, 'Active official social account must exist');
     console.log(`✓ Creator: ${testCreator.name} (${testCreator.id}), Social Account: ${officialAccount.platform} (${officialAccount.handle})`);
 

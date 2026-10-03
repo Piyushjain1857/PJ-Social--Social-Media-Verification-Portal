@@ -11,7 +11,8 @@ const {
   getUserGamificationProfile
 } = require('../services/levelService');
 
-const API_BASE = 'http://localhost:5001/api';
+const API_PORT = process.env.PORT || 5002;
+const API_BASE = process.env.API_BASE || `http://localhost:${API_PORT}/api`;
 
 async function authenticate(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {

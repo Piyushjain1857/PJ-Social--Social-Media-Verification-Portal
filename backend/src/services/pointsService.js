@@ -246,6 +246,35 @@ const awardPoints = async ({
     // Non-fatal
   }
 
+  // Transactional Email notification (non-blocking)
+  findUserById(userId).then(targetUser => {
+    if (targetUser && targetUser.email) {
+      sendXPNotificationEmail(targetUser, {
+        xp: points,
+        actionType,
+        reason: desc,
+        totalXP: result.totalPoints,
+        currentLevel: newLevel.level,
+        transactionId: result.transaction?.id,
+        submissionId
+      }).catch(err => {
+        console.warn('[PointsService] XP earned email skipped:', err.message);
+      });
+
+      if (leveledUp) {
+        sendLevelUpEmail(targetUser, {
+          previousLevel: previousLevel.level,
+          newLevel: newLevel.level,
+          levelName: newLevel.name,
+          totalXP: result.totalPoints,
+          icon: newLevel.badge
+        }).catch(err => {
+          console.warn('[PointsService] Level-up email skipped:', err.message);
+        });
+      }
+    }
+  }).catch(() => null);
+
   return {
     awarded: true,
     alreadyAwarded: false,

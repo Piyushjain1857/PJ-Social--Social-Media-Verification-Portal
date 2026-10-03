@@ -3,6 +3,7 @@ const { calculateUserLevel } = require('./levelService');
 const {
   sendSubmissionApprovedEmail,
   sendSubmissionRejectedEmail,
+  sendXPEarnedEmail,
   sendLevelUpEmail
 } = require('./emailService');
 
@@ -451,12 +452,35 @@ const processSubmissionVerdict = async ({
       const recipientUser = result.submission.user;
       if (recipientUser && recipientUser.email) {
         if (result.submission.status === 'APPROVED') {
+          // 1. Send submission approved email
           sendSubmissionApprovedEmail(recipientUser, result.submission, result.pointsAwarded).catch(err => {
             console.warn('[SubmissionApproval] Approval email notification skipped:', err.message);
           });
 
+          // 2. Send XP earned email after XP transaction succeeds
+          if (result.pointsAwarded?.awarded && result.pointsAwarded.xp > 0) {
+            sendXPEarnedEmail(recipientUser, {
+              xp: result.pointsAwarded.xp,
+              reason: `Approved ${result.submission.platform} ${result.submission.actionType}`,
+              totalXP: result.pointsAwarded.totalXP,
+              currentLevel: result.pointsAwarded.level?.currentLevel,
+              submissionId: result.submission.id,
+              transactionId: result.pointsAwarded.transaction?.id
+            }).catch(err => {
+              console.warn('[SubmissionApproval] XP earned email notification skipped:', err.message);
+            });
+          }
+
+          // 3. Send level-up email if user reached a higher tier
           if (result.pointsAwarded?.leveledUp && result.pointsAwarded?.level) {
-            sendLevelUpEmail(recipientUser, result.pointsAwarded.level).catch(err => {
+            sendLevelUpEmail(recipientUser, {
+              previousLevel: result.pointsAwarded.level?.currentLevel ? Math.max(1, result.pointsAwarded.level.currentLevel - 1) : 1,
+              newLevel: result.pointsAwarded.level?.currentLevel,
+              currentLevel: result.pointsAwarded.level?.currentLevel,
+              levelName: result.pointsAwarded.level?.levelName,
+              totalXP: result.pointsAwarded.totalXP,
+              icon: result.pointsAwarded.level?.icon
+            }).catch(err => {
               console.warn('[SubmissionApproval] Level-up email notification skipped:', err.message);
             });
           }

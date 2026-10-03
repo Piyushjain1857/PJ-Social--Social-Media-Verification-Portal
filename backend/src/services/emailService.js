@@ -8,7 +8,8 @@
  */
 
 const nodemailer = require('nodemailer');
-const { createEmailLog, updateEmailLog } = require('../repositories/emailLogRepository');
+const { createEmailLog, updateEmailLog, hasSentEmail } = require('../repositories/emailLogRepository');
+const { getUserEmailPreferences } = require('../repositories/emailPreferenceRepository');
 const {
   PORTAL_NAME,
   getAccountCreatedTemplate,
@@ -19,9 +20,11 @@ const {
   getEmailChangedNewAddressTemplate,
   getAccountDeactivatedTemplate,
   getAccountReactivatedTemplate,
+  getSubmissionReceivedTemplate,
   getSubmissionApprovedTemplate,
   getSubmissionRejectedTemplate,
   getClarificationTemplate,
+  getXPEarnedTemplate,
   getXPNotificationTemplate,
   getLevelUpTemplate,
   getTestEmailTemplate
@@ -72,6 +75,11 @@ const getTransporterConfig = () => {
     host,
     port,
     secure: isSecure,
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
+    rateDelta: 1000,
+    rateLimit: 5
   };
 
   if (user && pass && pass.trim().length > 0 && !pass.includes('your_gmail')) {
@@ -123,7 +131,8 @@ const sendEmail = async ({
   subject,
   html,
   text,
-  templateName = 'CUSTOM'
+  templateName = 'CUSTOM',
+  entityId = null
 }) => {
   const recipient = (to || '').trim().toLowerCase();
 
@@ -138,6 +147,7 @@ const sendEmail = async ({
       subject: subject || '(No Subject)',
       template: templateName,
       status: 'FAILED',
+      entityId,
       error: errorMsg,
       sentAt: null
     }).catch(() => null);
@@ -158,6 +168,7 @@ const sendEmail = async ({
       subject,
       template: templateName,
       status: 'PENDING',
+      entityId,
       sentAt: null
     });
   } catch (logErr) {
@@ -426,118 +437,342 @@ const sendAccountReactivatedEmail = async (user, options = {}) => {
 };
 
 /**
- * 5. Submission Approved Email
+ * 5a. Submission Received Email (Optional notification)
+ * Triggers when user submits an activity.
+ * Subject: "Your submission has been received."
+ * Includes: Submission ID, Platform, Action, Submission date, Current status
  */
-const sendSubmissionApprovedEmail = async (user, submission, pointsAwarded = {}) => {
+const sendSubmissionReceivedEmail = async (user, submission) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
-  const html = getSubmissionApprovedTemplate({
+  if (!submission) return { success: false, error: 'Submission object is required' };
+
+  // 1. Check user email preferences
+  if (user.id) {
+    try {
+      const prefs = await getUserEmailPreferences(user.id);
+      if (prefs.submissionUpdates === false) {
+        console.log(`[EmailService] Submission received email skipped for user ${user.id} (submissionUpdates disabled).`);
+        return { success: true, skipped: true, reason: 'PREFERENCE_DISABLED' };
+      }
+    } catch (e) {
+      // Non-fatal preference check error
+    }
+  }
+
+  // 2. Prevent duplicate emails on retry
+  const alreadySent = await hasSentEmail({
+    recipient: user.email,
+    template: 'SUBMISSION_RECEIVED',
+    entityId: submission.id
+  });
+  if (alreadySent) {
+    console.log(`[EmailService] Duplicate submission received email prevented for submission ${submission.id}`);
+    return { success: true, duplicatePrevented: true };
+  }
+
+  const html = getSubmissionReceivedTemplate({
     name: user.name,
-    submissionId: submission?.id,
-    platform: submission?.platform || 'INSTAGRAM',
-    actionType: submission?.actionType || 'LIKE',
-    xpAwarded: pointsAwarded.xp || pointsAwarded.points || 0,
-    totalXP: pointsAwarded.totalXP || user.totalXP || 0,
-    levelName: pointsAwarded.level?.levelName || pointsAwarded.level?.name || 'Verified Creator'
+    submissionId: submission.id,
+    platform: submission.platform || 'INSTAGRAM',
+    actionType: submission.actionType || 'LIKE',
+    submissionDate: submission.createdAt || new Date(),
+    status: submission.status || 'PENDING'
   });
 
   return sendEmail({
     to: user.email,
-    subject: `🎉 Submission Approved! +${pointsAwarded.xp || pointsAwarded.points || 0} XP Earned - ${PORTAL_NAME}`,
+    subject: 'Your submission has been received.',
     html,
-    templateName: 'SUBMISSION_APPROVED'
+    templateName: 'SUBMISSION_RECEIVED',
+    entityId: submission.id
+  });
+};
+
+/**
+ * 5b. Submission Approved Email
+ * Triggers when Admin approves a submission.
+ * Subject: "Your submission has been approved! 🎉"
+ * Includes: Platform, Action, Submission ID, Approval date, XP earned, Current Level, [View Dashboard]
+ * Strictly truthful verification without claiming beyond admin review.
+ */
+const sendSubmissionApprovedEmail = async (user, submission, pointsAwarded = {}) => {
+  if (!user || !user.email) return { success: false, error: 'User email is required' };
+  if (!submission) return { success: false, error: 'Submission is required' };
+
+  // 1. Check user email preferences
+  if (user.id) {
+    try {
+      const prefs = await getUserEmailPreferences(user.id);
+      if (prefs.submissionUpdates === false) {
+        console.log(`[EmailService] Submission approved email skipped for user ${user.id} (submissionUpdates disabled).`);
+        return { success: true, skipped: true, reason: 'PREFERENCE_DISABLED' };
+      }
+    } catch (e) {
+      // Non-fatal
+    }
+  }
+
+  // 2. Prevent duplicate emails on retry
+  const alreadySent = await hasSentEmail({
+    recipient: user.email,
+    template: 'SUBMISSION_APPROVED',
+    entityId: submission.id
+  });
+  if (alreadySent) {
+    console.log(`[EmailService] Duplicate submission approved email prevented for submission ${submission.id}`);
+    return { success: true, duplicatePrevented: true };
+  }
+
+  const xpEarned = pointsAwarded.xp ?? pointsAwarded.points ?? 0;
+  const currentLevel = pointsAwarded.level?.currentLevel ?? pointsAwarded.level?.level ?? user.level ?? 1;
+  const levelName = pointsAwarded.level?.levelName ?? pointsAwarded.level?.name ?? 'Verified Creator';
+
+  const html = getSubmissionApprovedTemplate({
+    name: user.name,
+    submissionId: submission.id,
+    platform: submission.platform || 'INSTAGRAM',
+    actionType: submission.actionType || 'LIKE',
+    xpAwarded: xpEarned,
+    approvalDate: new Date(),
+    currentLevel,
+    levelName
+  });
+
+  return sendEmail({
+    to: user.email,
+    subject: 'Your submission has been approved! 🎉',
+    html,
+    templateName: 'SUBMISSION_APPROVED',
+    entityId: submission.id
   });
 };
 
 /**
  * 6. Submission Rejected Email
+ * Triggers when Admin rejects a submission.
+ * Subject: "Your submission was rejected."
+ * Includes: Submission ID, Platform, Action, Reason if the admin provided one, Date.
+ * NEVER exposes internal admin notes.
  */
 const sendSubmissionRejectedEmail = async (user, submission, reason = '') => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
+  if (!submission) return { success: false, error: 'Submission is required' };
+
+  // 1. Check user email preferences
+  if (user.id) {
+    try {
+      const prefs = await getUserEmailPreferences(user.id);
+      if (prefs.submissionUpdates === false) {
+        console.log(`[EmailService] Submission rejected email skipped for user ${user.id} (submissionUpdates disabled).`);
+        return { success: true, skipped: true, reason: 'PREFERENCE_DISABLED' };
+      }
+    } catch (e) {
+      // Non-fatal
+    }
+  }
+
+  // 2. Prevent duplicate emails on retry
+  const alreadySent = await hasSentEmail({
+    recipient: user.email,
+    template: 'SUBMISSION_REJECTED',
+    entityId: submission.id
+  });
+  if (alreadySent) {
+    console.log(`[EmailService] Duplicate submission rejected email prevented for submission ${submission.id}`);
+    return { success: true, duplicatePrevented: true };
+  }
+
   const html = getSubmissionRejectedTemplate({
     name: user.name,
-    submissionId: submission?.id,
-    platform: submission?.platform || 'INSTAGRAM',
-    actionType: submission?.actionType || 'LIKE',
-    reason: reason || 'Activity proof did not meet verification guidelines.'
+    submissionId: submission.id,
+    platform: submission.platform || 'INSTAGRAM',
+    actionType: submission.actionType || 'LIKE',
+    reason: (typeof reason === 'string' ? reason.trim() : '') || '',
+    date: new Date()
   });
 
   return sendEmail({
     to: user.email,
-    subject: `Submission Review Update - Action Required - ${PORTAL_NAME}`,
+    subject: 'Your submission was rejected.',
     html,
-    templateName: 'SUBMISSION_REJECTED'
+    templateName: 'SUBMISSION_REJECTED',
+    entityId: submission.id
   });
 };
 
 /**
  * 7. Clarification Request Email
+ * Triggers when Admin requests clarification on a submission.
+ * Subject: "Additional information is required."
+ * Includes: Submission ID, What information is needed, Button: View Submission
  */
 const sendClarificationEmail = async (user, submission, clarification = {}) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
-  const message = typeof clarification === 'string' ? clarification : clarification.message;
+  if (!submission) return { success: false, error: 'Submission is required' };
+
+  // 1. Check user email preferences
+  if (user.id) {
+    try {
+      const prefs = await getUserEmailPreferences(user.id);
+      if (prefs.submissionUpdates === false) {
+        console.log(`[EmailService] Clarification email skipped for user ${user.id} (submissionUpdates disabled).`);
+        return { success: true, skipped: true, reason: 'PREFERENCE_DISABLED' };
+      }
+    } catch (e) {
+      // Non-fatal
+    }
+  }
+
+  const message = typeof clarification === 'string' ? clarification : (clarification.message || '');
   const reviewerName = clarification.reviewerName || 'Moderation Team';
+  const clarificationKey = clarification.id ? `${submission.id}-${clarification.id}` : submission.id;
+
+  // 2. Prevent duplicate emails on retry
+  const alreadySent = await hasSentEmail({
+    recipient: user.email,
+    template: 'CLARIFICATION_REQUEST',
+    entityId: clarificationKey
+  });
+  if (alreadySent) {
+    console.log(`[EmailService] Duplicate clarification email prevented for submission ${submission.id}`);
+    return { success: true, duplicatePrevented: true };
+  }
 
   const html = getClarificationTemplate({
     name: user.name,
-    submissionId: submission?.id,
-    platform: submission?.platform || 'INSTAGRAM',
-    actionType: submission?.actionType || 'LIKE',
+    submissionId: submission.id,
+    platform: submission.platform || 'INSTAGRAM',
+    actionType: submission.actionType || 'LIKE',
     message,
     reviewerName
   });
 
   return sendEmail({
     to: user.email,
-    subject: `Clarification Requested for Your Submission - ${PORTAL_NAME}`,
+    subject: 'Additional information is required.',
     html,
-    templateName: 'CLARIFICATION_REQUEST'
+    templateName: 'CLARIFICATION_REQUEST',
+    entityId: clarificationKey
   });
 };
 
 /**
- * 8. XP Notification Email
+ * 8. XP Earned Email
+ * Triggers when XP is successfully awarded.
+ * Only send this after the XP transaction succeeds.
+ * Subject: "⚡ You earned XP!"
+ * Includes: +XP, Reason, Total XP, Current Level
  */
-const sendXPNotificationEmail = async (user, xpDetails = {}) => {
+const sendXPEarnedEmail = async (user, xpDetails = {}) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
-  const html = getXPNotificationTemplate({
+
+  // 1. Check user email preferences
+  if (user.id) {
+    try {
+      const prefs = await getUserEmailPreferences(user.id);
+      if (prefs.gamificationUpdates === false) {
+        console.log(`[EmailService] XP earned email skipped for user ${user.id} (gamificationUpdates disabled).`);
+        return { success: true, skipped: true, reason: 'PREFERENCE_DISABLED' };
+      }
+    } catch (e) {
+      // Non-fatal
+    }
+  }
+
+  const xpAmount = xpDetails.xp ?? xpDetails.points ?? 0;
+  const totalXP = xpDetails.totalXP ?? xpDetails.newTotalXP ?? user.totalXP ?? 0;
+  const currentLevel = xpDetails.currentLevel ?? xpDetails.level?.currentLevel ?? user.level ?? 1;
+  const reason = xpDetails.reason || (xpDetails.actionType ? `Approved ${xpDetails.actionType}` : 'Verified Activity');
+  const entityId = xpDetails.transactionId || xpDetails.submissionId || `${user.id}-${totalXP}`;
+
+  // 2. Prevent duplicate emails on retry
+  if (entityId) {
+    const alreadySent = await hasSentEmail({
+      recipient: user.email,
+      template: 'XP_EARNED',
+      entityId: String(entityId)
+    });
+    if (alreadySent) {
+      console.log(`[EmailService] Duplicate XP earned email prevented for entity ${entityId}`);
+      return { success: true, duplicatePrevented: true };
+    }
+  }
+
+  const html = getXPEarnedTemplate({
     name: user.name,
-    xpAmount: xpDetails.xp || xpDetails.points || 0,
-    actionType: xpDetails.actionType || 'BONUS',
-    reason: xpDetails.reason || 'Activity verified',
-    newTotalXP: xpDetails.newTotalXP || xpDetails.totalPoints || user.totalXP || 0
+    xpAmount,
+    reason,
+    totalXP,
+    currentLevel
   });
 
   return sendEmail({
     to: user.email,
-    subject: `XP Balance Update: ${xpDetails.xp >= 0 ? '+' : ''}${xpDetails.xp || 0} XP - ${PORTAL_NAME}`,
+    subject: '⚡ You earned XP!',
     html,
-    templateName: 'XP_AWARDED'
+    templateName: 'XP_EARNED',
+    entityId: String(entityId)
   });
 };
+
+const sendXPNotificationEmail = sendXPEarnedEmail;
 
 /**
  * 9. Level Up Email
+ * Triggers when user's level changes.
+ * Subject: "🏆 LEVEL UP!"
+ * Includes: Previous Level, New Level, Level Name, Current XP
+ * Prevents duplicate level-up emails!
  */
 const sendLevelUpEmail = async (user, levelDetails = {}) => {
   if (!user || !user.email) return { success: false, error: 'User email is required' };
-  const newLevel = levelDetails.currentLevel || levelDetails.level || 2;
-  const levelName = levelDetails.levelName || levelDetails.name || 'Active Creator';
-  const icon = levelDetails.icon || levelDetails.badge || '⚡';
-  const totalXP = levelDetails.totalXP || user.totalXP || 0;
+
+  // 1. Check user email preferences
+  if (user.id) {
+    try {
+      const prefs = await getUserEmailPreferences(user.id);
+      if (prefs.gamificationUpdates === false) {
+        console.log(`[EmailService] Level up email skipped for user ${user.id} (gamificationUpdates disabled).`);
+        return { success: true, skipped: true, reason: 'PREFERENCE_DISABLED' };
+      }
+    } catch (e) {
+      // Non-fatal
+    }
+  }
+
+  const previousLevel = levelDetails.previousLevel ?? (levelDetails.currentLevel ? Math.max(1, levelDetails.currentLevel - 1) : 1);
+  const newLevel = levelDetails.newLevel ?? levelDetails.currentLevel ?? levelDetails.level ?? 2;
+  const levelName = levelDetails.levelName ?? levelDetails.name ?? 'Active Creator';
+  const totalXP = levelDetails.totalXP ?? levelDetails.currentXP ?? user.totalXP ?? 0;
+  const icon = levelDetails.icon ?? levelDetails.badge ?? '🏆';
+
+  // 2. Deduplication: strictly prevent duplicate level-up emails for this user & level
+  const entityId = `${user.id}-level-${newLevel}`;
+  const alreadySent = await hasSentEmail({
+    recipient: user.email,
+    template: 'LEVEL_UP',
+    entityId
+  });
+  if (alreadySent) {
+    console.log(`[EmailService] Duplicate level-up email prevented for user ${user.email} (Level ${newLevel})`);
+    return { success: true, duplicatePrevented: true };
+  }
 
   const html = getLevelUpTemplate({
     name: user.name,
+    previousLevel,
     newLevel,
     levelName,
-    icon,
-    totalXP
+    totalXP,
+    icon
   });
 
   return sendEmail({
     to: user.email,
-    subject: `🏆 Congratulations! You Leveled Up to Level ${newLevel} (${levelName})!`,
+    subject: '🏆 LEVEL UP!',
     html,
-    templateName: 'LEVEL_UP'
+    templateName: 'LEVEL_UP',
+    entityId
   });
 };
 
@@ -596,9 +831,11 @@ module.exports = {
   sendEmailChangedNotification,
   sendAccountDeactivatedEmail,
   sendAccountReactivatedEmail,
+  sendSubmissionReceivedEmail,
   sendSubmissionApprovedEmail,
   sendSubmissionRejectedEmail,
   sendClarificationEmail,
+  sendXPEarnedEmail,
   sendXPNotificationEmail,
   sendLevelUpEmail,
   sendTestEmail,

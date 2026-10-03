@@ -184,6 +184,19 @@ export const changeUserEmail = async ({ newEmail, currentPassword }) => {
   });
 };
 
+export const fetchEmailPreferences = async () => {
+  return await apiFetch('/users/email-preferences', {
+    method: 'GET',
+  });
+};
+
+export const updateEmailPreferences = async (preferences) => {
+  return await apiFetch('/users/email-preferences', {
+    method: 'PUT',
+    body: JSON.stringify(preferences),
+  });
+};
+
 export const requestPasswordReset = async (email) => {
   return await apiFetch('/auth/forgot-password', {
     method: 'POST',

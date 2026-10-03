@@ -10,6 +10,10 @@ const {
   changeRole,
   getUserProfile
 } = require('../controllers/userController');
+const {
+  getMyEmailPreferences,
+  updateMyEmailPreferences
+} = require('../controllers/emailPreferenceController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorize, preventSuperAdminPrivilegeEscalation } = require('../middlewares/roleMiddleware');
 
@@ -21,6 +25,10 @@ router.get('/me', authenticate, getCurrentUserProfile);
 router.put('/me', authenticate, updateCurrentUserProfile);
 router.put('/change-password', authenticate, changeUserPassword);
 router.put('/change-email', authenticate, changeUserEmail);
+
+// User Email Notification Preferences
+router.get('/email-preferences', authenticate, getMyEmailPreferences);
+router.put('/email-preferences', authenticate, updateMyEmailPreferences);
 
 // Legacy profile endpoint for backward compatibility
 router.get('/profile', authenticate, getUserProfile);

@@ -462,40 +462,38 @@ const getAccountReactivatedTemplate = ({
 /**
  * 5. Submission Approved Template
  */
-const getSubmissionApprovedTemplate = ({
+/**
+ * 5a. Submission Received Template (Optional email when user submits activity)
+ */
+const getSubmissionReceivedTemplate = ({
   name,
   submissionId,
   platform = 'INSTAGRAM',
   actionType = 'LIKE',
-  xpAwarded = 0,
-  totalXP = 0,
-  levelName = 'Active',
+  status = 'PENDING',
+  submissionDate = new Date(),
   portalUrl = PORTAL_URL
 }) => {
+  const formattedDate = submissionDate ? new Date(submissionDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : new Date().toLocaleDateString('en-US');
+
   const content = `
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #334155;">Hi <strong>${name || 'Creator'}</strong>,</p>
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
-      🎉 Submission Approved!
+      Your submission has been received.
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Great job, <strong>${name || 'Creator'}</strong>! Your social media engagement proof has been reviewed and <strong style="color: #16a34a;">APPROVED</strong> by our moderation team.
+      Thank you for submitting your social media activity proof. It has been placed in the moderator verification queue.
     </p>
 
-    <!-- Badge Card -->
-    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 10px; padding: 20px; margin: 22px 0; text-align: center;">
-      <div style="font-size: 13px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 1px;">
-        Verified Reward
-      </div>
-      <div style="font-size: 32px; font-weight: 800; color: #065f46; margin: 6px 0;">
-        +${xpAwarded} XP
-      </div>
-      <div style="font-size: 13px; color: #047857;">
-        Total Balance: <strong>${totalXP} XP</strong> &bull; Current Tier: <strong>${levelName}</strong>
-      </div>
-    </div>
-
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; padding: 14px 18px;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 18px 0; padding: 14px 18px;">
       <tr>
-        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 120px;"><strong>Submission ID:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Submission ID:</strong></td>
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-family: monospace;">${submissionId || 'N/A'}</td>
       </tr>
       <tr>
@@ -503,22 +501,113 @@ const getSubmissionApprovedTemplate = ({
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${platform}</td>
       </tr>
       <tr>
-        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Action Type:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Action:</strong></td>
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${actionType}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Submission Date:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${formattedDate}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Current Status:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #d97706; font-weight: 700;">${status || 'PENDING'} (In Review)</td>
       </tr>
     </table>
 
     <p style="margin: 0 0 12px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      Keep engaging with institutional campaigns to earn more XP and climb to the top of the leaderboard!
+      An administrator will inspect your evidence shortly. You will receive an update once the review is completed.
     </p>
   `;
 
   return baseLayout({
-    title: 'Submission Approved - PJ Social Portal',
+    title: 'Your submission has been received. - PJ Social Portal',
+    preheader: `Your ${platform} ${actionType} submission (${submissionId}) has been received.`,
+    content,
+    callToAction: {
+      text: 'View Submission',
+      url: `${portalUrl}`
+    }
+  });
+};
+
+/**
+ * 5b. Submission Approved Template
+ */
+const getSubmissionApprovedTemplate = ({
+  name,
+  submissionId,
+  platform = 'INSTAGRAM',
+  actionType = 'LIKE',
+  xpAwarded = 0,
+  approvalDate = new Date(),
+  currentLevel = 1,
+  levelName = 'Active',
+  portalUrl = PORTAL_URL
+}) => {
+  const formattedDate = approvalDate ? new Date(approvalDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : new Date().toLocaleDateString('en-US');
+
+  const content = `
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #334155;">Hi <strong>${name || 'Creator'}</strong>,</p>
+    <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
+      Your submission has been approved! 🎉
+    </h2>
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+      Your social media activity submission has been verified and approved by the moderation team.
+    </p>
+
+    <!-- Reward Badge -->
+    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+      <div style="font-size: 13px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 1px;">
+        ${platform} &bull; ${actionType}
+      </div>
+      <div style="font-size: 34px; font-weight: 900; color: #065f46; margin: 6px 0;">
+        +${xpAwarded} XP
+      </div>
+      <div style="font-size: 13px; color: #047857;">
+        Current Level: <strong>${currentLevel}</strong> ${levelName ? `(${levelName})` : ''}
+      </div>
+    </div>
+
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Submission ID:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-family: monospace;">${submissionId || 'N/A'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Platform:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${platform}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Action:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${actionType}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Approval Date:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${formattedDate}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>XP Earned:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #059669; font-weight: 700;">+${xpAwarded} XP</td>
+      </tr>
+    </table>
+
+    <div style="background-color: #f1f5f9; border-radius: 6px; padding: 10px 14px; margin: 14px 0; font-size: 12px; color: #64748b;">
+      ℹ️ <em>Verification is strictly approved for the verified activity proof evaluated by the administrator.</em>
+    </div>
+  `;
+
+  return baseLayout({
+    title: 'Your submission has been approved! 🎉 - PJ Social Portal',
     preheader: `Your ${platform} ${actionType} proof was approved (+${xpAwarded} XP awarded)!`,
     content,
     callToAction: {
-      text: 'View Your Leaderboard Rank',
+      text: 'View Dashboard',
       url: `${portalUrl}`
     }
   });
@@ -532,30 +621,40 @@ const getSubmissionRejectedTemplate = ({
   submissionId,
   platform = 'INSTAGRAM',
   actionType = 'LIKE',
-  reason = 'The submitted screenshot did not clearly demonstrate valid activity.',
+  reason,
+  date = new Date(),
   portalUrl = PORTAL_URL
 }) => {
+  const formattedDate = date ? new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : new Date().toLocaleDateString('en-US');
+
   const content = `
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #334155;">Hi <strong>${name || 'Creator'}</strong>,</p>
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
-      Submission Update: Action Required ⚠️
+      Your submission was rejected.
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${name || 'Creator'}</strong>, our moderation team has reviewed your submission for <strong>${platform} (${actionType})</strong>. Unfortunately, it could not be approved at this time.
+      Our moderation team has inspected your submission for <strong>${platform} (${actionType})</strong> and could not approve it.
     </p>
 
-    <!-- Feedback Notice Box -->
-    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 18px 20px; margin: 20px 0; border-radius: 4px;">
-      <div style="font-size: 13px; font-weight: 700; color: #991b1b; margin-bottom: 6px;">
-        Moderator Feedback / Reason:
+    ${reason ? `
+    <!-- Moderator Feedback Box (Exposes reason only, never internal notes) -->
+    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px 18px; margin: 18px 0; border-radius: 4px;">
+      <div style="font-size: 12px; font-weight: 700; color: #991b1b; text-transform: uppercase; margin-bottom: 4px;">
+        Reason provided by moderator:
       </div>
-      <div style="font-size: 14px; color: #7f1d1d; line-height: 1.6; font-style: italic;">
+      <div style="font-size: 14px; color: #7f1d1d; line-height: 1.5;">
         "${reason}"
       </div>
     </div>
+    ` : ''}
 
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; padding: 14px 18px;">
       <tr>
-        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 120px;"><strong>Submission ID:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Submission ID:</strong></td>
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-family: monospace;">${submissionId || 'N/A'}</td>
       </tr>
       <tr>
@@ -563,22 +662,26 @@ const getSubmissionRejectedTemplate = ({
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${platform}</td>
       </tr>
       <tr>
-        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Action Type:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Action:</strong></td>
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${actionType}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Date:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${formattedDate}</td>
       </tr>
     </table>
 
     <p style="margin: 0 0 12px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      You are welcome to re-submit with clear, uncropped proof following our verification guidelines.
+      You may review our guidelines and submit an updated activity verification proof at any time.
     </p>
   `;
 
   return baseLayout({
-    title: 'Submission Status Update - PJ Social Portal',
-    preheader: `Your ${platform} submission was not approved. Review moderator feedback.`,
+    title: 'Your submission was rejected. - PJ Social Portal',
+    preheader: `Your ${platform} submission (${submissionId}) was rejected.`,
     content,
     callToAction: {
-      text: 'Submit New Proof',
+      text: 'View Submission',
       url: `${portalUrl}`
     }
   });
@@ -597,136 +700,181 @@ const getClarificationTemplate = ({
   portalUrl = PORTAL_URL
 }) => {
   const content = `
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #334155;">Hi <strong>${name || 'Creator'}</strong>,</p>
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
-      Clarification Requested for Submission 💬
+      Additional information is required.
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${name || 'Creator'}</strong>, a moderator (<strong>${reviewerName}</strong>) has requested clarification regarding your <strong>${platform} (${actionType})</strong> verification submission.
+      An administrator reviewing your <strong>${platform} (${actionType})</strong> submission has requested additional information before a verification decision can be completed.
     </p>
 
-    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 18px 20px; margin: 20px 0; border-radius: 4px;">
-      <div style="font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 6px;">
-        Message from Reviewer:
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 140px;"><strong>Submission ID:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-family: monospace;">${submissionId || 'N/A'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Platform:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${platform}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Action:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${actionType}</td>
+      </tr>
+    </table>
+
+    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px 18px; margin: 18px 0; border-radius: 4px;">
+      <div style="font-size: 12px; font-weight: 700; color: #92400e; text-transform: uppercase; margin-bottom: 4px;">
+        What information is needed:
       </div>
-      <div style="font-size: 14px; color: #78350f; line-height: 1.6;">
+      <div style="font-size: 14px; color: #78350f; line-height: 1.5;">
         "${message || 'Please provide additional context or an updated screenshot for your activity.'}"
       </div>
     </div>
 
     <p style="margin: 0 0 12px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      Please open the portal to review this request and respond directly so our team can finalize your verification.
+      Please click below to open your submission and respond with the requested details:
     </p>
   `;
 
   return baseLayout({
-    title: 'Clarification Needed - PJ Social Portal',
-    preheader: `Moderator requested clarification on your ${platform} submission.`,
+    title: 'Additional information is required. - PJ Social Portal',
+    preheader: `Additional information is required for your ${platform} submission (${submissionId}).`,
     content,
     callToAction: {
-      text: 'Respond on Portal',
+      text: 'View Submission',
       url: `${portalUrl}`
     }
   });
 };
 
 /**
- * 8. XP Notification Template
+ * 8. XP Earned Template
  */
-const getXPNotificationTemplate = ({
+const getXPEarnedTemplate = ({
   name,
   xpAmount = 0,
-  actionType = 'BONUS',
-  reason = 'Institutional Engagement',
-  newTotalXP = 0,
+  reason = 'Approved Activity',
+  totalXP = 0,
+  currentLevel = 1,
   portalUrl = PORTAL_URL
 }) => {
   const isPositive = xpAmount >= 0;
   const content = `
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #334155;">Hi <strong>${name || 'Creator'}</strong>,</p>
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
-      XP Balance Update ✨
+      ⚡ You earned XP!
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${name || 'Creator'}</strong>, your verified gamification XP has been updated.
+      Your verified activity points have been successfully awarded to your account.
     </p>
 
-    <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: 1px solid #ddd6fe; border-radius: 10px; padding: 22px; margin: 20px 0; text-align: center;">
-      <div style="font-size: 13px; font-weight: 700; color: #6d28d9; text-transform: uppercase; letter-spacing: 1px;">
-        Activity Transaction
-      </div>
-      <div style="font-size: 32px; font-weight: 800; color: ${isPositive ? '#5b21b6' : '#991b1b'}; margin: 8px 0;">
+    <!-- Big XP Award Box -->
+    <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: 1px solid #ddd6fe; border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center;">
+      <div style="font-size: 38px; font-weight: 900; color: #5b21b6; margin: 4px 0;">
         ${isPositive ? `+${xpAmount}` : `${xpAmount}`} XP
       </div>
-      <div style="font-size: 14px; color: #6d28d9; font-weight: 600;">
-        Type: ${actionType} &bull; ${reason}
-      </div>
-      <div style="font-size: 13px; color: #7c3aed; margin-top: 6px;">
-        Current Balance: <strong>${newTotalXP} XP</strong>
+      <div style="font-size: 14px; color: #6d28d9; font-weight: 600; margin-top: 4px;">
+        Reason: <strong>${reason}</strong>
       </div>
     </div>
 
-    <p style="margin: 0 0 12px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      Check out your current standings and see how close you are to the next tier!
-    </p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>XP Awarded:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #5b21b6; font-weight: 700;">+${xpAmount} XP</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Reason:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${reason}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Total XP:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 700;">${totalXP.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Current Level:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #4338ca; font-weight: 700;">${currentLevel}</td>
+      </tr>
+    </table>
   `;
 
   return baseLayout({
-    title: 'XP Awarded - PJ Social Portal',
-    preheader: `You received ${isPositive ? '+' : ''}${xpAmount} XP on PJ Social Portal.`,
+    title: '⚡ You earned XP! - PJ Social Portal',
+    preheader: `You earned +${xpAmount} XP! Total XP: ${totalXP.toLocaleString()}`,
     content,
     callToAction: {
-      text: 'View Gamification Hub',
+      text: 'View Dashboard',
       url: `${portalUrl}`
     }
   });
 };
+
+const getXPNotificationTemplate = getXPEarnedTemplate;
 
 /**
  * 9. Level Up Template
  */
 const getLevelUpTemplate = ({
   name,
+  previousLevel = 1,
   newLevel = 2,
   levelName = 'Active',
-  icon = '⚡',
   totalXP = 0,
-  nextLevelXP = 250,
+  icon = '🏆',
   portalUrl = PORTAL_URL
 }) => {
   const content = `
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #334155;">Hi <strong>${name || 'Creator'}</strong>,</p>
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 22px; font-weight: 800; text-align: center;">
-      🏆 CONGRATULATIONS ON LEVELING UP! 🏆
+      🏆 LEVEL UP!
     </h2>
     <p style="margin: 0 0 20px 0; color: #334155; font-size: 15px; line-height: 1.6; text-align: center;">
-      Awesome milestone, <strong>${name || 'Creator'}</strong>! Your consistent verified activities have elevated your profile to a new tier!
+      Congratulations! Your verified engagement has unlocked a higher tier!
     </p>
 
     <!-- Level Celebration Banner -->
-    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%); border-radius: 12px; padding: 26px 20px; margin: 24px 0; text-align: center; box-shadow: 0 6px 18px rgba(245, 158, 11, 0.25);">
-      <div style="font-size: 48px; margin-bottom: 8px;">
-        ${icon || '👑'}
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%); border-radius: 12px; padding: 26px 20px; margin: 20px 0; text-align: center; box-shadow: 0 6px 18px rgba(245, 158, 11, 0.25);">
+      <div style="font-size: 44px; margin-bottom: 6px;">
+        ${icon || '🏆'}
       </div>
-      <div style="font-size: 13px; font-weight: 800; color: #78350f; text-transform: uppercase; letter-spacing: 2px;">
-        UNLOCKED NEW LEVEL
+      <div style="font-size: 24px; font-weight: 900; color: #451a03; margin: 6px 0;">
+        Level ${previousLevel} &rarr; Level ${newLevel}
       </div>
-      <div style="font-size: 30px; font-weight: 900; color: #451a03; margin: 6px 0;">
-        Level ${newLevel}: ${levelName}
+      <div style="font-size: 16px; font-weight: 800; color: #78350f; text-transform: uppercase; letter-spacing: 1px;">
+        ${levelName}
       </div>
-      <div style="font-size: 14px; font-weight: 700; color: #78350f;">
-        Total Verified XP: ${totalXP.toLocaleString()}
+      <div style="font-size: 14px; font-weight: 700; color: #78350f; margin-top: 8px;">
+        Current XP: ${totalXP.toLocaleString()}
       </div>
     </div>
 
-    <p style="margin: 0 0 14px 0; color: #334155; font-size: 14px; line-height: 1.6; text-align: center;">
-      Your badge is now proudly displayed on the global institutional leaderboard!
-    </p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Previous Level:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">Level ${previousLevel}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>New Level:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #4338ca; font-weight: 700;">Level ${newLevel}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Level Name:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${levelName}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Current XP:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 700;">${totalXP.toLocaleString()}</td>
+      </tr>
+    </table>
   `;
 
   return baseLayout({
-    title: `Level Up: You are now Level ${newLevel}! - PJ Social Portal`,
-    preheader: `🏆 You reached Level ${newLevel} (${levelName}) with ${totalXP} verified XP!`,
+    title: '🏆 LEVEL UP! - PJ Social Portal',
+    preheader: `🏆 LEVEL UP: Level ${previousLevel} → Level ${newLevel} (${levelName}) with ${totalXP.toLocaleString()} XP!`,
     content,
     callToAction: {
-      text: 'View Your New Badge',
+      text: 'View Dashboard',
       url: `${portalUrl}`
     }
   });
@@ -779,9 +927,11 @@ module.exports = {
   getEmailChangedNewAddressTemplate,
   getAccountDeactivatedTemplate,
   getAccountReactivatedTemplate,
+  getSubmissionReceivedTemplate,
   getSubmissionApprovedTemplate,
   getSubmissionRejectedTemplate,
   getClarificationTemplate,
+  getXPEarnedTemplate,
   getXPNotificationTemplate,
   getLevelUpTemplate,
   getTestEmailTemplate

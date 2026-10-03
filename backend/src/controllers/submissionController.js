@@ -14,6 +14,7 @@ const { validateSubmissionPostUrl } = require('../utils/urlValidator');
 const { createNotification } = require('../repositories/notificationRepository');
 const { awardPoints } = require('../services/pointsService');
 const { processSubmissionVerdict } = require('../services/submissionApprovalService');
+const { sendSubmissionReceivedEmail } = require('../services/emailService');
 
 /**
  * POST /api/submissions
@@ -133,6 +134,11 @@ const create = async (req, res, next) => {
       type: 'SUBMISSION_UPDATE',
       title: 'Activity Submitted for Verification',
       message: `Your ${newSub.platform} ${newSub.actionType} submission for official account "${officialAccount.name || officialAccount.handle}" is now in the review queue. Status: PENDING manual admin review.`
+    });
+
+    // Dispatch optional transactional acknowledgement email (non-blocking, fault-tolerant)
+    sendSubmissionReceivedEmail(req.user, newSub).catch(err => {
+      console.warn('[SubmissionController] Submission received email notice:', err.message);
     });
 
     return res.status(201).json({
