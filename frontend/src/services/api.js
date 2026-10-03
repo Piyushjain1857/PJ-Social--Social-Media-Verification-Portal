@@ -177,6 +177,33 @@ export const changeUserPassword = async ({ currentPassword, newPassword, confirm
   });
 };
 
+export const changeUserEmail = async ({ newEmail, currentPassword }) => {
+  return await apiFetch('/users/change-email', {
+    method: 'PUT',
+    body: JSON.stringify({ newEmail, currentPassword }),
+  });
+};
+
+export const requestPasswordReset = async (email) => {
+  return await apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+};
+
+export const verifyResetToken = async (token) => {
+  return await apiFetch(`/auth/verify-reset-token?token=${encodeURIComponent(token)}`, {
+    method: 'GET',
+  });
+};
+
+export const confirmPasswordReset = async ({ token, newPassword, confirmPassword }) => {
+  return await apiFetch('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword, confirmPassword }),
+  });
+};
+
 export const logoutUser = async () => {
   try {
     return await apiFetch('/auth/logout', {

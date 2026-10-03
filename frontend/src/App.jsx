@@ -62,6 +62,11 @@ export default function App() {
     const pathname = window.location.pathname.replace(/^\//, '');
     const hasToken = !!localStorage.getItem('auth_token');
 
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('token') || pathname === 'reset-password' || hash.includes('reset-password')) {
+      return 'login';
+    }
+
     // Handle direct paths: /game-points, /admin/game-points, /super-admin/game-points, /super-admin/levels
     if (
       pathname === 'game-points' || pathname.startsWith('game-points/') ||

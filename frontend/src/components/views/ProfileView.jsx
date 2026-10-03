@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchMyProfile, updateMyProfile, changeUserPassword } from '../../services/api';
+import { fetchMyProfile, updateMyProfile, changeUserPassword, changeUserEmail } from '../../services/api';
 import { fetchMyGamification } from '../../services/gamificationApi';
 import LevelProgressCard from '../gamification/LevelProgressCard';
 
@@ -89,6 +89,15 @@ export default function ProfileView({ onNavigateToNav }) {
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [passSuccessMsg, setPassSuccessMsg] = useState(null);
   const [passErrorMsg, setPassErrorMsg] = useState(null);
+
+  // Change Email State
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
+  const [newEmailAddress, setNewEmailAddress] = useState('');
+  const [confirmNewEmailAddress, setConfirmNewEmailAddress] = useState('');
+  const [showEmailCurrentPass, setShowEmailCurrentPass] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState(null);
+  const [emailErrorMsg, setEmailErrorMsg] = useState(null);
 
   // Logout Confirmation Modal/State
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -454,6 +463,59 @@ export default function ProfileView({ onNavigateToNav }) {
       setPassErrorMsg(err.message || 'Failed to change password. Please check your credentials.');
     } finally {
       setIsChangingPass(false);
+    }
+  };
+
+  // Handle Change Email
+  const handleChangeEmail = async (e) => {
+    e.preventDefault();
+    setEmailErrorMsg(null);
+    setEmailSuccessMsg(null);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const trimmedNewEmail = newEmailAddress.trim().toLowerCase();
+
+    if (!emailCurrentPassword) {
+      setEmailErrorMsg('Please enter your current password to verify identity.');
+      return;
+    }
+    if (!trimmedNewEmail || !emailRegex.test(trimmedNewEmail)) {
+      setEmailErrorMsg('Please enter a valid new email address.');
+      return;
+    }
+    if (trimmedNewEmail !== confirmNewEmailAddress.trim().toLowerCase()) {
+      setEmailErrorMsg('New email and confirmation email do not match.');
+      return;
+    }
+    if (trimmedNewEmail === (profileData?.email || user?.email)?.toLowerCase()) {
+      setEmailErrorMsg('New email address must be different from your current email address.');
+      return;
+    }
+
+    setIsChangingEmail(true);
+    try {
+      const res = await changeUserEmail({
+        newEmail: trimmedNewEmail,
+        currentPassword: emailCurrentPassword
+      });
+
+      if (res.success && res.user) {
+        setProfileData(prev => ({ ...prev, email: res.user.email }));
+        if (updateUserContext) {
+          updateUserContext({ email: res.user.email });
+        }
+        setEmailSuccessMsg('Email updated successfully! Security notifications have been dispatched to your old and new email addresses.');
+        setEmailCurrentPassword('');
+        setNewEmailAddress('');
+        setConfirmNewEmailAddress('');
+        setTimeout(() => setEmailSuccessMsg(null), 6000);
+      } else {
+        throw new Error(res.message || 'Failed to update email address.');
+      }
+    } catch (err) {
+      setEmailErrorMsg(err.message || 'Failed to update email. Please check your password credentials.');
+    } finally {
+      setIsChangingEmail(false);
     }
   };
 
@@ -1681,6 +1743,114 @@ export default function ProfileView({ onNavigateToNav }) {
                 style={{ marginTop: '0.5rem', padding: '0.7rem 1.25rem', fontWeight: 700 }}
               >
                 {isChangingPass ? 'Verifying & Updating…' : 'Update Password'}
+              </button>
+            </form>
+          </div>
+
+          {/* Change Email Card */}
+          <div className="settings-section-card">
+            <div className="settings-section-header">
+              <div className="settings-section-title">
+                <span style={{ fontSize: '1.35rem' }}>📧</span>
+                <div>
+                  <h3>Change Account Email</h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Verify password to update login email and receive security notices
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {emailSuccessMsg && (
+              <div className="portal-alert portal-alert-success" style={{ margin: 0 }}>
+                <span>✓</span>
+                <span>{emailSuccessMsg}</span>
+              </div>
+            )}
+            {emailErrorMsg && (
+              <div className="portal-alert portal-alert-error" style={{ margin: 0 }}>
+                <span>⚠️</span>
+                <span>{emailErrorMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangeEmail} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Current Password Verification */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                  Current Password <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showEmailCurrentPass ? 'text' : 'password'}
+                    className="input-field"
+                    value={emailCurrentPassword}
+                    onChange={(e) => setEmailCurrentPassword(e.target.value)}
+                    placeholder="Enter existing password to authorize"
+                    disabled={isChangingEmail}
+                    required
+                    style={{ width: '100%', paddingRight: '2.5rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailCurrentPass(!showEmailCurrentPass)}
+                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.95rem' }}
+                  >
+                    {showEmailCurrentPass ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              {/* New Email */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                  New Email Address <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                </label>
+                <input
+                  type="email"
+                  className="input-field"
+                  value={newEmailAddress}
+                  onChange={(e) => setNewEmailAddress(e.target.value)}
+                  placeholder="newaddress@example.com"
+                  disabled={isChangingEmail}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Confirm New Email */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                  Confirm New Email Address <span style={{ color: 'var(--status-rejected)' }}>*</span>
+                </label>
+                <input
+                  type="email"
+                  className="input-field"
+                  value={confirmNewEmailAddress}
+                  onChange={(e) => setConfirmNewEmailAddress(e.target.value)}
+                  placeholder="Re-enter new email address"
+                  disabled={isChangingEmail}
+                  required
+                  style={{ width: '100%' }}
+                />
+                {confirmNewEmailAddress && (
+                  <div style={{ fontSize: '0.74rem', marginTop: '0.35rem', color: newEmailAddress.toLowerCase() === confirmNewEmailAddress.toLowerCase() ? '#34d399' : '#f87171' }}>
+                    {newEmailAddress.toLowerCase() === confirmNewEmailAddress.toLowerCase() ? '✓ Email addresses match' : '⚠️ Email addresses do not match'}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.02)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                ℹ️ <em>For security, change alerts will be dispatched simultaneously to both your old address and your new address.</em>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={isChangingEmail || !emailCurrentPassword || !newEmailAddress || !confirmNewEmailAddress || newEmailAddress.toLowerCase() !== confirmNewEmailAddress.toLowerCase()}
+                style={{ marginTop: '0.5rem', padding: '0.7rem 1.25rem', fontWeight: 700 }}
+              >
+                {isChangingEmail ? 'Verifying & Updating Email…' : 'Update Email Address'}
               </button>
             </form>
           </div>

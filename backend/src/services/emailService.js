@@ -15,6 +15,10 @@ const {
   getLoginNotificationTemplate,
   getPasswordChangedTemplate,
   getPasswordResetTemplate,
+  getEmailChangedOldAddressTemplate,
+  getEmailChangedNewAddressTemplate,
+  getAccountDeactivatedTemplate,
+  getAccountReactivatedTemplate,
   getSubmissionApprovedTemplate,
   getSubmissionRejectedTemplate,
   getClarificationTemplate,
@@ -256,12 +260,14 @@ const sendAccountCreatedEmail = async (user, options = {}) => {
   const html = getAccountCreatedTemplate({
     name: user.name,
     email: user.email,
+    role: user.role || options.role || 'USER',
+    createdAt: user.createdAt || options.createdAt || new Date(),
     loginUrl: options.loginUrl
   });
 
   return sendEmail({
     to: user.email,
-    subject: `Welcome to ${PORTAL_NAME}!`,
+    subject: `Welcome to ${PORTAL_NAME} 🎉`,
     html,
     templateName: 'ACCOUNT_CREATED'
   });
@@ -302,7 +308,7 @@ const sendPasswordChangedEmail = async (user, options = {}) => {
 
   return sendEmail({
     to: user.email,
-    subject: `Security Notice: Your ${PORTAL_NAME} Password Was Changed`,
+    subject: `Your password was changed successfully - ${PORTAL_NAME}`,
     html,
     templateName: 'PASSWORD_CHANGED'
   });
@@ -317,8 +323,7 @@ const sendPasswordResetEmail = async (user, resetDetails = {}) => {
     name: user.name,
     email: user.email,
     resetLink: resetDetails.resetLink,
-    temporaryPassword: resetDetails.temporaryPassword,
-    expiryTime: resetDetails.expiryTime || '24 hours'
+    expiryTime: resetDetails.expiryTime || '1 hour'
   });
 
   return sendEmail({
@@ -326,6 +331,97 @@ const sendPasswordResetEmail = async (user, resetDetails = {}) => {
     subject: `Password Reset Request - ${PORTAL_NAME}`,
     html,
     templateName: 'PASSWORD_RESET'
+  });
+};
+
+/**
+ * 5. Email Change Security Notifications
+ */
+const sendEmailChangedNotification = async ({ user, oldEmail, newEmail, ip }) => {
+  const dateStr = new Date().toUTCString();
+  const promises = [];
+
+  // Notify old address
+  if (oldEmail) {
+    const oldHtml = getEmailChangedOldAddressTemplate({
+      name: user?.name || 'User',
+      oldEmail,
+      newEmail,
+      date: dateStr
+    });
+    promises.push(
+      sendEmail({
+        to: oldEmail,
+        subject: `Your account email was changed - ${PORTAL_NAME}`,
+        html: oldHtml,
+        templateName: 'EMAIL_CHANGED_OLD'
+      }).catch(err => {
+        console.warn('[EmailService] Old email change notice failed:', err.message);
+      })
+    );
+  }
+
+  // Notify new address
+  if (newEmail) {
+    const newHtml = getEmailChangedNewAddressTemplate({
+      name: user?.name || 'User',
+      newEmail,
+      date: dateStr
+    });
+    promises.push(
+      sendEmail({
+        to: newEmail,
+        subject: `Your email has been added to the account - ${PORTAL_NAME}`,
+        html: newHtml,
+        templateName: 'EMAIL_CHANGED_NEW'
+      }).catch(err => {
+        console.warn('[EmailService] New email confirmation notice failed:', err.message);
+      })
+    );
+  }
+
+  const results = await Promise.all(promises);
+  return { success: true, count: results.length };
+};
+
+/**
+ * 6. Account Deactivation Notice
+ */
+const sendAccountDeactivatedEmail = async (user, options = {}) => {
+  if (!user || !user.email) return { success: false, error: 'User email is required' };
+  const html = getAccountDeactivatedTemplate({
+    name: user.name,
+    email: user.email,
+    reason: options.reason || 'Administrative policy review.',
+    date: options.date || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    supportEmail: options.supportEmail || 'support@portal.com'
+  });
+
+  return sendEmail({
+    to: user.email,
+    subject: `Your account has been deactivated - ${PORTAL_NAME}`,
+    html,
+    templateName: 'ACCOUNT_DEACTIVATED'
+  });
+};
+
+/**
+ * 7. Account Reactivation Notice
+ */
+const sendAccountReactivatedEmail = async (user, options = {}) => {
+  if (!user || !user.email) return { success: false, error: 'User email is required' };
+  const html = getAccountReactivatedTemplate({
+    name: user.name,
+    email: user.email,
+    date: options.date || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    loginUrl: options.loginUrl
+  });
+
+  return sendEmail({
+    to: user.email,
+    subject: `Your account has been reactivated - ${PORTAL_NAME}`,
+    html,
+    templateName: 'ACCOUNT_REACTIVATED'
   });
 };
 
@@ -497,6 +593,9 @@ module.exports = {
   sendLoginNotificationEmail,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
+  sendEmailChangedNotification,
+  sendAccountDeactivatedEmail,
+  sendAccountReactivatedEmail,
   sendSubmissionApprovedEmail,
   sendSubmissionRejectedEmail,
   sendClarificationEmail,

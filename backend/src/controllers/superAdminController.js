@@ -17,7 +17,13 @@ const { hashPassword } = require('../utils/hash');
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const { getAuditLogs: getRecordedAuditLogs } = require('../services/auditLogService');
-const { sendAccountCreatedEmail, sendPasswordResetEmail } = require('../services/emailService');
+const {
+  sendAccountCreatedEmail,
+  sendPasswordChangedEmail,
+  sendAccountDeactivatedEmail,
+  sendAccountReactivatedEmail,
+  sendEmailChangedNotification
+} = require('../services/emailService');
 
 /**
  * GET /api/superadmin/audit-logs
@@ -464,12 +470,40 @@ const updateUserManagement = async (req, res, next) => {
       }
     }
 
-    // If password was reset by administrator, dispatch notification email
-    if (password) {
-      sendPasswordResetEmail(updatedUser, {
-        temporaryPassword: password
+    // If status was changed, dispatch appropriate account lifecycle email
+    if (updates.status) {
+      if (updates.status === 'ACTIVE' && targetUser.status !== 'ACTIVE') {
+        sendAccountReactivatedEmail(updatedUser).catch(mailErr => {
+          console.warn('[superAdminController] Reactivation email skipped:', mailErr.message);
+        });
+      } else if ((updates.status === 'INACTIVE' || updates.status === 'SUSPENDED') && targetUser.status === 'ACTIVE') {
+        sendAccountDeactivatedEmail(updatedUser, {
+          reason: 'Administrative policy review.'
+        }).catch(mailErr => {
+          console.warn('[superAdminController] Deactivation email skipped:', mailErr.message);
+        });
+      }
+    }
+
+    // If email was modified, dispatch security notification to both old and new addresses
+    if (updates.email && updates.email.toLowerCase() !== targetUser.email.toLowerCase()) {
+      sendEmailChangedNotification({
+        user: updatedUser,
+        oldEmail: targetUser.email,
+        newEmail: updates.email,
+        ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown'
       }).catch(mailErr => {
-        console.warn('[superAdminController] Password reset email skipped:', mailErr.message);
+        console.warn('[superAdminController] Email change email skipped:', mailErr.message);
+      });
+    }
+
+    // If password was updated by administrator, notify without sending password
+    if (password) {
+      sendPasswordChangedEmail(updatedUser, {
+        ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown',
+        time: new Date().toUTCString()
+      }).catch(mailErr => {
+        console.warn('[superAdminController] Password changed email skipped:', mailErr.message);
       });
     }
 
@@ -546,6 +580,19 @@ const updateUserStatusManagement = async (req, res, next) => {
       });
     } catch (notifErr) {
       console.warn('[superAdminController] Notification error:', notifErr.message);
+    }
+
+    // Dispatch status change transactional email notifications
+    if (targetStatus === 'ACTIVE' && targetUser.status !== 'ACTIVE') {
+      sendAccountReactivatedEmail(updated).catch(mailErr => {
+        console.warn('[superAdminController] Reactivation email skipped:', mailErr.message);
+      });
+    } else if ((targetStatus === 'INACTIVE' || targetStatus === 'SUSPENDED') && targetUser.status === 'ACTIVE') {
+      sendAccountDeactivatedEmail(updated, {
+        reason: `Account status updated to ${targetStatus} by administrator.`
+      }).catch(mailErr => {
+        console.warn('[superAdminController] Deactivation email skipped:', mailErr.message);
+      });
     }
 
     const sanitized = {

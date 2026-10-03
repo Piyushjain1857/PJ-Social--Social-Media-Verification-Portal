@@ -347,3 +347,17 @@ model EmailLog {
   @@map("email_logs")
 }
 
+/// Cryptographically hashed single-use short-lived password reset tokens
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
+}
+

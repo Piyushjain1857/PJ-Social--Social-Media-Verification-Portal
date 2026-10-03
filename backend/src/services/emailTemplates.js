@@ -94,32 +94,64 @@ const baseLayout = ({ title, preheader, content, callToAction }) => {
 /**
  * 1. Account Created Welcome Template
  */
-const getAccountCreatedTemplate = ({ name, email, portalUrl = PORTAL_URL, loginUrl = `${PORTAL_URL}/login` }) => {
+const getAccountCreatedTemplate = ({
+  name,
+  email,
+  role = 'USER',
+  createdAt = new Date(),
+  portalUrl = PORTAL_URL,
+  loginUrl = `${PORTAL_URL}/login`
+}) => {
+  const formattedDate = createdAt ? new Date(createdAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : new Date().toLocaleDateString('en-US');
+
   const content = `
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
-      Welcome to the Portal, ${name || 'Creator'}! 👋
+      Welcome to the Portal, ${name || 'Creator'}! 🎉
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Your account on the <strong>Social Media Activity Verification Portal</strong> has been successfully created. You can now submit activity proof for official campaigns, earn verified XP, climb the institutional leaderboard, and level up your profile!
+      Your account on the <strong>Social Media Activity Verification Portal</strong> has been successfully created. You can now submit activity proof for official campaigns, earn verified institutional XP, climb the leaderboard, and unlock verified milestones!
     </p>
 
-    <div style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 16px 20px; margin: 20px 0; border-radius: 4px;">
-      <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: #1e293b;">Your Account Details:</p>
-      <p style="margin: 0 0 4px 0; font-size: 13px; color: #475569;"><strong>Full Name:</strong> ${name || 'N/A'}</p>
-      <p style="margin: 0; font-size: 13px; color: #475569;"><strong>Registered Email:</strong> ${email}</p>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Full Name:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${name || 'N/A'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Account Email:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${email}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Account Role:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #4338ca; font-weight: 700;">${role}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Creation Date:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${formattedDate}</td>
+      </tr>
+    </table>
+
+    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 16px; margin: 18px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 12px; color: #92400e; line-height: 1.5;">
+        🔒 <strong>Important Security Reminder:</strong> Never share your password with anyone. PJ Social Portal administrators will NEVER request your password via email, phone, or direct message.
+      </p>
     </div>
 
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      Click below to sign in and submit your first Instagram, LinkedIn, or Facebook activity proof:
+      Click the button below to sign in and start verifying your institutional activity:
     </p>
   `;
 
   return baseLayout({
-    title: 'Account Created - PJ Social Portal',
+    title: `Welcome to ${PORTAL_NAME} 🎉`,
     preheader: `Welcome to PJ Social Portal! Your account for ${email} is ready.`,
     content,
     callToAction: {
-      text: 'Sign In to Your Dashboard',
+      text: 'Sign In to Your Account',
       url: loginUrl
     }
   });
@@ -134,7 +166,7 @@ const getLoginNotificationTemplate = ({ name, email, ip = 'Unknown', time = new 
       New Login Detected 🔐
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${name || 'User'}</strong>, we detected a successful sign-in to your account on the PJ Social Verification Portal.
+      Hello <strong>${name || 'User'}</strong>, a successful sign-in to your PJ Social Verification Portal account was detected.
     </p>
 
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0; padding: 14px 18px;">
@@ -143,7 +175,7 @@ const getLoginNotificationTemplate = ({ name, email, ip = 'Unknown', time = new 
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${email}</td>
       </tr>
       <tr>
-        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Time (UTC):</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Time:</strong></td>
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${time}</td>
       </tr>
       <tr>
@@ -151,14 +183,16 @@ const getLoginNotificationTemplate = ({ name, email, ip = 'Unknown', time = new 
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${ip}</td>
       </tr>
       <tr>
-        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Client:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Device / Client:</strong></td>
         <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${userAgent}</td>
       </tr>
     </table>
 
-    <p style="margin: 0 0 12px 0; color: #475569; font-size: 13px; line-height: 1.6;">
-      If this was you, you can safely disregard this message. If you do not recognize this activity, please change your password immediately.
-    </p>
+    <div style="background-color: #fff1f2; border-left: 4px solid #f43f5e; padding: 14px 16px; margin: 18px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 12px; color: #9f1239; line-height: 1.5;">
+        ⚠️ <strong>Security Advice:</strong> If this wasn't you, someone may have unauthorized access to your credentials. Please secure your account immediately by changing your password.
+      </p>
+    </div>
   `;
 
   return baseLayout({
@@ -166,7 +200,7 @@ const getLoginNotificationTemplate = ({ name, email, ip = 'Unknown', time = new 
     preheader: `New login detected for ${email} at ${time}.`,
     content,
     callToAction: {
-      text: 'View Account Security',
+      text: 'Secure Your Account',
       url: `${PORTAL_URL}`
     }
   });
@@ -178,29 +212,47 @@ const getLoginNotificationTemplate = ({ name, email, ip = 'Unknown', time = new 
 const getPasswordChangedTemplate = ({ name, email, time = new Date().toUTCString(), ip = 'Unknown' }) => {
   const content = `
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
-      Password Changed Successfully 🔑
+      Your password was changed successfully 🔑
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${name || 'User'}</strong>, this is an automated confirmation that your password for <strong>${email}</strong> has just been updated.
+      Hello <strong>${name || 'User'}</strong>, this is an automated confirmation that your password for <strong>${email}</strong> has been updated.
     </p>
 
-    <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 14px 18px; margin: 20px 0; border-radius: 4px;">
-      <p style="margin: 0; font-size: 13px; color: #065f46; font-weight: 600;">
-        ✓ Password updated on: ${time}
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 18px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Account Email:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${email}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Date / Time:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${time}</td>
+      </tr>
+      ${ip !== 'Unknown' ? `
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Source IP:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${ip}</td>
+      </tr>` : ''}
+    </table>
+
+    <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 12px; color: #065f46; font-weight: 600;">
+        ✓ Status: Active and Secured with bcrypt encryption.
       </p>
     </div>
 
-    <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      If you made this change, no further action is required. If you did <strong>not</strong> authorize this change, please contact an administrator immediately to suspend and recover your account.
-    </p>
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+        🛡️ <strong>Security Advice:</strong> If you did not make this change, please contact an administrator immediately to freeze your account and prevent unauthorized access.
+      </p>
+    </div>
   `;
 
   return baseLayout({
-    title: 'Password Updated - PJ Social Portal',
-    preheader: `Your PJ Social Portal password was successfully changed.`,
+    title: 'Password Changed - PJ Social Portal',
+    preheader: `Your PJ Social Portal password was successfully updated.`,
     content,
     callToAction: {
-      text: 'Go to Sign In',
+      text: 'Sign In to Portal',
       url: `${PORTAL_URL}/login`
     }
   });
@@ -209,37 +261,200 @@ const getPasswordChangedTemplate = ({ name, email, time = new Date().toUTCString
 /**
  * 4. Password Reset Template
  */
-const getPasswordResetTemplate = ({ name, email, resetLink, temporaryPassword, expiryTime = '24 hours' }) => {
+const getPasswordResetTemplate = ({ name, email, resetLink, expiryTime = '1 hour' }) => {
   const content = `
     <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
       Password Reset Request 🔄
     </h2>
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${name || 'User'}</strong>, we received a request to reset the password associated with your account (<strong>${email}</strong>).
+      Hello <strong>${name || 'User'}</strong>, we received a request to reset the password for your account (<strong>${email}</strong>).
     </p>
-
-    ${temporaryPassword ? `
-    <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px 20px; text-align: center; margin: 20px 0;">
-      <span style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Temporary Password</span>
-      <div style="font-size: 20px; font-family: monospace; font-weight: 800; color: #4338ca; margin-top: 8px;">
-        ${temporaryPassword}
-      </div>
-      <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8;">Please change this password upon your next sign-in.</p>
-    </div>
-    ` : ''}
 
     <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.6;">
-      This security link is valid for <strong>${expiryTime}</strong>. If you did not request a password reset, you can safely ignore this email.
+      To choose a new password, click the button below. This link is single-use and will automatically expire in <strong>${expiryTime}</strong>.
     </p>
+
+    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 16px; margin: 20px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 12px; color: #92400e; line-height: 1.5;">
+        🔒 <strong>Security Notice:</strong> If you did not request this password reset, no action is required. Your current password remains active and secure. Never forward this link to anyone.
+      </p>
+    </div>
   `;
 
   return baseLayout({
     title: 'Password Reset Request - PJ Social Portal',
-    preheader: `Instructions to reset your PJ Social Portal password.`,
+    preheader: `Instructions to reset your password for ${email}.`,
     content,
     callToAction: {
       text: 'Reset Your Password',
-      url: resetLink || `${PORTAL_URL}/login`
+      url: resetLink
+    }
+  });
+};
+
+/**
+ * 5. Email Change Notifications
+ */
+const getEmailChangedOldAddressTemplate = ({ name, oldEmail, newEmail, date = new Date().toUTCString() }) => {
+  const content = `
+    <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
+      Your account email was changed ⚠️
+    </h2>
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+      Hello <strong>${name || 'User'}</strong>, this is an important security notice that the primary email address for your PJ Social Verification Portal account has been changed.
+    </p>
+
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 18px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 140px;"><strong>Previous Email:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${oldEmail}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>New Primary Email:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${newEmail}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Change Date:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${date}</td>
+      </tr>
+    </table>
+
+    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 16px; margin: 18px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 12px; color: #991b1b; line-height: 1.5;">
+        🚨 <strong>Security Advisory:</strong> If you did not authorize this change, your account may be compromised. Please contact system support immediately to restore your account.
+      </p>
+    </div>
+  `;
+
+  return baseLayout({
+    title: 'Account Email Changed - PJ Social Portal',
+    preheader: `Security Alert: The email address for your account was changed.`,
+    content,
+    callToAction: {
+      text: 'Contact Portal Support',
+      url: `${PORTAL_URL}`
+    }
+  });
+};
+
+const getEmailChangedNewAddressTemplate = ({ name, newEmail, date = new Date().toUTCString(), loginUrl = `${PORTAL_URL}/login` }) => {
+  const content = `
+    <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
+      Your email has been added to the account ✅
+    </h2>
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+      Hello <strong>${name || 'User'}</strong>, this email address (<strong>${newEmail}</strong>) has been successfully verified and linked as the primary email for your PJ Social Verification Portal account.
+    </p>
+
+    <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 14px 18px; margin: 18px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 13px; color: #065f46; font-weight: 600;">
+        ✓ Updated on: ${date}
+      </p>
+    </div>
+
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.6;">
+      You can now use this email to sign in and receive institutional verification notifications:
+    </p>
+  `;
+
+  return baseLayout({
+    title: 'Primary Email Confirmed - PJ Social Portal',
+    preheader: `Your new email address has been added to your account.`,
+    content,
+    callToAction: {
+      text: 'Sign In with New Email',
+      url: loginUrl
+    }
+  });
+};
+
+/**
+ * 6. Account Deactivation Template
+ */
+const getAccountDeactivatedTemplate = ({
+  name,
+  email,
+  reason = 'Account suspended as per administrative review.',
+  date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+  supportEmail = 'support@portal.com'
+}) => {
+  const content = `
+    <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
+      Your account has been deactivated 🚫
+    </h2>
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+      Hello <strong>${name || 'User'}</strong>, this is an official notice that your account for <strong>${email}</strong> has been deactivated on the PJ Social Verification Portal.
+    </p>
+
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 18px 0; padding: 14px 18px;">
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b; width: 130px;"><strong>Account:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b; font-weight: 600;">${email}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Effective Date:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #1e293b;">${date}</td>
+      </tr>
+      ${reason ? `
+      <tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748b;"><strong>Reason:</strong></td>
+        <td style="padding: 6px 0; font-size: 13px; color: #991b1b; font-weight: 600;">${reason}</td>
+      </tr>` : ''}
+    </table>
+
+    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; margin: 18px 0;">
+      <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.5;">
+        If you believe this deactivation was performed in error or if you wish to appeal this decision, please contact administrative support at <strong>${supportEmail}</strong>.
+      </p>
+    </div>
+  `;
+
+  return baseLayout({
+    title: 'Account Deactivated - PJ Social Portal',
+    preheader: `Notice: Your PJ Social Portal account has been deactivated.`,
+    content,
+    callToAction: {
+      text: 'Contact Support',
+      url: `${PORTAL_URL}`
+    }
+  });
+};
+
+/**
+ * 7. Account Reactivation Template
+ */
+const getAccountReactivatedTemplate = ({
+  name,
+  email,
+  date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+  loginUrl = `${PORTAL_URL}/login`
+}) => {
+  const content = `
+    <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px; font-weight: 700;">
+      Your account has been reactivated 🎉
+    </h2>
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+      Hello <strong>${name || 'User'}</strong>, we are pleased to inform you that your account for <strong>${email}</strong> has been successfully reactivated on the PJ Social Verification Portal.
+    </p>
+
+    <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 14px 18px; margin: 18px 0; border-radius: 4px;">
+      <p style="margin: 0; font-size: 13px; color: #065f46; font-weight: 600;">
+        ✓ Reactivated on: ${date} &bull; Full account privileges restored.
+      </p>
+    </div>
+
+    <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.6;">
+      You can now log in to access your activity submissions, gamification standings, and institutional rewards:
+    </p>
+  `;
+
+  return baseLayout({
+    title: 'Account Reactivated - PJ Social Portal',
+    preheader: `Good news! Your PJ Social Portal account has been reactivated.`,
+    content,
+    callToAction: {
+      text: 'Sign In to Portal',
+      url: loginUrl
     }
   });
 };
@@ -560,6 +775,10 @@ module.exports = {
   getLoginNotificationTemplate,
   getPasswordChangedTemplate,
   getPasswordResetTemplate,
+  getEmailChangedOldAddressTemplate,
+  getEmailChangedNewAddressTemplate,
+  getAccountDeactivatedTemplate,
+  getAccountReactivatedTemplate,
   getSubmissionApprovedTemplate,
   getSubmissionRejectedTemplate,
   getClarificationTemplate,

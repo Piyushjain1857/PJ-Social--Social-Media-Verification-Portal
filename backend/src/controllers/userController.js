@@ -1,8 +1,8 @@
-const { getAllUsers, getUsersPaginated, updateUserRole, findUserById, updateUser, getUserDetails: getUserDetailsRepo } = require('../repositories/userRepository');
+const { getAllUsers, getUsersPaginated, updateUserRole, findUserById, findUserByEmail, updateUser, getUserDetails: getUserDetailsRepo } = require('../repositories/userRepository');
 const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
-const { sendPasswordChangedEmail } = require('../services/emailService');
+const { sendPasswordChangedEmail, sendEmailChangedNotification } = require('../services/emailService');
 
 /**
  * GET /api/users/me
@@ -270,6 +270,131 @@ const changeUserPassword = async (req, res, next) => {
 };
 
 /**
+ * PUT /api/users/change-email
+ * Protected: USER, ADMIN, SUPER_ADMIN
+ * Security:
+ * - Requires currentPassword verification via bcrypt
+ * - Validates newEmail format and uniqueness
+ * - Updates user email in DB
+ * - Dispatches dual notification emails:
+ *     1. Notice to old email address ("Your account email was changed")
+ *     2. Confirmation to new email address ("Your email has been added to the account")
+ * - Dispatches internal security alert notification
+ */
+const changeUserEmail = async (req, res, next) => {
+  try {
+    const { newEmail, currentPassword } = req.body;
+
+    if (!newEmail || typeof newEmail !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'New email address is required.'
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const normalizedNewEmail = newEmail.trim().toLowerCase();
+
+    if (!emailRegex.test(normalizedNewEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Please provide a valid new email address.'
+      });
+    }
+
+    if (!currentPassword || typeof currentPassword !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Current password is required to verify your identity.'
+      });
+    }
+
+    // Fetch user to verify credentials
+    const user = await findUserById(req.user.id);
+    if (!user || !user.password) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found.'
+      });
+    }
+
+    if (user.email.toLowerCase() === normalizedNewEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'New email address cannot be the same as your current email address.'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await comparePassword(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'The current password you provided is incorrect.'
+      });
+    }
+
+    // Check if new email is already in use
+    const existing = await findUserByEmail(normalizedNewEmail);
+    if (existing && existing.id !== user.id) {
+      return res.status(409).json({
+        success: false,
+        error: 'Conflict',
+        message: 'This email address is already associated with another account.'
+      });
+    }
+
+    const oldEmail = user.email;
+
+    // Update in database first
+    const updatedUser = await updateUser(user.id, { email: normalizedNewEmail });
+
+    // Send in-app notification
+    try {
+      await createNotification({
+        userId: user.id,
+        type: 'ACCOUNT_ALERT',
+        title: 'Account Email Changed',
+        message: `Your account email address was changed from ${oldEmail} to ${normalizedNewEmail}.`
+      });
+    } catch (notifErr) {
+      console.warn('[changeUserEmail] In-app notification failed:', notifErr.message);
+    }
+
+    // Send transactional security email notifications (dual: old + new)
+    sendEmailChangedNotification({
+      user: updatedUser,
+      oldEmail,
+      newEmail: normalizedNewEmail,
+      ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown'
+    }).catch(mailErr => {
+      console.warn('[changeUserEmail] Email change notifications skipped:', mailErr.message);
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account email updated successfully. Security notifications have been dispatched.',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/users/profile
  * Protected: USER, ADMIN, SUPER_ADMIN
  * Retrieves authenticated user profile along with role-relevant summary metrics.
@@ -502,6 +627,7 @@ module.exports = {
   getCurrentUserProfile,
   updateCurrentUserProfile,
   changeUserPassword,
+  changeUserEmail,
   getUserProfile,
   listUsers,
   getUserDetails: getUserDetailsController,

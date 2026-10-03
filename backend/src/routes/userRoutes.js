@@ -4,6 +4,7 @@ const {
   getCurrentUserProfile,
   updateCurrentUserProfile,
   changeUserPassword,
+  changeUserEmail,
   listUsers,
   getUserDetails,
   changeRole,
@@ -19,6 +20,7 @@ const { authorize, preventSuperAdminPrivilegeEscalation } = require('../middlewa
 router.get('/me', authenticate, getCurrentUserProfile);
 router.put('/me', authenticate, updateCurrentUserProfile);
 router.put('/change-password', authenticate, changeUserPassword);
+router.put('/change-email', authenticate, changeUserEmail);
 
 // Legacy profile endpoint for backward compatibility
 router.get('/profile', authenticate, getUserProfile);

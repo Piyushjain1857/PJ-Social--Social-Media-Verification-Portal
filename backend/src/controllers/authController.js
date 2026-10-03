@@ -1,10 +1,34 @@
-const { findUserByEmail, findUserById, createUser } = require('../repositories/userRepository');
+const crypto = require('crypto');
+const { findUserByEmail, findUserById, createUser, updateUser } = require('../repositories/userRepository');
+const { createResetToken, findTokenByHash, markTokenUsed } = require('../repositories/passwordResetRepository');
+const { createNotification } = require('../repositories/notificationRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
-const { sendAccountCreatedEmail, sendLoginNotificationEmail } = require('../services/emailService');
+const {
+  sendAccountCreatedEmail,
+  sendLoginNotificationEmail,
+  sendPasswordResetEmail,
+  sendPasswordChangedEmail
+} = require('../services/emailService');
 
 // Simple regex for email validation
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// In-memory rate limiting map for password reset requests: key -> [timestamps]
+const resetRateLimitMap = new Map();
+const RESET_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_RESET_ATTEMPTS = 5;
+
+const isResetRateLimited = (key) => {
+  const now = Date.now();
+  const timestamps = (resetRateLimitMap.get(key) || []).filter(t => now - t < RESET_RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= MAX_RESET_ATTEMPTS) {
+    return true;
+  }
+  timestamps.push(now);
+  resetRateLimitMap.set(key, timestamps);
+  return false;
+};
 
 /**
  * POST /api/auth/register
@@ -219,9 +243,213 @@ const logout = (req, res) => {
   });
 };
 
+/**
+ * POST /api/auth/forgot-password
+ * Initiates secure password reset flow without revealing user existence
+ */
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    // Validate email format
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid email address is required.'
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const rateLimitKey = `${req.ip}_${cleanEmail}`;
+
+    // Rate limit check: max 5 requests per 15 minutes
+    if (isResetRateLimited(rateLimitKey)) {
+      return res.status(429).json({
+        success: false,
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many password reset attempts. Please wait a few minutes before trying again.'
+      });
+    }
+
+    // Always standard response text to avoid account enumeration
+    const genericSuccessResponse = {
+      success: true,
+      message: 'If an account exists with that email address, password reset instructions have been sent.'
+    };
+
+    const user = await findUserByEmail(cleanEmail);
+    if (!user || user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
+      // Do not reveal whether user exists
+      return res.status(200).json(genericSuccessResponse);
+    }
+
+    // Generate cryptographically secure random token (32 bytes hex)
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    // Store SHA-256 hash in database
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
+
+    await createResetToken({
+      userId: user.id,
+      tokenHash,
+      expiresAt
+    });
+
+    const portalUrl = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',')[0] : 'http://localhost:5173';
+    const resetLink = `${portalUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+
+    // Dispatch transactional password reset email (non-blocking)
+    sendPasswordResetEmail(user, {
+      resetLink,
+      expiryTime: '1 hour'
+    }).catch(err => {
+      console.warn('[AuthController] Password reset email skipped:', err.message);
+    });
+
+    return res.status(200).json(genericSuccessResponse);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/auth/verify-reset-token
+ * Validates if a password reset token is active and unexpired
+ */
+const verifyResetToken = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== 'string' || token.length < 32) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Invalid or missing reset token.'
+      });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const record = await findTokenByHash(tokenHash);
+
+    if (!record || record.usedAt !== null || new Date(record.expiresAt) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'This password reset link is invalid, has expired, or has already been used.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      valid: true,
+      message: 'Token is valid.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Consumes reset token and applies new password with bcrypt
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token is required.'
+      });
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required and must be at least 8 characters long.'
+      });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const record = await findTokenByHash(tokenHash);
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_TOKEN',
+        message: 'Invalid password reset token.'
+      });
+    }
+
+    if (record.usedAt !== null) {
+      return res.status(400).json({
+        success: false,
+        code: 'TOKEN_ALREADY_USED',
+        message: 'This password reset link has already been used. Please request a new one.'
+      });
+    }
+
+    if (new Date(record.expiresAt) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        code: 'TOKEN_EXPIRED',
+        message: 'This password reset link has expired. Please request a new one.'
+      });
+    }
+
+    const user = await findUserById(record.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found.'
+      });
+    }
+
+    // Hash new password using bcrypt
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Save updated password
+    await updateUser(user.id, { password: hashedPassword });
+
+    // Mark single-use token as consumed
+    await markTokenUsed(record.id);
+
+    // Record in-app notification
+    try {
+      await createNotification({
+        userId: user.id,
+        type: 'ACCOUNT_ALERT',
+        title: 'Password Reset Successful',
+        message: 'Your account password was successfully reset using a security link. If you did not make this change, please contact support immediately.'
+      });
+    } catch (notifErr) {
+      console.warn('[AuthController] Reset notification skipped:', notifErr.message);
+    }
+
+    // Dispatch transactional confirmation email
+    sendPasswordChangedEmail(user, {
+      ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown',
+      time: new Date().toUTCString()
+    }).catch(err => {
+      console.warn('[AuthController] Password reset confirmation email skipped:', err.message);
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your password has been reset successfully. You can now log in with your new password.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
-  logout
+  logout,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword
 };
