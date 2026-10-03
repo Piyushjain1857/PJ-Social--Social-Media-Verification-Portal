@@ -331,23 +331,26 @@ const getById = async (req, res, next) => {
 const review = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, feedback } = req.body;
+    const { status, feedback } = req.body || {};
 
     const result = await processSubmissionVerdict({
       submissionId: id,
       status,
       feedback,
-      adminUser: req.user
+      adminUser: req.user,
+      endpoint: `${req.method} ${req.originalUrl || req.url}`
     });
 
-    const isApproved = result.submission.status === 'APPROVED';
+    const isApproved = result.submission?.status === 'APPROVED';
     const pointsAwarded = result.pointsAwarded;
 
     return res.status(200).json({
       success: true,
-      message: result.message || `Submission successfully marked as ${result.submission.status}.${pointsAwarded?.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
+      alreadyReviewed: Boolean(result.alreadyReviewed),
+      message: result.message || `Submission successfully marked as ${result.submission?.status}.${pointsAwarded?.awarded ? ` +${pointsAwarded.points} points awarded.` : ''}`,
       data: {
         success: true,
+        alreadyReviewed: Boolean(result.alreadyReviewed),
         submission: result.submission,
         review: result.review,
         pointsAwarded: pointsAwarded || null
@@ -367,11 +370,13 @@ const review = async (req, res, next) => {
 };
 
 const approve = async (req, res, next) => {
+  req.body = req.body || {};
   req.body.status = 'APPROVED';
   return review(req, res, next);
 };
 
 const reject = async (req, res, next) => {
+  req.body = req.body || {};
   req.body.status = 'REJECTED';
   return review(req, res, next);
 };

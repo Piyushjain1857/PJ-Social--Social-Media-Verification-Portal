@@ -44,7 +44,8 @@ const processSubmissionVerdict = async ({
   submissionId,
   status,
   feedback,
-  adminUser
+  adminUser,
+  endpoint = 'POST /api/submissions/:id/review'
 }) => {
   if (!submissionId) {
     const err = new Error('Submission ID is required.');
@@ -83,7 +84,7 @@ const processSubmissionVerdict = async ({
     : null;
   const reviewTimestamp = new Date();
 
-  // Execute entire 10-step flow within an atomic Prisma database transaction
+  // Execute entire flow within an atomic Prisma database transaction
   const result = await prisma.$transaction(async (tx) => {
     // 1. Verify submission exists
     const submission = await tx.submission.findUnique({
@@ -111,15 +112,15 @@ const processSubmissionVerdict = async ({
       throw err;
     }
 
-    // 2. Verify current status & state transitions
+
+    // 2. Strict State Transitions and Idempotency Enforcement
     if (currentStatus === 'APPROVED') {
       if (cleanStatus === 'APPROVED') {
-        // Prevent duplicate XP if approval endpoint is called twice
-        const err = new Error('Submission is already approved. Cannot re-approve an approved submission.');
+        const err = new Error('Submission has already been reviewed. Cannot re-approve an already approved submission.');
         err.code = 'ALREADY_APPROVED';
         err.statusCode = 400;
         err.data = {
-          submission,
+          submissionId,
           alreadyApproved: true,
           duplicatePrevented: true,
           pointsAwarded: { awarded: false, alreadyAwarded: true, points: 0, xp: 0 }
@@ -134,14 +135,30 @@ const processSubmissionVerdict = async ({
       }
     }
 
-    if (currentStatus === 'REJECTED' && cleanStatus === 'REJECTED') {
-      const err = new Error('Submission is already rejected. Cannot re-reject a rejected submission.');
-      err.code = 'ALREADY_REJECTED';
+    if (currentStatus === 'REJECTED') {
+      if (cleanStatus === 'REJECTED') {
+        const err = new Error('Submission has already been reviewed. Cannot re-reject a rejected submission.');
+        err.code = 'ALREADY_REJECTED';
+        err.statusCode = 400;
+        err.data = {
+          submissionId,
+          alreadyRejected: true,
+          duplicatePrevented: true,
+          pointsAwarded: { awarded: false, alreadyAwarded: false, points: 0, xp: 0 }
+        };
+        throw err;
+      }
+      // Note: REJECTED -> APPROVED is the existing admin overturn workflow
+    }
+
+    if (!['PENDING', 'REJECTED'].includes(currentStatus)) {
+      const err = new Error(`Invalid state transition. Submission has already been reviewed with status "${currentStatus}". Cannot change status from ${currentStatus} to ${cleanStatus}.`);
+      err.code = 'INVALID_STATE_TRANSITION';
       err.statusCode = 400;
       throw err;
     }
 
-    // 4. Atomic conditional update to prevent concurrent review race conditions
+    // 3. Atomic conditional update to prevent concurrent review race conditions
     const updateResult = await tx.submission.updateMany({
       where: {
         id: submissionId,
@@ -154,7 +171,7 @@ const processSubmissionVerdict = async ({
     });
 
     if (updateResult.count === 0) {
-      const err = new Error('Submission is already approved or modified by another concurrent review.');
+      const err = new Error('Submission has already been reviewed.');
       err.code = 'ALREADY_APPROVED';
       err.statusCode = 400;
       err.data = {
@@ -191,7 +208,7 @@ const processSubmissionVerdict = async ({
     // CASE A: REJECTED (Pending → Rejected = 0 XP)
     // ------------------------------------------------------------------------
     if (cleanStatus === 'REJECTED') {
-      // 9. Dispatch rejection notification
+      // Create rejection notification
       await tx.notification.create({
         data: {
           userId: submission.userId,
@@ -207,22 +224,26 @@ const processSubmissionVerdict = async ({
         }
       });
 
-      // 10. Create audit log
+      // Create audit log
       await tx.auditLog.create({
         data: {
           actor: adminUser.email || adminUser.name,
           action: 'SUBMISSION_REJECTED',
           entity: 'Submission',
           entityId: submission.id,
-          details: `Admin ${adminUser.name} rejected submission ${submission.id} for creator ${targetUser.name} (${targetUser.email}). Reason: "${cleanFeedback}"`,
+          details: `Admin ${adminUser.name} (${adminUser.email}) rejected submission ${submission.id}. Previous: PENDING, New: REJECTED. Reason: "${cleanFeedback}"`,
           metadata: {
-            reviewerId: adminUser.id,
+            submissionId: submission.id,
+            adminId: adminUser.id,
+            action: 'REJECTED',
+            previousStatus: currentStatus,
+            newStatus: 'REJECTED',
+            reason: cleanFeedback,
+            timestamp: reviewTimestamp.toISOString(),
             reviewerRole: adminUser.role,
             userId: submission.userId,
             actionType: submission.actionType,
             platform: submission.platform,
-            previousStatus: currentStatus,
-            newStatus: 'REJECTED',
             xpAwarded: 0
           }
         }
@@ -362,15 +383,19 @@ const processSubmissionVerdict = async ({
         action: 'SUBMISSION_APPROVED',
         entity: 'Submission',
         entityId: submission.id,
-        details: `Admin ${adminUser.name} approved submission ${submission.id} for creator ${targetUser.name} (${targetUser.email}). Awarded +${xpToAward} XP (Action: ${actionTypeUpper}, Platform: ${submission.platform}).`,
+        details: `Admin ${adminUser.name} (${adminUser.email}) approved submission ${submission.id}. Previous: PENDING, New: APPROVED. Awarded +${xpToAward} XP.`,
         metadata: {
-          reviewerId: adminUser.id,
+          submissionId: submission.id,
+          adminId: adminUser.id,
+          action: 'APPROVED',
+          previousStatus: currentStatus,
+          newStatus: 'APPROVED',
+          reason: null,
+          timestamp: reviewTimestamp.toISOString(),
           reviewerRole: adminUser.role,
           userId: submission.userId,
           actionType: actionTypeUpper,
           platform: submission.platform,
-          previousStatus: currentStatus,
-          newStatus: 'APPROVED',
           xpAwarded: xpToAward,
           previousXP,
           newTotalXP,
@@ -398,7 +423,7 @@ const processSubmissionVerdict = async ({
       message: `Submission ${submissionId} has been marked as APPROVED.${xpToAward > 0 ? ` +${xpToAward} XP awarded.` : ''}`
     };
   });
-  if (result && result.submission) {
+  if (result && result.submission && !result.alreadyReviewed) {
     try {
       const { syncInMemorySubmissionReview } = require('../repositories/submissionRepository');
       syncInMemorySubmissionReview(submissionId, result.submission.status, result.review);

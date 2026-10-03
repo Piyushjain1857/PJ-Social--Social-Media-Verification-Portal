@@ -511,14 +511,16 @@ const reviewSubmission = async (id, { status, feedback, adminId, adminName }) =>
     if (newStatus === 'APPROVED') {
       return {
         error: 'ALREADY_APPROVED',
-        code: 'INVALID_STATE_TRANSITION',
-        message: 'Submission is already approved. Cannot re-approve an approved submission.'
+        code: 'ALREADY_APPROVED',
+        statusCode: 400,
+        message: 'Submission has already been reviewed. Cannot re-approve an approved submission.'
       };
     }
     if (newStatus === 'REJECTED') {
       return {
         error: 'CANNOT_REJECT_APPROVED',
-        code: 'INVALID_STATE_TRANSITION',
+        code: 'CANNOT_REJECT_APPROVED',
+        statusCode: 400,
         message: 'Cannot reject an already approved and verified submission.'
       };
     }
@@ -529,11 +531,12 @@ const reviewSubmission = async (id, { status, feedback, adminId, adminName }) =>
     if (newStatus === 'REJECTED') {
       return {
         error: 'ALREADY_REJECTED',
-        code: 'INVALID_STATE_TRANSITION',
-        message: 'Submission is already rejected. Cannot re-reject a rejected submission.'
+        code: 'ALREADY_REJECTED',
+        statusCode: 400,
+        message: 'Submission has already been reviewed. Cannot re-reject a rejected submission.'
       };
     }
-    // Note: Transition from REJECTED -> APPROVED is permitted according to business rules
+    // Note: Transition from REJECTED -> APPROVED is permitted according to existing admin overturn rules
   }
 
   // 3. Rejection requires non-empty reason

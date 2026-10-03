@@ -31,14 +31,9 @@ const SAMPLE_DEMO_SUBMISSIONS = [
     postUrl: 'https://www.instagram.com/p/DAq_official_fest_2026',
     description: 'Shared the official University Tech Fest teaser on my 24h Instagram story with #PJTechFest2026 tag.',
     screenshotUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&auto=format&fit=crop&q=80',
-    status: 'APPROVED',
+    status: 'PENDING',
     createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    reviews: [
-      {
-        adminName: 'Dean of Media / Moderator',
-        feedback: 'Story view metrics, official handle mention, and timestamp verified. +25 XP credited to your profile!'
-      }
-    ]
+    reviews: []
   },
   {
     id: 1041,
@@ -58,14 +53,9 @@ const SAMPLE_DEMO_SUBMISSIONS = [
     postUrl: 'https://www.facebook.com/university.official/posts/9910283819284',
     description: 'Liked and reacted to the campus placement report release post.',
     screenshotUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop&q=80',
-    status: 'APPROVED',
+    status: 'PENDING',
     createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-    reviews: [
-      {
-        adminName: 'Campus Admin',
-        feedback: 'Verified engagement on primary placement broadcast. +10 XP awarded.'
-      }
-    ]
+    reviews: []
   }
 ];
 

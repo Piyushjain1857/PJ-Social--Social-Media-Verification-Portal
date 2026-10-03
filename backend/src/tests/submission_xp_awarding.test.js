@@ -251,14 +251,14 @@ async function runSubmissionXPAwardingTests() {
     console.log('✓ Verified: Exactly 1 PointTransaction exists for submission');
 
     // ------------------------------------------------------------------------
-    // TEST 4: Rejected → Approved = Award XP Only Once
+    // TEST 4: Rejected → Approved = Award XP Only Once (Existing Overturn Workflow)
     // ------------------------------------------------------------------------
     console.log('\n--- 5. Testing Flow: Rejected → Approved = Award XP Only Once ---');
 
     const userBefore4 = await prisma.user.findUnique({ where: { id: testCreator.id } });
     const initialXP4 = userBefore4.totalXP;
 
-    // sub2 was previously REJECTED. Now administrator reviews and approves it!
+    // sub2 was previously REJECTED. Now administrator reviews and approves it (overturn)!
     const approveRejectedSub2 = await makeRequest({
       method: 'POST',
       path: `/api/reviews/${sub2Id}/approve`,
@@ -290,6 +290,7 @@ async function runSubmissionXPAwardingTests() {
       headers: { Authorization: `Bearer ${adminToken}` },
       body: { feedback: 'Trying to approve again' }
     });
+    assert.strictEqual(reApproveSub2.status, 400);
     const userAfterReApprove = await prisma.user.findUnique({ where: { id: testCreator.id } });
     assert.strictEqual(userAfterReApprove.totalXP, userAfter4.totalXP, 'Second approval must NOT award duplicate XP');
     console.log(`✓ Second approval attempt blocked duplicate award: User XP remains ${userAfterReApprove.totalXP}`);
