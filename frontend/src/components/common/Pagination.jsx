@@ -54,6 +54,7 @@ export default function Pagination({
 
   return (
     <div
+      className="pagination-container"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -68,14 +69,14 @@ export default function Pagination({
       }}
     >
       {/* Result Count and Range */}
-      <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+      <div className="pagination-summary" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
         Showing <strong style={{ color: 'var(--text-highlight)' }}>{startItem}</strong> to{' '}
         <strong style={{ color: 'var(--text-highlight)' }}>{endItem}</strong> of{' '}
         <strong style={{ color: 'var(--text-highlight)' }}>{totalCount}</strong> entries
       </div>
 
       {/* Pagination Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+      <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
         {/* Page Size Selector */}
         {onLimitChange && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginRight: '0.5rem' }}>
