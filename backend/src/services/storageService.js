@@ -68,12 +68,16 @@ const resolveScreenshotPath = (filename) => {
     return null;
   }
 
-  // Only allow valid evidence filename structure
-  if (!/^evidence-\d+-[0-9a-f]{16}\.(jpg|png|webp|gif)$/.test(filename)) {
+  // Only allow valid evidence filename structure (generated or seed/test files)
+  if (!/^evidence-[a-zA-Z0-9_\-.]+\.(jpg|jpeg|png|webp|gif)$/i.test(filename)) {
     return null;
   }
 
   const filePath = path.join(UPLOAD_DIR, filename);
+  if (!filePath.startsWith(UPLOAD_DIR + path.sep)) {
+    return null;
+  }
+
   if (!fs.existsSync(filePath)) {
     return null;
   }
