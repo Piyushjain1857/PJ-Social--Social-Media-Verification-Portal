@@ -3090,7 +3090,33 @@ div:hover > .profile-photo-hover-badge {
 @media (max-width: 767px) {
   .layout-navbar {
     height: 56px;
-    padding: 0 0.85rem;
+    padding: 0 0.75rem;
+    gap: 0.35rem;
+  }
+
+  .layout-navbar-left {
+    gap: 0.5rem;
+  }
+
+  /* Sleek modern mobile menu toggle button */
+  .navbar-mobile-toggle {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f8fafc !important;
+    font-size: 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .navbar-mobile-toggle:hover,
+  .navbar-mobile-toggle:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
   }
 
   .breadcrumb-root,
@@ -3098,17 +3124,126 @@ div:hover > .profile-photo-hover-badge {
     display: none; /* Keep breadcrumb clean on mobile */
   }
 
-  .navbar-user-name {
-    display: none; /* Show only avatar and badge on mobile */
+  .breadcrumb-current {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    white-space: nowrap;
   }
 
+  .navbar-user-name {
+    display: none; /* Show only avatar on mobile */
+  }
+
+  /* Hide redundant role pill on mobile to give room for notifications and profile */
   .navbar-role-pill {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.68rem;
+    display: none !important;
   }
 
   .api-status-pill {
     display: none; /* Hide latency pill on small screens to conserve navbar space */
+  }
+
+  /* Compact Navbar Search Trigger on Mobile */
+  .layout-navbar-center {
+    flex: 0 0 auto !important;
+    max-width: none !important;
+    margin: 0 0.15rem !important;
+  }
+
+  .navbar-search-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .navbar-search-btn:hover,
+  .navbar-search-btn:active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .navbar-search-placeholder,
+  .navbar-search-btn kbd {
+    display: none !important;
+  }
+
+  /* Right-side controls container */
+  .layout-navbar-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Sleek Gold Points Pill */
+  .navbar-points-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    padding: 0.22rem 0.55rem !important;
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    border-radius: 20px !important;
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.18), rgba(249, 115, 22, 0.18)) !important;
+    border: 1px solid rgba(234, 179, 8, 0.4) !important;
+    color: #facc15 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Notification Bell Button */
+  .navbar-notif-trigger {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    font-size: 1rem !important;
+    color: #94a3b8 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .navbar-notif-trigger:hover,
+  .navbar-notif-trigger:active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #f8fafc !important;
+  }
+
+  /* Profile Avatar Trigger */
+  .navbar-profile-trigger {
+    padding: 2px !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+
+  .navbar-profile-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50% !important;
+    border: 1.5px solid rgba(52, 211, 153, 0.5) !important;
+  }
+
+  .navbar-chevron {
+    display: none !important;
   }
 
   .layout-content-area {
@@ -3118,8 +3253,8 @@ div:hover > .profile-photo-hover-badge {
   .layout-page-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.85rem;
-    margin-bottom: 1.25rem;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   .layout-header-title-wrap {
@@ -3127,11 +3262,11 @@ div:hover > .profile-photo-hover-badge {
   }
 
   .layout-header-title {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
   }
 
   .layout-header-subtitle {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
 
   .layout-header-actions {
@@ -3142,8 +3277,10 @@ div:hover > .profile-photo-hover-badge {
   }
 
   .layout-header-actions button {
-    flex: 1 1 calc(50% - 0.5rem);
-    min-height: 42px;
+    flex: 1 1 calc(50% - 0.25rem);
+    min-height: 40px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
     justify-content: center;
   }
 
@@ -3201,17 +3338,18 @@ div:hover > .profile-photo-hover-badge {
     justify-content: center;
   }
 
-  /* Dropdown Menus on Mobile */
-  .profile-dropdown-menu {
-    width: 270px;
-    max-width: calc(100vw - 20px);
-    right: -10px;
-  }
-
+  /* Floating Dropdown Menus on Mobile */
+  .profile-dropdown-menu,
   .notif-dropdown-menu {
-    width: 320px;
-    max-width: calc(100vw - 16px);
-    right: -50px;
+    position: fixed !important;
+    top: 60px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+    border-radius: var(--radius-md, 14px) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+    transform: none !important;
   }
 }
 
@@ -3222,7 +3360,10 @@ div:hover > .profile-photo-hover-badge {
   }
 
   .layout-header-actions button {
-    flex: 1 1 100%; /* Full-width buttons on extra-compact phones */
+    flex: 1 1 calc(50% - 0.25rem);
+    min-height: 38px;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.5rem;
   }
 
   .notif-dropdown-menu {
@@ -13131,4 +13272,455 @@ input[type="date"] {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+}
+
+/* ==========================================================================
+   SECTION: NORMAL USER DASHBOARD MOBILE RESPONSIVE ENGINE
+   Comprehensive layout, typography, touch target & grid adjustments
+   for all normal creator user views on screens <= 768px, <= 480px, <= 380px
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* ── 1. Welcome Creator Hero Header (DashboardView) ── */
+  .glass-panel:has(.badge-user),
+  .glass-panel:has(.role-creator) {
+    padding: 1.15rem 1rem !important;
+    gap: 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  /* Identity row (Avatar + Text info) */
+  .glass-panel:has(.badge-user) > div:first-child,
+  .glass-panel:has(.role-creator) > div:first-child {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.85rem !important;
+    width: 100% !important;
+  }
+
+  /* Avatar gradient ring & letter */
+  .glass-panel:has(.badge-user) > div:first-child > div:first-child,
+  .glass-panel:has(.role-creator) > div:first-child > div:first-child {
+    width: 48px !important;
+    height: 48px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .glass-panel:has(.badge-user) > div:first-child > div:first-child > div,
+  .glass-panel:has(.role-creator) > div:first-child > div:first-child > div {
+    font-size: 1.2rem !important;
+  }
+
+  /* Role & verified badges row */
+  .glass-panel:has(.badge-user) .badge,
+  .glass-panel:has(.role-creator) .badge {
+    font-size: 0.68rem !important;
+    padding: 0.12rem 0.5rem !important;
+  }
+
+  /* Welcome greeting headline */
+  .glass-panel:has(.badge-user) h2,
+  .glass-panel:has(.role-creator) h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.25 !important;
+    margin-top: 0.15rem !important;
+  }
+
+  /* Subtitle text */
+  .glass-panel:has(.badge-user) p,
+  .glass-panel:has(.role-creator) p {
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+    color: var(--text-secondary, #94a3b8) !important;
+  }
+
+  /* Action buttons container (Creator Studio + Submit Activity) */
+  .glass-panel:has(.badge-user) > div:last-child,
+  .glass-panel:has(.role-creator) > div:last-child {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .glass-panel:has(.badge-user) > div:last-child > button,
+  .glass-panel:has(.role-creator) > div:last-child > button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    padding: 0.5rem 0.65rem !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap !important;
+    border-radius: var(--radius-sm, 8px) !important;
+  }
+
+  /* ── 2. KPI Stat Cards Grid (Total Submissions, Approved, Pending, Rejected) ── */
+  .glass-panel:has(.badge-user) + div[style*="grid"],
+  .glass-panel:has(.role-creator) + div[style*="grid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+
+  .glass-panel:has(.badge-user) + div[style*="grid"] > .glass-panel,
+  .glass-panel:has(.role-creator) + div[style*="grid"] > .glass-panel {
+    padding: 0.95rem 0.85rem !important;
+    gap: 0.2rem !important;
+    border-radius: var(--radius-sm, 10px) !important;
+  }
+
+  /* Stat watermark glyph */
+  .glass-panel:has(.badge-user) + div[style*="grid"] > .glass-panel > span[style*="position: absolute"],
+  .glass-panel:has(.role-creator) + div[style*="grid"] > .glass-panel > span[style*="position: absolute"] {
+    font-size: 1.85rem !important;
+    right: 0.4rem !important;
+    opacity: 0.05 !important;
+  }
+
+  /* Stat card label */
+  .glass-panel:has(.badge-user) + div[style*="grid"] > .glass-panel > div:nth-child(2),
+  .glass-panel:has(.role-creator) + div[style*="grid"] > .glass-panel > div:nth-child(2) {
+    font-size: 0.64rem !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Stat card counter value */
+  .glass-panel:has(.badge-user) + div[style*="grid"] > .glass-panel > div:nth-child(3),
+  .glass-panel:has(.role-creator) + div[style*="grid"] > .glass-panel > div:nth-child(3) {
+    font-size: 1.55rem !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Stat card subtitle */
+  .glass-panel:has(.badge-user) + div[style*="grid"] > .glass-panel > div:last-child,
+  .glass-panel:has(.role-creator) + div[style*="grid"] > .glass-panel > div:last-child {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+  }
+
+  /* ── 3. Gamification Level Progress Card (GamificationSummary) ── */
+  .level-progress-card {
+    padding: 1.15rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  .lpc-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .lpc-header-left {
+    gap: 0.75rem !important;
+  }
+
+  .lpc-level-badge {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.4rem !important;
+  }
+
+  .lpc-level-name {
+    font-size: 1.1rem !important;
+  }
+
+  .lpc-xp-total {
+    width: 100% !important;
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    padding-top: 0.5rem !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    text-align: left !important;
+  }
+
+  .lpc-xp-number {
+    font-size: 1.4rem !important;
+    justify-content: flex-start !important;
+  }
+
+  .lpc-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.45rem !important;
+  }
+
+  .lpc-stat {
+    padding: 0.55rem 0.65rem !important;
+  }
+
+  .lpc-stat-label {
+    font-size: 0.64rem !important;
+  }
+
+  .lpc-stat-value {
+    font-size: 0.88rem !important;
+  }
+
+  .lpc-progress-labels {
+    font-size: 0.78rem !important;
+  }
+
+  .lpc-progress-footer {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.35rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  /* XP Earning Rules ribbon bar */
+  .level-progress-card + div,
+  div[style*="rgba(15, 23, 42, 0.6)"]:has(> div:first-child:has(strong)) {
+    padding: 0.75rem 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+
+  /* ── 4. Points Summary Card (PointsSummary) ── */
+  .glass-panel:has(.points-card-stats-grid) {
+    padding: 1.15rem 1rem !important;
+    gap: 0.95rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  /* Header of points card (Title + Leaderboard button) */
+  .glass-panel:has(.points-card-stats-grid) > div:first-of-type,
+  .glass-panel:has(.points-card-stats-grid) > div:nth-child(2) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+  }
+
+  .glass-panel:has(.points-card-stats-grid) > div:nth-child(2) button,
+  .glass-panel:has(.points-card-stats-grid) button:has(span) {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+  }
+
+  /* 3 metric boxes: Total Points, This Week, This Month */
+  .points-card-stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.45rem !important;
+  }
+
+  .points-stat-box {
+    padding: 0.6rem 0.45rem !important;
+  }
+
+  .points-stat-box-label {
+    font-size: 0.62rem !important;
+    gap: 0.2rem !important;
+  }
+
+  .points-stat-box-value {
+    font-size: 1.15rem !important;
+  }
+
+  /* Action breakdown row (Likes, Comments, Stories) */
+  .points-breakdown-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+  }
+
+  .points-action-pill {
+    padding: 0.25rem 0.45rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Activity feeds under points card */
+  .glass-panel:has(.points-card-stats-grid) > div[style*="minmax(280px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* ── 5. Creator Compliance & Platform Breakdown ── */
+  div[style*="minmax(260px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  div[style*="minmax(260px, 1fr)"] > .glass-panel {
+    padding: 1.15rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  /* ── 6. Recent Submissions + Recent Notifications ── */
+  div[style*="minmax(min(100%, 280px), 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  div[style*="minmax(min(100%, 280px), 1fr)"] > .glass-panel {
+    padding: 1.15rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  /* Recent submission row items */
+  div[style*="minmax(min(100%, 280px), 1fr)"] .glass-panel div[style*="justify-content: space-between"][style*="border: 1px solid"] {
+    padding: 0.65rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  /* ── 7. Quick Actions Grid (DashboardView) ── */
+  div[style*="minmax(180px, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.55rem !important;
+  }
+
+  div[style*="minmax(180px, 1fr)"] > button {
+    padding: 0.75rem 0.65rem !important;
+    gap: 0.55rem !important;
+    min-height: 52px !important;
+    border-radius: var(--radius-sm, 10px) !important;
+  }
+
+  div[style*="minmax(180px, 1fr)"] > button > span:first-child {
+    width: 1.85rem !important;
+    height: 1.85rem !important;
+    font-size: 1.1rem !important;
+  }
+
+  div[style*="minmax(180px, 1fr)"] > button div > div:first-child {
+    font-size: 0.82rem !important;
+  }
+
+  div[style*="minmax(180px, 1fr)"] > button div > div:last-child {
+    font-size: 0.68rem !important;
+  }
+
+  /* ── 8. UserSpace (Creator Studio Workspace Tab) ── */
+  .user-space-wrapper {
+    gap: 1.15rem !important;
+  }
+
+  .user-hero-card {
+    padding: 1.25rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  .user-hero-inner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+
+  .user-hero-identity {
+    min-width: 0 !important;
+    width: 100% !important;
+    gap: 0.85rem !important;
+  }
+
+  .user-hero-avatar-wrap {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .user-hero-avatar {
+    font-size: 1.35rem !important;
+  }
+
+  .user-hero-details h1 {
+    font-size: 1.25rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .user-hero-badges {
+    gap: 0.35rem !important;
+  }
+
+  .user-hero-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .user-hero-actions button {
+    width: 100% !important;
+    min-height: 40px !important;
+    justify-content: center !important;
+  }
+
+  .user-hero-actions .telemetry-pill {
+    grid-column: 1 / -1 !important;
+    justify-content: center !important;
+  }
+
+  .user-tabs-bar {
+    padding: 0.35rem 0.5rem !important;
+    gap: 0.35rem !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .user-tab-btn {
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .user-pane-card {
+    padding: 1.15rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  .platform-select-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .platform-card-btn {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .platform-card-btn .p-icon {
+    font-size: 1.4rem !important;
+  }
+
+  .platform-card-btn .p-name {
+    font-size: 0.76rem !important;
+  }
+}
+
+/* ── 9. Ultra-compact Phones (< 440px) ── */
+@media (max-width: 440px) {
+  .glass-panel:has(.badge-user) > div:last-child,
+  .glass-panel:has(.role-creator) > div:last-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  .points-card-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .points-stat-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.6rem 0.85rem !important;
+  }
+
+  .user-hero-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .lpc-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 10. Tiny Phones (< 360px) ── */
+@media (max-width: 360px) {
+  .layout-header-actions button {
+    flex: 1 1 100% !important;
+  }
+
+  div[style*="minmax(180px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .glass-panel:has(.badge-user) + div[style*="grid"],
+  .glass-panel:has(.role-creator) + div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
 }
