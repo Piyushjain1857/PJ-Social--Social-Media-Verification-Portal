@@ -3223,37 +3223,78 @@ div:hover > .profile-photo-hover-badge {
   }
 
   .layout-page-header {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.15rem;
   }
 
   .layout-header-title-wrap {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 160px;
   }
 
   .layout-header-title {
     font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .layout-header-title > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.16) 0%, rgba(99, 102, 241, 0.16) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.32);
+    font-size: 1rem;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
+    flex-shrink: 0;
   }
 
   .layout-header-subtitle {
     font-size: 0.8rem;
+    color: var(--text-secondary, #94a3b8);
+    margin-top: 0.2rem;
   }
 
   .layout-header-actions {
     display: flex;
-    flex-wrap: wrap;
-    width: 100%;
+    align-items: center;
     gap: 0.5rem;
+    width: auto;
+    flex-shrink: 0;
   }
 
   .layout-header-actions button {
-    flex: 1 1 calc(50% - 0.25rem);
-    min-height: 40px;
-    padding: 0.45rem 0.75rem;
+    min-height: 34px;
+    padding: 0.35rem 0.75rem;
     font-size: 0.8rem;
     justify-content: center;
+  }
+
+  .layout-header-actions .btn-refresh-pill {
+    flex: 0 0 auto;
+    width: auto;
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    color: #38bdf8 !important;
+    font-weight: 700 !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 14px rgba(56, 189, 248, 0.15) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .layout-header-actions .btn-refresh-pill:active {
+    transform: scale(0.96) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
   }
 
   /* Form touch targets on mobile */
@@ -14384,9 +14425,627 @@ input[type="date"] {
   .gamepoints-badge-dyn {
     display: none !important;
   }
+
+  /* ── 10. Submit Activity & Evidence Verification Flow (SubmitActivityView) ── */
+  .submit-activity-page-container {
+    gap: 1.15rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Compact Stepper Track with frosted gradient and glow */
+  .submit-stepper-track {
+    padding: 0.65rem 0.85rem !important;
+    gap: 0.25rem !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-radius: 14px !important;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    overflow-x: hidden !important;
+    scrollbar-width: none !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .submit-stepper-track::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .submit-stepper-item {
+    flex: 0 0 auto !important;
+    gap: 0.35rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .submit-stepper-circle {
+    width: 25px !important;
+    height: 25px !important;
+    font-size: 0.72rem !important;
+    flex-shrink: 0 !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* Pulsing cyan aura on active step circle */
+  @keyframes stepperPulsingAura {
+    0%, 100% {
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4), inset 0 0 4px rgba(56, 189, 248, 0.25);
+      border-color: #38bdf8;
+    }
+    50% {
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.85), inset 0 0 8px rgba(56, 189, 248, 0.5);
+      border-color: #67e8f9;
+    }
+  }
+
+  .submit-stepper-item.active .submit-stepper-circle {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.28) 0%, rgba(14, 165, 233, 0.18) 100%) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    animation: stepperPulsingAura 2.2s infinite ease-in-out !important;
+  }
+
+  .submit-stepper-item.completed .submit-stepper-circle {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.28) 0%, rgba(5, 150, 105, 0.18) 100%) !important;
+    border-color: #10b981 !important;
+    color: #34d399 !important;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35) !important;
+  }
+
+  .submit-stepper-arrow {
+    font-size: 0.72rem !important;
+    opacity: 0.38 !important;
+    margin: 0 0.1rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Only active step displays its text label on mobile, keeping all 5 step circles in a single row */
+  .submit-stepper-item:not(.active) > span:not(.submit-stepper-circle) {
+    display: none !important;
+  }
+
+  .submit-stepper-item.active > span:not(.submit-stepper-circle) {
+    display: inline-block !important;
+    font-size: 0.76rem !important;
+    font-weight: 800 !important;
+    color: #38bdf8 !important;
+    max-width: 95px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.3) !important;
+  }
+
+  /* Policy & Disclaimer Banner with frosted amber glass */
+  .submit-protocol-banner {
+    padding: 0.95rem 1.05rem !important;
+    border-radius: 14px !important;
+    gap: 0.8rem !important;
+    background: radial-gradient(circle at top left, rgba(245, 158, 11, 0.12) 0%, rgba(15, 23, 42, 0.85) 85%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.32) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(251, 191, 36, 0.22) !important;
+    box-sizing: border-box !important;
+  }
+
+  .submit-protocol-icon-box {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.2rem !important;
+    border-radius: 10px !important;
+    background: rgba(245, 158, 11, 0.18) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.25) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .submit-protocol-title {
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    color: #fcd34d !important;
+  }
+
+  .submit-protocol-desc {
+    font-size: 0.77rem !important;
+    line-height: 1.45 !important;
+    color: #cbd5e1 !important;
+  }
+
+  /* Main Form Panel with ambient cyan-indigo glow */
+  .submit-form-panel {
+    padding: 1.3rem 1.05rem !important;
+    border-radius: 16px !important;
+    gap: 1.35rem !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .submit-form-header {
+    padding-bottom: 0.95rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  }
+
+  .submit-pipeline-badge {
+    font-size: 0.65rem !important;
+    padding: 0.2rem 0.55rem !important;
+    margin-bottom: 0.45rem !important;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%) !important;
+    border: 1px solid rgba(56, 189, 248, 0.38) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.22) !important;
+    color: #38bdf8 !important;
+  }
+
+  .submit-form-title {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    margin: 0 0 0.25rem 0 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .submit-form-subtitle {
+    font-size: 0.79rem !important;
+    line-height: 1.4 !important;
+    color: var(--text-secondary, #94a3b8) !important;
+  }
+
+  /* Step Header Labels */
+  .submit-step-label-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+    margin-bottom: 0.6rem !important;
+  }
+
+  .submit-step-label {
+    font-size: 0.86rem !important;
+    font-weight: 800 !important;
+    gap: 0.45rem !important;
+  }
+
+  .submit-step-badge {
+    font-size: 0.62rem !important;
+    padding: 0.12rem 0.45rem !important;
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    color: #38bdf8 !important;
+    font-weight: 800 !important;
+  }
+
+  .submit-step-hint {
+    font-size: 0.73rem !important;
+    color: var(--text-muted, #94a3b8) !important;
+  }
+
+  /* Platform Selection — 3-column compact button grid */
+  .submit-platform-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.55rem !important;
+  }
+
+  .submit-platform-btn {
+    padding: 0.8rem 0.35rem !important;
+    border-radius: 12px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0.35rem !important;
+    min-height: 78px !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .submit-platform-btn:active {
+    transform: scale(0.96) !important;
+  }
+
+  .submit-platform-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.4rem !important;
+    border-radius: 9px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .submit-platform-info {
+    align-items: center !important;
+    gap: 0.1rem !important;
+    overflow: visible !important;
+  }
+
+  .submit-platform-name {
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+    color: var(--text-highlight, #f8fafc) !important;
+  }
+
+  .submit-platform-btn:not(.selected) .submit-platform-status {
+    display: none !important;
+  }
+
+  .submit-platform-btn.selected .submit-platform-status {
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Specific Platform Active Glows on Mobile */
+  .submit-platform-btn.selected.instagram {
+    background: linear-gradient(145deg, rgba(225, 48, 108, 0.2) 0%, rgba(131, 58, 180, 0.1) 50%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #e1306c !important;
+    box-shadow: 0 0 20px rgba(225, 48, 108, 0.35) !important;
+  }
+
+  .submit-platform-btn.selected.linkedin {
+    background: linear-gradient(145deg, rgba(10, 102, 194, 0.22) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #0a66c2 !important;
+    box-shadow: 0 0 20px rgba(10, 102, 194, 0.35) !important;
+  }
+
+  .submit-platform-btn.selected.facebook {
+    background: linear-gradient(145deg, rgba(24, 119, 242, 0.22) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #1877f2 !important;
+    box-shadow: 0 0 20px rgba(24, 119, 242, 0.35) !important;
+  }
+
+  /* Official Accounts Selection */
+  .submit-accounts-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .submit-account-card {
+    padding: 0.95rem 1.05rem !important;
+    border-radius: 12px !important;
+    gap: 0.55rem !important;
+    box-sizing: border-box !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .submit-account-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  .submit-account-card.selected {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.25), inset 0 1px 0 rgba(56, 189, 248, 0.2) !important;
+  }
+
+  .submit-account-header {
+    gap: 0.5rem !important;
+  }
+
+  .submit-account-name {
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+  }
+
+  .submit-official-badge {
+    background: rgba(16, 185, 129, 0.18) !important;
+    border: 1px solid rgba(16, 185, 129, 0.45) !important;
+    color: #34d399 !important;
+    font-weight: 800 !important;
+  }
+
+  .submit-account-meta {
+    font-size: 0.76rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.45rem !important;
+  }
+
+  .submit-account-inspect-link {
+    font-size: 0.74rem !important;
+    color: #38bdf8 !important;
+    padding: 0.15rem 0 !important;
+  }
+
+  .submit-account-active-tag {
+    font-size: 0.71rem !important;
+    color: #38bdf8 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Action Types Grid */
+  .submit-actions-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+
+  .submit-action-card {
+    padding: 0.9rem 1rem !important;
+    border-radius: 12px !important;
+    gap: 0.35rem !important;
+    box-sizing: border-box !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .submit-action-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  .submit-action-card.selected.like {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #f43f5e !important;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.25) !important;
+  }
+
+  .submit-action-card.selected.comment {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.25) !important;
+  }
+
+  .submit-action-card.selected.story {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+    border-color: #a855f7 !important;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.25) !important;
+  }
+
+  .submit-action-name-wrap {
+    font-size: 0.9rem !important;
+    font-weight: 800 !important;
+    gap: 0.5rem !important;
+  }
+
+  .submit-action-desc {
+    font-size: 0.75rem !important;
+    line-height: 1.4 !important;
+    color: var(--text-secondary, #cbd5e1) !important;
+  }
+
+  /* Post URL Input */
+  .submit-url-field {
+    font-size: 16px !important; /* Prevents iOS auto-zoom on input focus */
+    padding: 0.8rem 0.85rem 0.8rem 2.65rem !important;
+    border-radius: 11px !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .submit-url-field:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+  }
+
+  .submit-url-icon-badge {
+    left: 0.9rem !important;
+    font-size: 1rem !important;
+    color: #38bdf8 !important;
+  }
+
+  /* Screenshot Evidence Dropzone & Preview */
+  .submit-dropzone {
+    padding: 1.6rem 1rem !important;
+    border-radius: 14px !important;
+    gap: 0.75rem !important;
+    box-sizing: border-box !important;
+    background: radial-gradient(circle at center, rgba(56, 189, 248, 0.04) 0%, rgba(15, 23, 42, 0.5) 100%) !important;
+    border: 1.5px dashed rgba(56, 189, 248, 0.35) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .submit-dropzone:active {
+    transform: scale(0.985) !important;
+    border-color: #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.08) !important;
+  }
+
+  .submit-dropzone-icon-aura {
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 1.6rem !important;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.5) 75%) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.2) !important;
+  }
+
+  .submit-dropzone-primary-text {
+    font-size: 0.94rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  .submit-dropzone-subtext {
+    font-size: 0.79rem !important;
+  }
+
+  .submit-format-pills {
+    gap: 0.35rem !important;
+  }
+
+  .submit-format-pill {
+    font-size: 0.66rem !important;
+    padding: 0.12rem 0.48rem !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .submit-preview-card {
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .submit-preview-image-wrap {
+    height: 180px !important;
+  }
+
+  .submit-preview-meta-row {
+    padding: 0.95rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .submit-preview-file-info {
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 0.75rem !important;
+  }
+
+  .submit-preview-filename {
+    max-width: 100% !important;
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .submit-preview-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    width: 100% !important;
+    gap: 0.55rem !important;
+  }
+
+  .submit-preview-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 0.55rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+  }
+
+  .submit-mode-toggle-btn {
+    font-size: 0.76rem !important;
+    padding: 0.35rem 0 !important;
+    min-height: 40px !important;
+  }
+
+  /* Description Textarea */
+  #description-input {
+    font-size: 16px !important; /* Prevents iOS auto-zoom on input focus */
+    padding: 0.8rem 0.9rem !important;
+    border-radius: 11px !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-sizing: border-box !important;
+  }
+
+  #description-input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+  }
+
+  /* Submission Form Footer & Primary Button */
+  .submit-form-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+    padding-top: 1.25rem !important;
+  }
+
+  .submit-security-footnote {
+    font-size: 0.76rem !important;
+    text-align: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    line-height: 1.45 !important;
+  }
+
+  .submit-form-footer > div:last-child {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+  }
+
+  .submit-form-footer > div:last-child .btn-secondary {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.8rem !important;
+    font-size: 0.88rem !important;
+    min-height: 46px !important;
+  }
+
+  .submit-btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.9rem 1.35rem !important;
+    font-size: 0.95rem !important;
+    min-height: 50px !important;
+    background: linear-gradient(135deg, #059669 0%, #10b981 60%, #34d399 100%) !important;
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.01em !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .submit-btn-primary:active {
+    transform: scale(0.97) !important;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.5) !important;
+  }
+
+  /* Submission Success Panel */
+  .submit-success-panel {
+    padding: 2rem 1.15rem !important;
+    gap: 1.25rem !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+    background: radial-gradient(circle at center top, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.9) 75%) !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.2) !important;
+  }
+
+  .submit-success-icon-aura {
+    width: 64px !important;
+    height: 64px !important;
+    font-size: 2.2rem !important;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.4) !important;
+  }
+
+  .submit-receipt-card {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.85rem !important;
+    padding: 1.05rem !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+    background: rgba(15, 23, 42, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  }
+
+  .submit-success-panel > div:last-child {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.65rem !important;
+  }
+
+  .submit-success-panel > div:last-child button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+  }
 }
 
-/* ── 10. Ultra-compact Phones (< 440px) ── */
+/* ── 11. Ultra-compact Phones (< 440px) ── */
 @media (max-width: 440px) {
   .glass-panel:has(.badge-user) > div:last-child,
   .glass-panel:has(.role-creator) > div:last-child {
@@ -14432,9 +15091,28 @@ input[type="date"] {
   .gamepoints-subnav-tabs {
     grid-template-columns: 1fr !important;
   }
+
+  /* Submit Activity ultra-compact adjustments */
+  .submit-receipt-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .submit-platform-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.2rem !important;
+  }
+
+  .submit-platform-name {
+    font-size: 0.74rem !important;
+  }
+
+  .submit-stepper-item.active > span:not(.submit-stepper-circle) {
+    max-width: 75px !important;
+  }
 }
 
-/* ── 11. Tiny Phones (< 360px) ── */
+/* ── 12. Tiny Phones (< 360px) ── */
 @media (max-width: 360px) {
   .layout-header-actions button {
     flex: 1 1 100% !important;
@@ -14459,5 +15137,20 @@ input[type="date"] {
 
   .platform-select-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .submit-platform-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .submit-platform-btn {
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    padding: 0.6rem 0.85rem !important;
+    min-height: auto !important;
+  }
+
+  .submit-platform-info {
+    align-items: flex-start !important;
   }
 }

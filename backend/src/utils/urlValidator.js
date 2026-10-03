@@ -164,14 +164,6 @@ const validateSubmissionPostUrl = (platform, postUrl) => {
     }
   }
 
-  const cleanPath = parsed.pathname.replace(/^\/+|\/+$/g, '');
-  if (!cleanPath) {
-    return {
-      valid: false,
-      message: 'Post URL must point to a specific post, comment, or story, not just the homepage.'
-    };
-  }
-
   return {
     valid: true,
     cleanUrl: parsed.toString()
