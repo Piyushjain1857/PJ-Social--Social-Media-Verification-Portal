@@ -17,6 +17,7 @@ const { hashPassword } = require('../utils/hash');
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const { getAuditLogs: getRecordedAuditLogs } = require('../services/auditLogService');
+const { sendAccountCreatedEmail, sendPasswordResetEmail } = require('../services/emailService');
 
 /**
  * GET /api/superadmin/audit-logs
@@ -299,6 +300,11 @@ const createUserManagement = async (req, res, next) => {
       console.warn('[superAdminController] Provisioning notification failed:', notifErr.message);
     }
 
+    // Dispatch welcome email asynchronously (fault-tolerant)
+    sendAccountCreatedEmail(newUser).catch(mailErr => {
+      console.warn('[superAdminController] Provisioning email skipped:', mailErr.message);
+    });
+
     // Never expose password hash
     const sanitized = {
       id: newUser.id,
@@ -456,6 +462,15 @@ const updateUserManagement = async (req, res, next) => {
       } catch (notifErr) {
         console.warn('[superAdminController] Notification dispatch failed:', notifErr.message);
       }
+    }
+
+    // If password was reset by administrator, dispatch notification email
+    if (password) {
+      sendPasswordResetEmail(updatedUser, {
+        temporaryPassword: password
+      }).catch(mailErr => {
+        console.warn('[superAdminController] Password reset email skipped:', mailErr.message);
+      });
     }
 
     // Strip password

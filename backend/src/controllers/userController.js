@@ -2,6 +2,7 @@ const { getAllUsers, getUsersPaginated, updateUserRole, findUserById, updateUser
 const { getUserSubmissions, getAllSubmissions } = require('../repositories/submissionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
+const { sendPasswordChangedEmail } = require('../services/emailService');
 
 /**
  * GET /api/users/me
@@ -250,6 +251,14 @@ const changeUserPassword = async (req, res, next) => {
     } catch (notifErr) {
       console.warn('[changeUserPassword] Failed to send notification:', notifErr.message);
     }
+
+    // Send transactional security email notification
+    sendPasswordChangedEmail(user, {
+      ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown',
+      time: new Date().toUTCString()
+    }).catch(mailErr => {
+      console.warn('[changeUserPassword] Password changed email skipped:', mailErr.message);
+    });
 
     return res.status(200).json({
       success: true,

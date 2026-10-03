@@ -1,6 +1,7 @@
 const { findUserByEmail, findUserById, createUser } = require('../repositories/userRepository');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
+const { sendAccountCreatedEmail, sendLoginNotificationEmail } = require('../services/emailService');
 
 // Simple regex for email validation
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,6 +67,11 @@ const register = async (req, res, next) => {
       email: newUser.email,
       role: newUser.role,
       name: newUser.name
+    });
+
+    // Asynchronously dispatch transactional welcome email (fault-tolerant, never blocks registration)
+    sendAccountCreatedEmail(newUser).catch(err => {
+      console.warn('[AuthController] Account created email notification skipped:', err.message);
     });
 
     return res.status(201).json({
@@ -141,6 +147,15 @@ const login = async (req, res, next) => {
       email: user.email,
       role: user.role,
       name: user.name
+    });
+
+    // Asynchronously dispatch transactional login notification email (non-blocking)
+    sendLoginNotificationEmail(user, {
+      ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown',
+      userAgent: req.headers['user-agent'] || 'Web Browser',
+      time: new Date().toUTCString()
+    }).catch(err => {
+      console.warn('[AuthController] Login notification email skipped:', err.message);
     });
 
     return res.status(200).json({

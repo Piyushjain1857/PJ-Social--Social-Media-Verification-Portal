@@ -9,6 +9,8 @@ const {
   getAdminGamificationOverviewData
 } = require('../repositories/pointTransactionRepository');
 const { createNotification } = require('../repositories/notificationRepository');
+const { sendXPNotificationEmail, sendLevelUpEmail } = require('./emailService');
+const { findUserById } = require('../repositories/userRepository');
 
 const { prisma } = require('../config/db');
 
@@ -453,6 +455,26 @@ const adjustPoints = async ({
   } catch (rtErr) {
     // Non-fatal
   }
+
+  // Transactional Email notification (non-blocking)
+  findUserById(userId).then(targetUser => {
+    if (targetUser && targetUser.email) {
+      sendXPNotificationEmail(targetUser, {
+        xp: deltaPoints,
+        actionType: 'ADJUSTMENT',
+        reason: cleanReason,
+        newTotalXP: result.totalPoints
+      }).catch(err => {
+        console.warn('[PointsService] XP adjustment email skipped:', err.message);
+      });
+
+      if (leveledUp) {
+        sendLevelUpEmail(targetUser, newLevel).catch(err => {
+          console.warn('[PointsService] Level-up email skipped:', err.message);
+        });
+      }
+    }
+  }).catch(() => null);
 
   return {
     success: true,

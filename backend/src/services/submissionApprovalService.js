@@ -1,5 +1,10 @@
 const { prisma, checkDatabaseConnection } = require('../config/db');
 const { calculateUserLevel } = require('./levelService');
+const {
+  sendSubmissionApprovedEmail,
+  sendSubmissionRejectedEmail,
+  sendLevelUpEmail
+} = require('./emailService');
 
 /**
  * Standard default XP values if DB configuration is missing or inactive
@@ -439,6 +444,30 @@ const processSubmissionVerdict = async ({
       }
     } catch (rtErr) {
       console.warn('[SubmissionApproval] Realtime broadcast notice:', rtErr.message);
+    }
+
+    // Transactional Email Notifications (Fault-tolerant, non-blocking)
+    try {
+      const recipientUser = result.submission.user;
+      if (recipientUser && recipientUser.email) {
+        if (result.submission.status === 'APPROVED') {
+          sendSubmissionApprovedEmail(recipientUser, result.submission, result.pointsAwarded).catch(err => {
+            console.warn('[SubmissionApproval] Approval email notification skipped:', err.message);
+          });
+
+          if (result.pointsAwarded?.leveledUp && result.pointsAwarded?.level) {
+            sendLevelUpEmail(recipientUser, result.pointsAwarded.level).catch(err => {
+              console.warn('[SubmissionApproval] Level-up email notification skipped:', err.message);
+            });
+          }
+        } else if (result.submission.status === 'REJECTED') {
+          sendSubmissionRejectedEmail(recipientUser, result.submission, result.review?.feedback).catch(err => {
+            console.warn('[SubmissionApproval] Rejection email notification skipped:', err.message);
+          });
+        }
+      }
+    } catch (emailErr) {
+      console.warn('[SubmissionApproval] Email dispatch caught non-fatally:', emailErr.message);
     }
   }
 

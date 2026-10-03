@@ -858,6 +858,80 @@ Tokens are obtained via \`POST /api/auth/login\` or \`POST /api/auth/register\`.
           200: { description: 'Gamification audit trail entries' }
         }
       }
+    },
+    '/super-admin/email/test': {
+      post: {
+        tags: ['Super Admin Email Control Center'],
+        summary: 'Send Protected Test Transactional Email',
+        description: 'Dispatches a verified test email to validate Nodemailer transporter and delivery logging.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['recipient'],
+                properties: {
+                  recipient: { type: 'string', format: 'email', example: 'admin@portal.com' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'Test email successfully dispatched and logged' },
+          400: { description: 'Invalid recipient email format' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden - Super Admin only' }
+        }
+      }
+    },
+    '/super-admin/email/logs': {
+      get: {
+        tags: ['Super Admin Email Control Center'],
+        summary: 'Search, Filter, and Paginate Transactional Email Delivery Logs',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['ALL', 'SENT', 'FAILED', 'PENDING'] } },
+          { name: 'template', in: 'query', schema: { type: 'string' } },
+          { name: 'startDate', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'endDate', in: 'query', schema: { type: 'string', format: 'date' } }
+        ],
+        responses: {
+          200: { description: 'Paginated transactional email delivery logs' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden - Super Admin only' }
+        }
+      }
+    },
+    '/super-admin/email/status': {
+      get: {
+        tags: ['Super Admin Email Control Center'],
+        summary: 'Get Transactional Email Service Telemetry',
+        description: 'Returns safe SMTP host, port, provider, and masked sender telemetry without leaking secrets.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'Safe email configuration telemetry' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden - Super Admin only' }
+        }
+      }
+    },
+    '/super-admin/email/templates': {
+      get: {
+        tags: ['Super Admin Email Control Center'],
+        summary: 'List Available Transactional Email Templates',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'Array of template identifiers' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden - Super Admin only' }
+        }
+      }
     }
   }
 };

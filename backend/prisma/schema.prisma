@@ -59,6 +59,12 @@ enum PointActionType {
   SUPER_ADMIN_ADJUSTMENT
 }
 
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 // ============================================================================
 // Models
 // ============================================================================
@@ -320,5 +326,24 @@ model GamificationSetting {
   @@index([activity])
   @@index([isActive])
   @@map("gamification_settings")
+}
+
+/// Transactional Email Log for auditable delivery tracking without storing sensitive secrets
+model EmailLog {
+  id        String      @id @default(uuid())
+  recipient String
+  subject   String
+  template  String
+  status    EmailStatus @default(PENDING)
+  messageId String?
+  error     String?     @db.Text
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([recipient])
+  @@index([status])
+  @@index([template])
+  @@index([createdAt(sort: Desc)])
+  @@map("email_logs")
 }
 

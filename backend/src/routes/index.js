@@ -57,6 +57,11 @@ const superAdminGamificationRoutes = require('./superAdminGamificationRoutes');
 router.use('/super-admin/gamification', superAdminGamificationRoutes);
 router.use('/superadmin/gamification', superAdminGamificationRoutes);
 
+// Super Admin Transactional Email Control Center routes (/api/super-admin/email & /api/superadmin/email)
+const superAdminEmailRoutes = require('./superAdminEmailRoutes');
+router.use('/super-admin/email', superAdminEmailRoutes);
+router.use('/superadmin/email', superAdminEmailRoutes);
+
 // Official Social Accounts (active accounts for submission targeting) (/api/social-accounts)
 router.use('/social-accounts', socialAccountRoutes);
 

@@ -10,6 +10,8 @@ const {
 const { createNotification } = require('../repositories/notificationRepository');
 const { awardPoints } = require('../services/pointsService');
 const { processSubmissionVerdict } = require('../services/submissionApprovalService');
+const { sendClarificationEmail } = require('../services/emailService');
+const { findUserById } = require('../repositories/userRepository');
 
 /**
  * GET /api/reviews/pending
@@ -540,6 +542,18 @@ const postClarificationRequest = async (req, res, next) => {
       title: 'Clarification Requested for Submission',
       message: `${req.user.name} requested clarification for your ${sub.platform} activity submission: "${result.message}"`
     });
+
+    // Send transactional clarification email notification (non-blocking)
+    findUserById(sub.userId).then(creatorUser => {
+      if (creatorUser && creatorUser.email) {
+        sendClarificationEmail(creatorUser, sub, {
+          message: result.message,
+          reviewerName: req.user.name
+        }).catch(err => {
+          console.warn('[ReviewController] Clarification email skipped:', err.message);
+        });
+      }
+    }).catch(() => null);
 
     return res.status(201).json({
       success: true,

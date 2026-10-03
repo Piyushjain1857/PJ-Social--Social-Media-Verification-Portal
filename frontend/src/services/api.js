@@ -853,4 +853,45 @@ export const generateAdminLevels = async (options = {}) => {
   });
 };
 
+// ============================================================================
+// Super Admin Transactional Email Management APIs
+// ============================================================================
+
+export const sendSuperAdminTestEmail = async (recipient) => {
+  return await apiFetch('/super-admin/email/test', {
+    method: 'POST',
+    body: JSON.stringify({ recipient })
+  });
+};
+
+export const fetchSuperAdminEmailLogs = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  status = 'ALL',
+  template = 'ALL',
+  startDate = '',
+  endDate = ''
+} = {}) => {
+  const query = new URLSearchParams();
+  if (page) query.append('page', page);
+  if (limit) query.append('limit', limit);
+  if (search) query.append('search', search);
+  if (status && status !== 'ALL') query.append('status', status);
+  if (template && template !== 'ALL') query.append('template', template);
+  if (startDate) query.append('startDate', startDate);
+  if (endDate) query.append('endDate', endDate);
+
+  const qs = query.toString();
+  return await apiFetch(`/super-admin/email/logs${qs ? `?${qs}` : ''}`);
+};
+
+export const fetchSuperAdminEmailStatus = async () => {
+  return await apiFetch('/super-admin/email/status');
+};
+
+export const fetchSuperAdminEmailTemplates = async () => {
+  return await apiFetch('/super-admin/email/templates');
+};
+
 

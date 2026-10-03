@@ -7,11 +7,12 @@ import {
   updateUserRole,
   fetchAllSubmissions
 } from '../services/api';
+import SuperAdminEmailPanel from '../components/SuperAdminEmailPanel';
 
 export default function SuperAdminSpace({ onNavigate }) {
   const { user, logout } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'roles' | 'audit' | 'submissions'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'roles' | 'audit' | 'submissions' | 'emails'
   const [stats, setStats] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [usersList, setUsersList] = useState([]);
@@ -154,6 +155,20 @@ export default function SuperAdminSpace({ onNavigate }) {
           }}
         >
           🛡️ All Submissions ({submissions.length})
+        </button>
+        <button
+          type="button"
+          className={`btn-secondary ${activeTab === 'emails' ? 'active' : ''}`}
+          onClick={() => setActiveTab('emails')}
+          style={{
+            background: activeTab === 'emails' ? 'var(--role-superadmin)' : 'transparent',
+            color: activeTab === 'emails' ? '#000' : 'var(--text-secondary)',
+            borderColor: activeTab === 'emails' ? 'var(--role-superadmin)' : 'var(--border-subtle)',
+            fontSize: '0.88rem',
+            fontWeight: 600
+          }}
+        >
+          📧 Email Delivery Logs & Test
         </button>
       </div>
 
@@ -428,6 +443,11 @@ export default function SuperAdminSpace({ onNavigate }) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* TAB 5: Transactional Email Delivery Logs & Test */}
+      {activeTab === 'emails' && (
+        <SuperAdminEmailPanel />
       )}
     </div>
   );
