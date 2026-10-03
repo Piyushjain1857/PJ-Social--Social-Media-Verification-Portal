@@ -245,7 +245,16 @@ export default function App() {
   const scrollToSection = (id) => {
     setCurrentView('portal');
     setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      if (id === 'site-header' || id === 'overview' || id === 'top') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        if (document.documentElement) document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        if (document.body) document.body.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      } else {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
     }, 50);
   };
 
@@ -314,7 +323,13 @@ export default function App() {
         )}
       </main>
 
-      <Footer />
+      {/* Footer rendered on public views: compact bottom bar on login/signup, full showcase on portal */}
+      <Footer
+        onNavigate={handleNavigate}
+        onScrollToSection={scrollToSection}
+        apiStatus={apiStatus}
+        variant={currentView === 'login' ? 'compact' : 'full'}
+      />
     </div>
   );
 }
