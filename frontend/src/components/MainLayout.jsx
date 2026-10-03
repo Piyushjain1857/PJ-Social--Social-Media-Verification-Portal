@@ -959,11 +959,11 @@ export default function MainLayout({
         <div className="sidebar-footer">
           <div
             className="sidebar-user-card"
-            onClick={() => { handleNavChange('profile'); setIsMobileMenuOpen(false); }}
+            onClick={() => { handleNavChange('profile'); setIsMobileDrawerOpen(false); }}
             title="Open Profile & Personalization"
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleNavChange('profile'); setIsMobileMenuOpen(false); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleNavChange('profile'); setIsMobileDrawerOpen(false); } }}
           >
             <div
               className="sidebar-user-avatar"

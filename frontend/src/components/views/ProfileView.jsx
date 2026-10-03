@@ -736,7 +736,10 @@ export default function ProfileView({ onNavigateToNav }) {
                 onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                 title="Upload new photo"
               >
-                📷
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
               </button>
 
               {/* Corner Emblem */}
@@ -754,7 +757,11 @@ export default function ProfileView({ onNavigateToNav }) {
                 onClick={handleRemovePhoto}
                 title="Remove photo and restore avatar emblem"
               >
-                ✕ Remove
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: '3px' }}>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                <span>Remove</span>
               </button>
             )}
           </div>
@@ -791,24 +798,16 @@ export default function ProfileView({ onNavigateToNav }) {
               </div>
             )}
 
-            {/* Email & ID Row */}
+            {/* Email Row */}
             <div className="profile-meta-row">
               <span className="profile-meta-item">
-                <span>✉️</span>
+                <span className="profile-meta-icon" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>
+                </span>
                 <span>{profileData?.email || user?.email}</span>
-              </span>
-              <span className="profile-meta-dot">•</span>
-              <span className="profile-meta-item">
-                <span>ID:</span>
-                <code className="profile-id-code">{profileData?.id || user?.id}</code>
-                <button
-                  type="button"
-                  onClick={handleCopyId}
-                  className="profile-copy-btn"
-                  title="Copy Account ID"
-                >
-                  {copiedId ? '✓ Copied' : '📋 Copy'}
-                </button>
               </span>
             </div>
 
@@ -1043,7 +1042,7 @@ export default function ProfileView({ onNavigateToNav }) {
             <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                 <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Full Name (Allowed Profile Field)
+                  Full Name
                 </label>
                 {!isEditingName && (
                   <button

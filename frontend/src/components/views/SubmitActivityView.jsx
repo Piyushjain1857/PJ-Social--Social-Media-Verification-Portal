@@ -463,7 +463,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
         </div>
       </div>
 
-      {/* Policy & System Disclaimer Banner */}
+      {/* Policy & System Disclaimer Banner
       <div className="submit-protocol-banner">
         <div className="submit-protocol-icon-box">
           🛡️
@@ -476,7 +476,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
             Uploaded screenshots serve strictly as <strong>evidence for human administrator review</strong>. The portal does not claim that a screenshot automatically or instantaneously proves that an engagement occurred. Every submission is recorded with <strong>PENDING</strong> status until an authorized moderator inspects your proof.
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Global Error Banner */}
       {errorMessage && (
@@ -714,8 +714,11 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           </div>
 
           <div className="submit-url-input-wrap">
-            <span className="submit-url-icon-badge">
-              🔗
+            <span className="submit-url-icon-badge" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
             </span>
             <input
               id="post-url-input"
@@ -781,7 +784,18 @@ export default function SubmitActivityView({ onNavigateToNav }) {
 
                   {/* Upload icon aura */}
                   <div className="submit-dropzone-icon-aura">
-                    {isDragOver ? '⬇️' : '📸'}
+                    {isDragOver ? (
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="submit-dropzone-svg-icon">
+                        <path d="M12 3v13m0 0-4-4m4 4 4-4" />
+                        <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                      </svg>
+                    ) : (
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="submit-dropzone-svg-icon">
+                        <rect width="18" height="18" x="3" y="3" rx="4" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="m21 15-5-5L5 21" />
+                      </svg>
+                    )}
                   </div>
 
                   <div>
@@ -802,20 +816,14 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                     ))}
                   </div>
 
-                  <div style={{ marginTop: '0.2rem' }}>
-                    <span
-                      style={{
-                        fontSize: '0.68rem',
-                        padding: '0.2rem 0.65rem',
-                        borderRadius: '999px',
-                        background: 'rgba(245,158,11,0.12)',
-                        border: '1px solid rgba(245,158,11,0.25)',
-                        color: 'var(--status-warning)',
-                        fontWeight: 700,
-                      }}
-                    >
-                      📋 Required for admin moderation review
+                  <div className="submit-moderation-pill">
+                    <span className="submit-moderation-icon" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
                     </span>
+                    <span>Required for admin moderation review</span>
                   </div>
                 </div>
               ) : (
@@ -833,14 +841,25 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                       className="submit-preview-image"
                     />
                     <div className="submit-preview-zoom-overlay">
-                      🔍
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        <line x1="11" y1="8" x2="11" y2="14" />
+                        <line x1="8" y1="11" x2="14" y2="11" />
+                      </svg>
                     </div>
                   </div>
 
                   {/* Metadata row */}
                   <div className="submit-preview-meta-row">
                     <div className="submit-preview-file-info">
-                      <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🖼️</span>
+                      <span className="submit-preview-file-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="18" height="18" x="3" y="3" rx="4" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <path d="m21 15-5-5L5 21" />
+                        </svg>
+                      </span>
                       <div style={{ minWidth: 0 }}>
                         <div className="submit-preview-badges">
                           <span className="submit-preview-attached-tag">
@@ -879,9 +898,13 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                         type="button"
                         onClick={() => setLightboxPreview(true)}
                         className="btn-secondary"
-                        style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem' }}
+                        style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                       >
-                        🔍 Preview
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8" />
+                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <span>Preview</span>
                       </button>
                       <button
                         type="button"
@@ -896,9 +919,16 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                           padding: '0.4rem 0.85rem',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
                         }}
                       >
-                        ✕ Remove
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        <span>Remove</span>
                       </button>
                     </div>
                   </div>
@@ -915,15 +945,24 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                 }}
                 className="submit-mode-toggle-btn"
               >
-                🔗 Or provide an external image link instead
+                <span className="submit-mode-toggle-icon" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                </span>
+                <span>Provide an external image link instead</span>
               </button>
             </div>
           ) : (
             /* ── External Image Link Mode ─────────────────────────────────────── */
             <div>
               <div className="submit-url-input-wrap">
-                <span className="submit-url-icon-badge">
-                  🖼️
+                <span className="submit-url-icon-badge" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
                 </span>
                 <input
                   type="url"
@@ -948,7 +987,14 @@ export default function SubmitActivityView({ onNavigateToNav }) {
                 }}
                 className="submit-mode-toggle-btn"
               >
-                📁 Switch back to file upload
+                <span className="submit-mode-toggle-icon" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </span>
+                <span>Switch back to direct file upload</span>
               </button>
             </div>
           )}
@@ -977,7 +1023,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
             className="input-field"
             rows="3"
             maxLength={1000}
-            placeholder="e.g. Liked product announcement from registered handle @my_creator_account within 2 hours of post publishing."
+            placeholder="e.g. Liked product announcement"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             style={{ width: '100%', resize: 'vertical', borderRadius: '10px' }}
