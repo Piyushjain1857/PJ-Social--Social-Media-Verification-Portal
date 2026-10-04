@@ -848,11 +848,13 @@ function SuperAdminDashboard({ onNavigateToNav }) {
       )}
 
       {/* ── Analytics Metric Cards Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
         {isLoading ? (
           <>
-            <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
-            <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+            <SkeletonCard /><SkeletonCard />
+            <SkeletonCard /><SkeletonCard />
+            <SkeletonCard /><SkeletonCard />
+            <SkeletonCard /><SkeletonCard />
           </>
         ) : (
           <>
@@ -1745,91 +1747,51 @@ function AdminDashboard({ onNavigateToNav }) {
         )}
       </div>
 
-      {/* ── Standard Moderation Procedures ── */}
-      <div className="admin-dash-panel" style={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Subtle background glow */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '320px',
-          height: '100%',
-          background: 'radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          paddingBottom: '0.9rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25))',
-              border: '1px solid rgba(168, 85, 247, 0.35)',
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                <path d="m9 14 2 2 4-4" />
-              </svg>
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.08rem', color: '#ffffff', fontWeight: 800, letterSpacing: '-0.01em' }}>
-                  Moderator Verification Standard Operating Procedures
-                </h3>
-                <span style={{
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  padding: '0.15rem 0.55rem',
-                  borderRadius: '999px',
-                  background: 'rgba(99, 102, 241, 0.15)',
-                  border: '1px solid rgba(99, 102, 241, 0.35)',
-                  color: '#c7d2fe',
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase'
-                }}>
-                  Protocol &amp; SOP
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                Mandatory compliance standards enforced across all submission audits to ensure fair, consistent, and accountable decisions.
-              </p>
-            </div>
-          </div>
-
+      {/* ── Standard Moderation Procedures Callout Banner ── */}
+      <div
+        className="admin-dash-queue-callout empty"
+        style={{ marginBottom: '1.25rem' }}
+      >
+        <div style={{ width: '100%' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            background: 'rgba(16, 185, 129, 0.08)',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
-            padding: '0.35rem 0.75rem',
-            borderRadius: '999px',
-            fontSize: '0.74rem',
-            color: '#34d399',
-            fontWeight: 600,
-            whiteSpace: 'nowrap'
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+            marginBottom: '0.35rem'
           }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
-            <span>Active Quality Framework</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: '1 1 auto', minWidth: 0 }}>
+              <span style={{ fontSize: '1.4rem', flexShrink: 0, lineHeight: 1 }}>✨</span>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
+                Moderator Verification Standard Operating Procedures
+              </h3>
+            </div>
+            <span style={{
+              fontSize: '0.60rem',
+              fontWeight: 700,
+              padding: '0.15rem 0.55rem',
+              borderRadius: '999px',
+              background: 'rgba(99, 102, 241, 0.15)',
+              border: '1px solid rgba(99, 102, 241, 0.35)',
+              color: '#c7d2fe',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              marginLeft: 'auto',
+              marginTop: '-1.3rem'
+            }}>
+              PROTOCOL &amp; SOP
+            </span>
           </div>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.55 }}>
+            Mandatory compliance standards enforced across all submission audits to ensure fair, consistent, and accountable decisions.
+          </p>
         </div>
+      </div>
 
-        <div className="admin-dash-sop-grid">
+      {/* ── Standard Moderation Procedures Grid Panel ── */}
+      <div className="admin-dash-panel">
+        <div className="admin-dash-sop-grid" style={{ marginTop: 0 }}>
           {/* Phase 1 */}
           <div className="admin-dash-sop-card" style={{ borderTop: '3px solid #f59e0b' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1.25rem', marginBottom: '0.35rem' }}>

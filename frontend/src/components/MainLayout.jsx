@@ -258,6 +258,8 @@ export default function MainLayout({
     const handleHashChange = () => {
       const fullHash = window.location.hash.replace('#', '');
       const hash = fullHash.split('?')[0];
+      const role = user?.role || 'USER';
+      const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
 
       if (hash === 'gamification') {
         window.location.hash = 'dashboard';
@@ -277,9 +279,6 @@ export default function MainLayout({
           return;
         }
       }
-
-      const role = user?.role || 'USER';
-      const roleItems = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.USER;
 
       // Handle game points navigation for all roles
       if (
@@ -1485,6 +1484,7 @@ export default function MainLayout({
         <main className="layout-content-area" id="main-content">
           {/* Page Header (hidden when view has its own dedicated hero banner) */}
           {!(
+            ['email-management', 'super-admin/email', 'email'].includes(activeNav) ||
             (currentRole === 'SUPER_ADMIN' && [
               'dashboard', 'game-points', 'points', 'gamification',
               'levels', 'super-admin/levels',

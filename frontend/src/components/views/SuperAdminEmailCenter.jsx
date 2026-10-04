@@ -445,104 +445,79 @@ export default function SuperAdminEmailCenter() {
         </div>
       )}
 
-      {/* Top Banner & Actions Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '1.25rem',
-          marginBottom: '1.5rem',
-          paddingBottom: '1.25rem',
-          borderBottom: '1px solid rgba(255,255,255,0.08)'
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.2rem'
-              }}
-            >
-              📧
-            </div>
-            <h1 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
-              Email Management & Control Center
-            </h1>
-            <span
-              style={{
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                padding: '3px 10px',
-                borderRadius: '12px',
-                background: 'rgba(192, 132, 252, 0.15)',
-                color: '#c084fc',
-                border: '1px solid rgba(192, 132, 252, 0.3)',
-                letterSpacing: '0.5px'
-              }}
-            >
-              Super Admin Exclusive
+      {/* Super Admin Email Command Center Hero Banner */}
+      <div className="superadmin-email-hero">
+        <div className="superadmin-email-hero-content">
+          <div className="superadmin-email-badge-row">
+            <span className="superadmin-email-role-badge">
+              👑 SUPER ADMINISTRATOR GOVERNANCE
             </span>
+            <div className="superadmin-email-telemetry-tag">
+              <span className="superadmin-email-telemetry-dot" />
+              <span>Telemetry Live • TLS SMTP Relay Active</span>
+            </div>
           </div>
-          <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>
+          <h2 className="superadmin-email-title">
+            <span style={{ fontSize: '1.45rem', filter: 'drop-shadow(0 0 10px rgba(99, 102, 241, 0.6))' }}>📧</span> Email Management &amp; Control Center
+          </h2>
+          <p className="superadmin-email-desc">
             Authoritative transactional delivery pipeline, real-time audit ledger, analytics, and event policy controls.
           </p>
+
+          {/* Quick Action Buttons inside hero */}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={`email-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              title={`Last synced: ${lastSyncedAt.toLocaleTimeString()}`}
+              aria-label="Refresh telemetry data"
+            >
+              <RefreshIcon className={`refresh-spin-icon ${isRefreshing ? 'is-spinning' : ''}`} />
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh Telemetry'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="email-send-test-btn"
+              onClick={() => {
+                setTestForm({
+                  recipient: settings?.telemetry?.sender?.match(/<([^>]+)>/)?.[1] || 'user@portal.com',
+                  template: 'TEST_EMAIL',
+                  isSubmitting: false,
+                  result: null
+                });
+                setIsTestModalOpen(true);
+              }}
+            >
+              <SendIcon />
+              <span>Send Test Email</span>
+            </button>
+          </div>
         </div>
 
-        {/* Action Buttons: Polished SVG Refresh & Send Test Email */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className={`email-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
-            title={`Last synced: ${lastSyncedAt.toLocaleTimeString()}`}
-            aria-label="Refresh telemetry data"
-          >
-            <RefreshIcon className={`refresh-spin-icon ${isRefreshing ? 'is-spinning' : ''}`} />
-            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </button>
-
-          <button
-            type="button"
-            className="email-send-test-btn"
-            onClick={() => {
-              setTestForm({
-                recipient: settings?.telemetry?.sender?.match(/<([^>]+)>/)?.[1] || 'user@portal.com',
-                template: 'TEST_EMAIL',
-                isSubmitting: false,
-                result: null
-              });
-              setIsTestModalOpen(true);
-            }}
-          >
-            <SendIcon />
-            <span>Send Test Email</span>
-          </button>
+        {/* Right-side Stats HUD chips */}
+        <div className="superadmin-email-hud-chips">
+          <div className="superadmin-email-hud-chip" title="Emails sent in the active rolling 24h window">
+            <span>📬 Sent Today:</span>
+            <strong>{overview?.sentToday ?? 0}</strong>
+          </div>
+          <div className="superadmin-email-hud-chip" title="Confirmed successful SMTP transmissions">
+            <span>⚡ Success Rate:</span>
+            <strong style={{ color: (overview?.deliverySuccessRate ?? 100) >= 95 ? '#34d399' : '#f87171' }}>
+              {overview?.deliverySuccessRate ?? 100}%
+            </strong>
+          </div>
+          <div className="superadmin-email-hud-chip" title="Configured email transport service">
+            <span>🛡️ Relay:</span>
+            <strong>{settings?.telemetry?.provider || 'Gmail SMTP'}</strong>
+          </div>
         </div>
       </div>
 
-      {/* Navigation Tabs with Modern SVGs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.4rem',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          marginBottom: '1.5rem',
-          overflowX: 'auto',
-          paddingBottom: '2px'
-        }}
-      >
+      {/* Dedicated Master Navigation Tabs Bar */}
+      <nav className="superadmin-email-nav-bar" role="tablist" aria-label="Email Control Modules">
         {[
           { id: 'overview', label: 'Overview & Analytics', icon: <ChartBarIcon className="tab-icon-svg" /> },
           { id: 'logs', label: 'Email Logs', icon: <LogsListIcon className="tab-icon-svg" />, count: overview?.total },
@@ -555,30 +530,22 @@ export default function SuperAdminEmailCenter() {
             <button
               key={tab.id}
               type="button"
-              className={`email-nav-tab ${isActive ? 'active' : ''}`}
+              role="tab"
+              aria-selected={isActive}
+              className={`superadmin-email-tab ${isActive ? 'active' : ''}`}
               onClick={() => handleTabChange(tab.id)}
             >
               {tab.icon}
               <span>{tab.label}</span>
               {tab.count !== undefined && (
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    padding: '1px 7px',
-                    borderRadius: '10px',
-                    background: tab.isAlert ? 'rgba(244, 63, 94, 0.25)' : 'rgba(255,255,255,0.1)',
-                    color: tab.isAlert ? '#fda4af' : '#cbd5e1',
-                    border: tab.isAlert ? '1px solid rgba(244,63,94,0.4)' : 'none',
-                    fontWeight: 700
-                  }}
-                >
+                <span className={`superadmin-email-tab-badge ${tab.isAlert ? 'alert' : ''}`}>
                   {tab.count}
                 </span>
               )}
             </button>
           );
         })}
-      </div>
+      </nav>
 
       {/* =====================================================================
           TAB 1: OVERVIEW & ANALYTICS
@@ -597,9 +564,10 @@ export default function SuperAdminEmailCenter() {
             </div>
 
             <div
+              className="email-velocity-grid"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',
                 gap: '0.9rem'
               }}
             >
@@ -683,9 +651,10 @@ export default function SuperAdminEmailCenter() {
             </div>
 
             <div
+              className="email-pipeline-grid"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
                 gap: '0.9rem'
               }}
             >
@@ -741,9 +710,10 @@ export default function SuperAdminEmailCenter() {
 
           {/* Analytics Visual Charts Grid */}
           <div
+            className="email-charts-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
               gap: '1.25rem',
               marginBottom: '1.5rem'
             }}
@@ -782,7 +752,8 @@ export default function SuperAdminEmailCenter() {
               </div>
 
               {/* Bar visualization */}
-              <div style={{ height: '180px', display: 'flex', alignItems: 'flex-end', gap: '6px', paddingTop: '10px' }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '6px' }}>
+                <div style={{ height: '180px', display: 'flex', alignItems: 'flex-end', gap: '6px', paddingTop: '10px', minWidth: analyticsDays === 30 ? '480px' : 'auto' }}>
                 {analytics?.daily?.map((d, i) => {
                   const heightPercent = Math.max(8, Math.round((d.total / maxDailyVolume) * 100));
                   const isFailedOnly = d.total > 0 && d.sent === 0 && d.failed > 0;
@@ -824,6 +795,7 @@ export default function SuperAdminEmailCenter() {
                     </div>
                   );
                 })}
+              </div>
               </div>
               <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center', marginTop: '1.1rem', fontSize: '0.74rem', color: '#94a3b8' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -906,7 +878,7 @@ export default function SuperAdminEmailCenter() {
                 Delivery Breakdown by Template
               </h3>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '0.85rem' }}>
               {analytics?.byTemplate?.slice(0, 10).map((t, idx) => (
                 <div
                   key={idx}
@@ -945,6 +917,7 @@ export default function SuperAdminEmailCenter() {
         <div className="email-glass-panel">
           {/* Filters Bar */}
           <div
+            className="email-logs-filters"
             style={{
               display: 'flex',
               flexWrap: 'wrap',
@@ -956,7 +929,7 @@ export default function SuperAdminEmailCenter() {
             }}
           >
             {/* Search Input */}
-            <div style={{ flex: '1 1 240px', position: 'relative' }}>
+            <div className="email-filter-search" style={{ flex: '1 1 240px', position: 'relative' }}>
               <input
                 type="text"
                 placeholder="Search recipient, subject, or message ID..."
@@ -977,6 +950,7 @@ export default function SuperAdminEmailCenter() {
 
             {/* Status Filter */}
             <select
+              className="email-filter-select"
               value={filters.status}
               onChange={e => {
                 setFilters(prev => ({ ...prev, status: e.target.value }));
@@ -998,6 +972,7 @@ export default function SuperAdminEmailCenter() {
 
             {/* Template Filter */}
             <select
+              className="email-filter-select"
               value={filters.template}
               onChange={e => {
                 setFilters(prev => ({ ...prev, template: e.target.value }));
@@ -1020,6 +995,7 @@ export default function SuperAdminEmailCenter() {
             {/* Date Filters */}
             <input
               type="date"
+              className="email-filter-date"
               value={filters.startDate}
               onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
               title="From Date"
@@ -1034,6 +1010,7 @@ export default function SuperAdminEmailCenter() {
             />
             <input
               type="date"
+              className="email-filter-date"
               value={filters.endDate}
               onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
               title="To Date"
@@ -1049,6 +1026,7 @@ export default function SuperAdminEmailCenter() {
 
             <button
               type="button"
+              className="email-filter-btn"
               onClick={() => loadLogs(1)}
               style={{
                 padding: '0.55rem 1.1rem',
@@ -1067,6 +1045,7 @@ export default function SuperAdminEmailCenter() {
 
             <button
               type="button"
+              className="email-filter-btn"
               onClick={() => {
                 setFilters({ search: '', status: 'ALL', template: 'ALL', startDate: '', endDate: '' });
                 setTimeout(() => loadLogs(1), 50);
@@ -1427,7 +1406,7 @@ export default function SuperAdminEmailCenter() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
               {templateConfigs.map(tmpl => {
                 const isEditing = editingTemplateKey === tmpl.templateKey;
                 return (
@@ -1550,7 +1529,7 @@ export default function SuperAdminEmailCenter() {
               </h3>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1rem' }}>
               {[
                 { label: 'Email Provider', value: settings?.telemetry?.provider || 'Gmail', status: 'Active' },
                 { label: 'Configured Sender', value: settings?.telemetry?.sender || 'pjsocialmediaportal@gmail.com', status: 'Primary' },
@@ -1621,6 +1600,7 @@ export default function SuperAdminEmailCenter() {
           onClick={() => setIsLogDrawerOpen(false)}
         >
           <div
+            className="email-modal-card"
             style={{
               background: '#0d111a',
               border: '1px solid rgba(255,255,255,0.14)',
@@ -1754,6 +1734,7 @@ export default function SuperAdminEmailCenter() {
           onClick={() => setIsTestModalOpen(false)}
         >
           <div
+            className="email-modal-card"
             style={{
               background: '#0d111a',
               border: '1px solid rgba(255,255,255,0.14)',
