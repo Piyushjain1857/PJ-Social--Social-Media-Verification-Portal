@@ -847,7 +847,7 @@ function SuperAdminDashboard({ onNavigateToNav }) {
       )}
 
       {/* ── Analytics Metric Cards Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {isLoading ? (
           <>
             <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
