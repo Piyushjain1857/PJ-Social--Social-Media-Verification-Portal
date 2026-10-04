@@ -94,7 +94,6 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 ```
 Social Media Verification Portal/
 ├── .gitignore                            # Repository-wide gitignore rules (ignores credentials, env, node_modules)
-├── GOOGLE_PASS.txt                       # Google account & SMTP app credentials (git-ignored)
 ├── LICENSE                               # MIT Open-Source License
 ├── PITCH.md                              # Comprehensive presentation & feature pitch guide
 ├── README.md                             # Master project documentation
