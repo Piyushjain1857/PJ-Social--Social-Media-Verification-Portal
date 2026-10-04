@@ -401,7 +401,8 @@ export default function GamePointsView({ onNavigateToNav = null }) {
               className={`gamepoints-subnav-btn ${adminTab === 'users' ? 'active' : ''}`}
               onClick={() => setAdminTab('users')}
             >
-              <span>👥</span> Users Points Table
+              <span>👥</span>
+              <span>Users Points Table</span>
             </button>
             <button
               type="button"
@@ -410,7 +411,8 @@ export default function GamePointsView({ onNavigateToNav = null }) {
               className={`gamepoints-subnav-btn ${adminTab === 'analytics' ? 'active' : ''}`}
               onClick={() => setAdminTab('analytics')}
             >
-              <span>📊</span> Analytics Dashboard
+              <span>📊</span>
+              <span>Analytics Dashboard</span>
             </button>
             <button
               type="button"
@@ -419,7 +421,8 @@ export default function GamePointsView({ onNavigateToNav = null }) {
               className={`gamepoints-subnav-btn ${adminTab === 'leaderboard' ? 'active' : ''}`}
               onClick={() => setAdminTab('leaderboard')}
             >
-              <span>🏆</span> Community Leaderboard
+              <span>🏆</span>
+              <span>Community Leaderboard</span>
             </button>
             {isSuperAdmin && (
               <button
@@ -429,7 +432,8 @@ export default function GamePointsView({ onNavigateToNav = null }) {
                 className={`gamepoints-subnav-btn ${adminTab === 'engine' ? 'active' : ''}`}
                 onClick={() => setAdminTab('engine')}
               >
-                <span>⚡</span> Level Engine
+                <span>⚡</span>
+                <span>Level Engine</span>
               </button>
             )}
           </div>

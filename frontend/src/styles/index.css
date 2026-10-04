@@ -9305,6 +9305,8 @@ input[type="text"]:hover {
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
 }
 
+
+
 /* KPI Cards Grid */
 .gamepoints-kpi-grid {
   display: grid;
@@ -11015,14 +11017,23 @@ div:has(> strong:nth-of-type(2)):not(:has(button, input, select, table, form)) >
     align-items: stretch;
   }
 
+  /* Admin Sub-navigation Tabs: 1x1x1 layer */
   .gamepoints-subnav-tabs {
     width: 100%;
-    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.35rem;
+    box-sizing: border-box;
   }
 
   .gamepoints-subnav-btn {
-    flex: 1;
+    width: 100%;
     justify-content: center;
+    font-size: 0.86rem;
+    padding: 0.7rem 1rem;
+    min-height: 42px;
+    box-sizing: border-box;
   }
 
   .gamepoints-kpi-grid {
@@ -16189,7 +16200,7 @@ input[type="date"] {
     align-items: stretch !important;
     gap: 0.85rem !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .gamepoints-banner-content {
@@ -16213,21 +16224,28 @@ input[type="date"] {
     gap: 0.65rem !important;
   }
 
+  /* Admin Sub-navigation Tabs: 1x1x1 layer */
   .gamepoints-subnav-tabs {
     width: 100% !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
+    display: flex !important;
+    flex-direction: column !important;
     box-sizing: border-box !important;
-    padding: 0.25rem !important;
-    gap: 0.35rem !important;
+    padding: 0.35rem !important;
+    gap: 0.45rem !important;
   }
 
   .gamepoints-subnav-btn {
+    flex: none !important;
+    width: 100% !important;
     justify-content: center !important;
-    padding: 0.55rem 0.4rem !important;
-    font-size: 0.78rem !important;
-    white-space: nowrap !important;
+    padding: 0.7rem 1rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    white-space: normal !important;
     text-align: center !important;
+    box-sizing: border-box !important;
+    min-height: 42px !important;
+    border-radius: 8px !important;
   }
 
   .gamepoints-banner-actions .btn-portal-primary {
@@ -18175,7 +18193,7 @@ input[type="date"] {
     box-sizing: border-box !important;
   }
 
-  /* Admin Sub-navigation Tabs: 3 Items (ODD) -> Prefer 1fr ratio */
+  /* Admin Sub-navigation Tabs: 3 Items → 1x1x1 layer (stacked full-width rows) on mobile */
   .gamepoints-banner-actions {
     width: 100% !important;
     align-items: stretch !important;
@@ -18186,19 +18204,23 @@ input[type="date"] {
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 0.35rem !important;
-    padding: 0.3rem !important;
+    gap: 0.45rem !important;
+    padding: 0.35rem !important;
     box-sizing: border-box !important;
   }
 
   .gamepoints-subnav-btn {
+    flex: none !important;
     width: 100% !important;
-    flex: 1 1 100% !important; /* Odd item: 1fr ratio */
     justify-content: center !important;
     text-align: center !important;
-    padding: 0.55rem 0.8rem !important;
-    font-size: 0.82rem !important;
+    padding: 0.7rem 1rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
     box-sizing: border-box !important;
+    white-space: normal !important;
+    border-radius: 8px !important;
+    min-height: 42px !important;
   }
 
   /* Admin Gamification 6-KPI Header Grid: 6 Items (EVEN) -> Use 2X2 grid (repeat(2, 1fr)) */
@@ -18653,7 +18675,10 @@ input[type="date"] {
   }
 
   .gamepoints-subnav-tabs {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.4rem !important;
   }
 
   /* Submit Activity ultra-compact adjustments */
