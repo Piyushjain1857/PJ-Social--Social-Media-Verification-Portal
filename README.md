@@ -92,195 +92,213 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 ## 📂 Folder Structure
 
 ```
-Social Media Verification Portal/
-├── .gitignore                            # Repository-wide gitignore rules (ignores credentials, env, node_modules)
-├── LICENSE                               # MIT Open-Source License
-├── PITCH.md                              # Comprehensive presentation & feature pitch guide
-├── README.md                             # Master project documentation
-│
-├── backend/
-│   ├── .env                              # Active backend environment configuration
-│   ├── .env.example                      # Reference template for backend variables
-│   ├── .gitignore
-│   ├── nodemon.json                      # Hot-reloading watch/ignore rules
-│   ├── package.json                      # Backend dependencies and test scripts
-│   ├── package-lock.json                 # Backend dependency lockfile
-│   ├── prisma/
-│   │   ├── schema.prisma                 # Core Prisma relational schema (Users, Levels, Submissions, etc.)
-│   │   ├── seed.js                       # Core accounts, official channels & default levels seeder
-│   │   ├── seedLevels.js                 # 50-tier dynamic gamification level seeder
-│   │   └── migrations/                   # PostgreSQL migration history & lockfile
-│   ├── uploads/
-│   │   └── screenshots/                  # Auth-gated storage directory for uploaded evidence & test fixtures
-│   └── src/
-│       ├── app.js                        # Express app configuration, Helmet, CORS, parser limits, audit logger
-│       ├── server.js                     # HTTP server startup with automatic port fallback (5001 -> 5002+)
-│       ├── config/
-│       │   ├── db.js                     # PrismaClient singleton with connection diagnostics
-│       │   ├── env.js                    # Validated environment loader
-│       │   └── swagger.js                # OpenAPI 3.0 documentation specification
+Social Media Verification Portal/               
+├── .gitignore                                           # Repository-wide gitignore rules (ignores credentials, env, node_modules)
+├── LICENSE                                              # MIT Open-Source License
+├── PITCH.md                                             # Comprehensive presentation & feature pitch guide
+├── README.md                                            # Master project documentation
+│              
+├── backend/               
+│   ├── .env                                             # Active backend environment configuration
+│   ├── .env.example                                     # Reference template for backend variables
+│   ├── .gitignore               
+│   ├── nodemon.json                                     # Hot-reloading watch/ignore rules
+│   ├── package.json                                     # Backend dependencies and test scripts
+│   ├── package-lock.json                                # Backend dependency lockfile
+│   │             
+│   ├── prisma/               
+│   │   ├── schema.prisma                                # Core Prisma relational schema (Users, Levels, Submissions, etc.)
+│   │   ├── seed.js                                      # Core accounts, official channels & default levels seeder
+│   │   ├── seedLevels.js                                # 50-tier dynamic gamification level seeder
+│   │   └── migrations/                                  # PostgreSQL migration history & lockfile
+│   │             
+│   ├── uploads/              
+│   │   └── screenshots/                                 # Auth-gated storage directory for uploaded evidence & test fixtures
+│   │             
+│   └── src/               
+│       ├── app.js                                       # Express app configuration, Helmet, CORS, parser limits, audit logger
+│       ├── server.js                                    # HTTP server startup with automatic port fallback (5001 -> 5002+)
+│       ├── config/              
+│       │   ├── db.js                                    # PrismaClient singleton with connection diagnostics
+│       │   ├── env.js                                   # Validated environment loader
+│       │   └── swagger.js                               # OpenAPI 3.0 documentation specification
+│       │
 │       ├── controllers/
-│       │   ├── adminGamificationController.js # Admin points directory, user dossiers, and XP adjustments
-│       │   ├── adminLevelController.js   # Super Admin dynamic level CRUD & generation
-│       │   ├── authController.js         # Register, login, me, logout handlers
-│       │   ├── dashboardController.js    # Scoped telemetry for user, admin, super-admin
-│       │   ├── emailPreferenceController.js # User email notification preferences
-│       │   ├── gamificationController.js # Authoritative XP, Level Journey, Rank, Chart & history APIs
-│       │   ├── healthController.js       # Health and database telemetry endpoints
-│       │   ├── notificationController.js # Read / read-all notification handlers
-│       │   ├── pointsController.js       # Points ledger, rank, and manual adjustments
-│       │   ├── reviewController.js       # Admin review queue, approval, and rejection
-│       │   ├── searchController.js       # Unified multi-criteria global search
-│       │   ├── socialAccountController.js# Official accounts registry and management
-│       │   ├── submissionController.js   # User activity submission & query handlers
-│       │   ├── superAdminController.js   # Super Admin user CRUD, stats & audit logs
-│       │   ├── superAdminEmailController.js # Super Admin transactional email control center
-│       │   ├── superAdminGamificationController.js # Super Admin governance: overview, ledger, rules, analytics
-│       │   ├── uploadController.js       # Auth-gated screenshot stream handler
-│       │   └── userController.js         # Profile management & password updates
-│       ├── middlewares/
-│       │   ├── authMiddleware.js         # Bearer JWT validation & token extraction
-│       │   ├── errorHandler.js           # Centralized exception formatter
-│       │   ├── roleMiddleware.js         # Role gatekeeper & privilege escalation guard
-│       │   └── uploadMiddleware.js       # Multer memory storage & magic byte validator
+│       │   ├── adminGamificationController.js           # Admin points directory, user dossiers, and XP adjustments
+│       │   ├── adminLevelController.js                  # Super Admin dynamic level CRUD & generation
+│       │   ├── authController.js                        # Register, login, me, logout handlers
+│       │   ├── dashboardController.js                   # Scoped telemetry for user, admin, super-admin
+│       │   ├── emailPreferenceController.js             # User email notification preferences
+│       │   ├── gamificationController.js                # Authoritative XP, Level Journey, Rank, Chart & history APIs
+│       │   ├── healthController.js                      # Health and database telemetry endpoints
+│       │   ├── notificationController.js                # Read / read-all notification handlers
+│       │   ├── pointsController.js                      # Points ledger, rank, and manual adjustments
+│       │   ├── reviewController.js                      # Admin review queue, approval, and rejection
+│       │   ├── searchController.js                      # Unified multi-criteria global search
+│       │   ├── socialAccountController.js               # Official accounts registry and management
+│       │   ├── submissionController.js                  # User activity submission & query handlers
+│       │   ├── superAdminController.js                  # Super Admin user CRUD, stats & audit logs
+│       │   ├── superAdminEmailController.js             # Super Admin transactional email control center
+│       │   ├── superAdminGamificationController.js      # Super Admin governance: overview, ledger, rules, analytics
+│       │   ├── uploadController.js                      # Auth-gated screenshot stream handler
+│       │   └── userController.js                        # Profile management & password updates
+│       │               
+│       ├── middlewares/               
+│       │   ├── authMiddleware.js                        # Bearer JWT validation & token extraction
+│       │   ├── errorHandler.js                          # Centralized exception formatter
+│       │   ├── roleMiddleware.js                        # Role gatekeeper & privilege escalation guard
+│       │   └── uploadMiddleware.js                      # Multer memory storage & magic byte validator
+│       │
 │       ├── repositories/
-│       │   ├── emailConfigRepository.js  # SMTP server configurations
-│       │   ├── emailLogRepository.js     # Transactional email delivery logs
-│       │   ├── emailPreferenceRepository.js # User communication preferences
-│       │   ├── notificationRepository.js # Notification queries & mutations
-│       │   ├── passwordResetRepository.js# Password reset tokens
-│       │   ├── pointTransactionRepository.js # Points & XP transaction store
-│       │   ├── socialAccountRepository.js# Official social account database ops
-│       │   ├── submissionRepository.js   # Submissions & moderation reviews store
-│       │   └── userRepository.js         # User store with password-hash sanitization
+│       │   ├── emailConfigRepository.js                 # SMTP server configurations
+│       │   ├── emailLogRepository.js                    # Transactional email delivery logs
+│       │   ├── emailPreferenceRepository.js             # User communication preferences
+│       │   ├── notificationRepository.js                # Notification queries & mutations
+│       │   ├── passwordResetRepository.js               # Password reset tokens
+│       │   ├── pointTransactionRepository.js            # Points & XP transaction store
+│       │   ├── socialAccountRepository.js               # Official social account database ops
+│       │   ├── submissionRepository.js                  # Submissions & moderation reviews store
+│       │   └── userRepository.js                        # User store with password-hash sanitization
+│       │
 │       ├── routes/
-│       │   ├── adminGamificationRoutes.js# /api/admin/gamification
-│       │   ├── adminLevelRoutes.js       # /api/admin/levels & /api/superadmin/levels
-│       │   ├── authRoutes.js             # /api/auth
-│       │   ├── dashboardRoutes.js        # /api/dashboard
-│       │   ├── gamificationRoutes.js     # /api/gamification
-│       │   ├── healthRoutes.js           # /api/health, /api/database/status, /api/info
-│       │   ├── notificationRoutes.js     # /api/notifications
-│       │   ├── pointsRoutes.js           # /api/points
-│       │   ├── reviewRoutes.js           # /api/reviews
-│       │   ├── searchRoutes.js           # /api/search
-│       │   ├── socialAccountRoutes.js    # /api/social-accounts
-│       │   ├── submissionRoutes.js       # /api/submissions
-│       │   ├── superAdminEmailRoutes.js  # /api/super-admin/email
-│       │   ├── superAdminGamificationRoutes.js # /api/superadmin/gamification
-│       │   ├── superAdminRoutes.js       # /api/superadmin
-│       │   ├── swaggerRoutes.js          # /api/docs
-│       │   ├── uploadRoutes.js           # /api/uploads
-│       │   ├── userRoutes.js             # /api/users
-│       │   └── index.js                  # Central router registration
+│       │   ├── adminGamificationRoutes.js               # /api/admin/gamification
+│       │   ├── adminLevelRoutes.js                      # /api/admin/levels & /api/superadmin/levels
+│       │   ├── authRoutes.js                            # /api/auth
+│       │   ├── dashboardRoutes.js                       # /api/dashboard
+│       │   ├── gamificationRoutes.js                    # /api/gamification
+│       │   ├── healthRoutes.js                          # /api/health, /api/database/status, /api/info
+│       │   ├── notificationRoutes.js                    # /api/notifications
+│       │   ├── pointsRoutes.js                          # /api/points
+│       │   ├── reviewRoutes.js                          # /api/reviews
+│       │   ├── searchRoutes.js                          # /api/search
+│       │   ├── socialAccountRoutes.js                   # /api/social-accounts
+│       │   ├── submissionRoutes.js                      # /api/submissions
+│       │   ├── superAdminEmailRoutes.js                 # /api/super-admin/email
+│       │   ├── superAdminGamificationRoutes.js          # /api/superadmin/gamification
+│       │   ├── superAdminRoutes.js                      # /api/superadmin
+│       │   ├── swaggerRoutes.js                         # /api/docs
+│       │   ├── uploadRoutes.js                          # /api/uploads
+│       │   ├── userRoutes.js                            # /api/users
+│       │   └── index.js                                 # Central router registration
+│       │
 │       ├── services/
-│       │   ├── adminGamificationService.js # Admin users directory & manual adjustment business logic
-│       │   ├── auditLogService.js        # Governance and audit logging
-│       │   ├── emailService.js           # Transactional email dispatch, retries & telemetry
-│       │   ├── emailTemplates.js         # Production HTML transactional email templates
-│       │   ├── levelService.js           # Dynamic level thresholds calculation engine
-│       │   ├── pointsService.js          # Points awarding & idempotency service
-│       │   ├── realtimeGamificationService.js # SSE real-time broadcast and subscription manager
-│       │   ├── storageService.js         # Local/cloud storage abstraction
-│       │   ├── submissionApprovalService.js # Transactional approval & XP awarding orchestrator
-│       │   └── superAdminGamificationService.js # Super Admin transactions, audit logs, and settings logic
-│       ├── tests/                        # 32 automated test suites + master runner
-│       │   ├── run_all_tests.js          # Master test runner
-│       │   └── *.test.js                 # 32 unit, integration, and security suites
-│       └── utils/
-│           ├── hash.js                   # bcrypt helper functions
-│           ├── jwt.js                    # JWT signing and verification utility
-│           └── urlValidator.js           # Domain & URL structure validation
-│
-└── frontend/
-    ├── .env                              # Active frontend environment configuration
-    ├── .env.example                      # Reference template for frontend variables
-    ├── .gitignore
-    ├── index.html                        # Application entrypoint with SEO meta
-    ├── package.json                      # React 19, Vite, and scripts
-    ├── package-lock.json                 # Frontend dependency lockfile
-    ├── vite.config.js                    # Vite configuration & dev proxy
-    └── src/
-        ├── main.jsx                      # React 19 root bootstrap
-        ├── App.jsx                       # Top-level hash router & role orchestrator
-        ├── context/
-        │   └── AuthContext.jsx           # Global auth provider, session state & listeners
-        ├── services/
-        │   ├── adminGamificationApi.js   # Admin gamification API client
-        │   ├── api.js                    # Universal API abstraction client
-        │   ├── emailAdminApi.js          # Transactional email management API client
-        │   ├── gamificationApi.js        # Dedicated gamification client
-        │   ├── gamificationRealtimeClient.js # Frontend SSE real-time client & event emitter
-        │   └── superAdminGamificationApi.js # Super Admin gamification API client
+│       │   ├── adminGamificationService.js              # Admin users directory & manual adjustment business logic
+│       │   ├── auditLogService.js                       # Governance and audit logging
+│       │   ├── emailService.js                          # Transactional email dispatch, retries & telemetry
+│       │   ├── emailTemplates.js                        # Production HTML transactional email templates
+│       │   ├── levelService.js                          # Dynamic level thresholds calculation engine
+│       │   ├── pointsService.js                         # Points awarding & idempotency service
+│       │   ├── realtimeGamificationService.js           # SSE real-time broadcast and subscription manager
+│       │   ├── storageService.js                        # Local/cloud storage abstraction
+│       │   ├── submissionApprovalService.js             # Transactional approval & XP awarding orchestrator
+│       │   └── superAdminGamificationService.js         # Super Admin transactions, audit logs, and settings logic
+│       │               
+│       ├── tests/                                       # 32 automated test suites + master runner
+│       │   ├── run_all_tests.js                         # Master test runner
+│       │   └── *.test.js                                # 32 unit, integration, and security suites
+│       │               
+│       └── utils/               
+│           ├── hash.js                                  # bcrypt helper functions
+│           ├── jwt.js                                   # JWT signing and verification utility
+│           └── urlValidator.js                          # Domain & URL structure validation
+│              
+└── frontend/              
+    ├── .env                                             # Active frontend environment configuration
+    ├── .env.example                                     # Reference template for frontend variables
+    ├── .gitignore               
+    ├── index.html                                       # Application entrypoint with SEO meta
+    ├── package.json                                     # React 19, Vite, and scripts
+    ├── package-lock.json                                # Frontend dependency lockfile
+    ├── vite.config.js                                   # Vite configuration & dev proxy
+    └── src/               
+        ├── main.jsx                                     # React 19 root bootstrap
+        ├── App.jsx                                      # Top-level hash router & role orchestrator
+        ├── context/             
+        │   └── AuthContext.jsx                          # Global auth provider, session state & listeners
+        │               
+        ├── services/               
+        │   ├── adminGamificationApi.js                  # Admin gamification API client
+        │   ├── api.js                                   # Universal API abstraction client
+        │   ├── emailAdminApi.js                         # Transactional email management API client
+        │   ├── gamificationApi.js                       # Dedicated gamification client
+        │   ├── gamificationRealtimeClient.js            # Frontend SSE real-time client & event emitter
+        │   └── superAdminGamificationApi.js             # Super Admin gamification API client
+        │
         ├── styles/
-        │   └── index.css                 # Master design system (tokens, typography, glassmorphism)
+        │   └── index.css                                # Master design system (tokens, typography, glassmorphism)
+        │
         ├── pages/
-        │   ├── LoginPage.jsx             # Credentials authentication & demo selector
-        │   └── UserSpace.jsx             # Creator space view (rendered inside MainLayout)
-        └── components/
-            ├── Header.jsx                # Navigation header, user avatar & search trigger
-            ├── Footer.jsx                # Public footer
-            ├── Hero.jsx                  # Hero section with primary CTAs
-            ├── MainLayout.jsx            # Authenticated application shell, sidebar & LevelUpModal
-            ├── ProtectedRoute.jsx        # Role clearance router guard
-            ├── RoleOverview.jsx          # Interactive 3-tier role cards
-            ├── ScreenshotImage.jsx       # Authenticated blob image loader for screenshots
-            ├── TechStackBadge.jsx        # Architecture details pill
-            ├── Unauthorized403.jsx       # Dedicated 403 Forbidden page
-            ├── HealthCheckWidget.jsx     # Live backend connectivity tester
-            ├── DevDatabaseDashboard.jsx  # Interactive database telemetry console
+        │   ├── LoginPage.jsx                            # Credentials authentication & demo selector
+        │   └── UserSpace.jsx                            # Creator space view (rendered inside MainLayout)
+        │               
+        └── components/             
+            ├── Header.jsx                               # Navigation header, user avatar & search trigger
+            ├── Footer.jsx                               # Public footer
+            ├── Hero.jsx                                 # Hero section with primary CTAs
+            ├── MainLayout.jsx                           # Authenticated application shell, sidebar & LevelUpModal
+            ├── ProtectedRoute.jsx                       # Role clearance router guard
+            ├── RoleOverview.jsx                         # Interactive 3-tier role cards
+            ├── ScreenshotImage.jsx                      # Authenticated blob image loader for screenshots
+            ├── TechStackBadge.jsx                       # Architecture details pill
+            ├── Unauthorized403.jsx                      # Dedicated 403 Forbidden page
+            ├── HealthCheckWidget.jsx                    # Live backend connectivity tester
+            ├── DevDatabaseDashboard.jsx                 # Interactive database telemetry console
             ├── admin/gamification/
-            │   ├── AdminGamificationAnalytics.jsx # Admin telemetry & XP distribution charts
-            │   ├── AdminUserGamificationDossier.jsx # In-depth creator gamification dossier
-            │   ├── AdminUsersPointsTable.jsx # Creator points directory with filters & pagination
-            │   └── AdminXPAdjustmentModal.jsx # Manual XP adjustment modal with live validation
+            │   ├── AdminGamificationAnalytics.jsx       # Admin telemetry & XP distribution charts
+            │   ├── AdminUserGamificationDossier.jsx     # In-depth creator gamification dossier
+            │   ├── AdminUsersPointsTable.jsx            # Creator points directory with filters & pagination
+            │   └── AdminXPAdjustmentModal.jsx           # Manual XP adjustment modal with live validation
+            │
             ├── common/
-            │   ├── EmptyState.jsx        # Zero-state empty cards
-            │   ├── FilterBar.jsx         # Debounced search & filter bar
-            │   ├── GlobalSearchModal.jsx # ⌘K / Ctrl+K Command Palette
-            │   ├── LoadingSkeleton.jsx   # Shimmer table skeletons
-            │   ├── Pagination.jsx        # Ellipsis pagination & page size selector
-            │   └── PointsSummary.jsx     # Points card summary widget
+            │   ├── EmptyState.jsx                       # Zero-state empty cards
+            │   ├── FilterBar.jsx                        # Debounced search & filter bar
+            │   ├── GlobalSearchModal.jsx                # ⌘K / Ctrl+K Command Palette
+            │   ├── LoadingSkeleton.jsx                  # Shimmer table skeletons
+            │   ├── Pagination.jsx                       # Ellipsis pagination & page size selector
+            │   └── PointsSummary.jsx                    # Points card summary widget
+            │
             ├── gamification/
-            │   ├── DynamicLevelTimeline.jsx # Visual 50-level milestone journey
-            │   ├── GamificationSummary.jsx # Level & points summary bar
-            │   ├── Leaderboard.jsx       # Portal-wide ranked leaderboard with tie-breaking
-            │   ├── LevelBadge.jsx        # Tier icons & glowing badges
-            │   ├── LevelJourneySection.jsx # Visual level track section
-            │   ├── LevelProgress.jsx     # Level progress bar component
-            │   ├── LevelProgressCard.jsx # Compact level progress card
-            │   ├── LevelUpModal.jsx      # Animated level-up celebration modal
-            │   ├── PersonalGamificationDashboard.jsx # Normal user gamification command center
-            │   ├── PointHistory.jsx      # Points activity log
-            │   ├── PositionTimeline.jsx  # Creator leaderboard position timeline
-            │   ├── UserActivityDistribution.jsx # Activity breakdown donut chart
-            │   ├── UserXPChart.jsx       # Dynamic SVG/CSS XP trajectory chart
-            │   └── XPHistoryLedger.jsx   # Itemized transaction ledger with pagination
+            │   ├── DynamicLevelTimeline.jsx             # Visual 50-level milestone journey
+            │   ├── GamificationSummary.jsx              # Level & points summary bar
+            │   ├── Leaderboard.jsx                      # Portal-wide ranked leaderboard with tie-breaking
+            │   ├── LevelBadge.jsx                       # Tier icons & glowing badges
+            │   ├── LevelJourneySection.jsx              # Visual level track section
+            │   ├── LevelProgress.jsx                    # Level progress bar component
+            │   ├── LevelProgressCard.jsx                # Compact level progress card
+            │   ├── LevelUpModal.jsx                     # Animated level-up celebration modal
+            │   ├── PersonalGamificationDashboard.jsx    # Normal user gamification command center
+            │   ├── PointHistory.jsx                     # Points activity log
+            │   ├── PositionTimeline.jsx                 # Creator leaderboard position timeline
+            │   ├── UserActivityDistribution.jsx         # Activity breakdown donut chart
+            │   ├── UserXPChart.jsx                      # Dynamic SVG/CSS XP trajectory chart
+            │   └── XPHistoryLedger.jsx                  # Itemized transaction ledger with pagination
+            │
             ├── superadmin/gamification/
-            │   ├── SuperAdminAdminsView.jsx # Staff administrator point governance
-            │   ├── SuperAdminAuditLogsView.jsx # Gamification compliance & audit trail
-            │   ├── SuperAdminGamificationAnalytics.jsx # Global platform telemetry & breakdown
-            │   ├── SuperAdminGamificationOverview.jsx # Super Admin KPI dashboard & quick stats
-            │   ├── SuperAdminGamificationSettings.jsx # Dynamic XP earning rules configuration
-            │   ├── SuperAdminTransactionsExplorer.jsx # Global transaction explorer ledger
-            │   ├── SuperAdminUsersTable.jsx # System-wide user directory & points
-            │   └── SuperAdminXPAdjustmentModal.jsx # Super Admin override adjustment modal
+            │   ├── SuperAdminAdminsView.jsx             # Staff administrator point governance
+            │   ├── SuperAdminAuditLogsView.jsx          # Gamification compliance & audit trail
+            │   ├── SuperAdminGamificationAnalytics.jsx  # Global platform telemetry & breakdown
+            │   ├── SuperAdminGamificationOverview.jsx   # Super Admin KPI dashboard & quick stats
+            │   ├── SuperAdminGamificationSettings.jsx   # Dynamic XP earning rules configuration
+            │   ├── SuperAdminTransactionsExplorer.jsx   # Global transaction explorer ledger
+            │   ├── SuperAdminUsersTable.jsx             # System-wide user directory & points
+            │   └── SuperAdminXPAdjustmentModal.jsx      # Super Admin override adjustment modal
+            │
             └── views/
-                ├── AdminsView.jsx        # Staff directory & moderator appointments
-                ├── DashboardView.jsx     # Role-tailored dashboards with gamification
-                ├── GamePointsView.jsx    # Unified Game Points routing view
-                ├── LevelManagementView.jsx # Dynamic Level configuration & generation console
-                ├── MySubmissionsView.jsx # Creator submission history & status modal
-                ├── NotificationsView.jsx # User notifications & mark-all-read
-                ├── ProfileView.jsx       # Avatar upload, color customization, password change
-                ├── ReviewSubmissionsView.jsx # Professional Moderator Review Workspace
-                ├── SettingsView.jsx      # System policies & anti-abuse thresholds
-                ├── SocialAccountsView.jsx# Official accounts management & stats
-                ├── SubmissionsView.jsx   # Global submissions directory
-                ├── SubmitActivityView.jsx# Social activity verification form
-                ├── SuperAdminEmailCenter.jsx # Transactional email control center
-                ├── SuperAdminGamificationCenter.jsx # 9-tab Super Admin governance console
-                └── UsersView.jsx         # Super Admin user CRUD & status control
+                ├── AdminsView.jsx                       # Staff directory & moderator appointments
+                ├── DashboardView.jsx                    # Role-tailored dashboards with gamification
+                ├── GamePointsView.jsx                   # Unified Game Points routing view
+                ├── LevelManagementView.jsx              # Dynamic Level configuration & generation console
+                ├── MySubmissionsView.jsx                # Creator submission history & status modal
+                ├── NotificationsView.jsx                # User notifications & mark-all-read
+                ├── ProfileView.jsx                      # Avatar upload, color customization, password change
+                ├── ReviewSubmissionsView.jsx            # Professional Moderator Review Workspace
+                ├── SettingsView.jsx                     # System policies & anti-abuse thresholds
+                ├── SocialAccountsView.jsx               # Official accounts management & stats
+                ├── SubmissionsView.jsx                  # Global submissions directory
+                ├── SubmitActivityView.jsx               # Social activity verification form
+                ├── SuperAdminEmailCenter.jsx            # Transactional email control center
+                ├── SuperAdminGamificationCenter.jsx     # 9-tab Super Admin governance console
+                └── UsersView.jsx                        # Super Admin user CRUD & status control
 ```
 
 ---
