@@ -4,9 +4,36 @@ const env = require('./env');
 let prisma;
 
 try {
-  prisma = new PrismaClient({
+  const basePrisma = new PrismaClient({
     log: env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
     errorFormat: 'pretty'
+  });
+
+  prisma = basePrisma.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const writeOps = ['create', 'createMany', 'update', 'updateMany', 'upsert', 'delete', 'deleteMany'];
+          if (writeOps.includes(operation)) {
+            console.log('\n========================================');
+            console.log('DATABASE WRITE');
+            console.log(`MODEL:      ${model}`);
+            console.log(`OPERATION:  ${operation}`);
+            console.log(`RECORD ID:  ${args?.where?.id || args?.data?.id || 'N/A'}`);
+            if (model === 'Submission' && args?.data?.status) {
+              console.log(`NEW STATUS: ${args.data.status}`);
+            }
+            if (model === 'User' && (args?.data?.email || args?.create?.email)) {
+              console.log(`EMAIL:      ${args.data?.email || args.create?.email}`);
+            }
+            console.log(`ARGS:       ${JSON.stringify({ where: args?.where, data: args?.data }, null, 2)}`);
+            console.log(`TIMESTAMP:  ${new Date().toISOString()}`);
+            console.log('========================================\n');
+          }
+          return query(args);
+        }
+      }
+    }
   });
 } catch (error) {
   console.error('[Database] Failed to instantiate PrismaClient:', error.message);

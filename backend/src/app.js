@@ -53,10 +53,38 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
-// Simple request logger
+// Request logger and Phase 12 Write Request Tracker
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    let tokenUser = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const { verifyToken } = require('./utils/jwt');
+        tokenUser = verifyToken(authHeader.substring(7).trim());
+      } catch (e) {}
+    }
+
+    console.log('\n========================================');
+    console.log('DATABASE WRITE REQUEST');
+    console.log('========================================');
+    console.log(`METHOD:    ${req.method}`);
+    console.log(`URL:       ${req.originalUrl}`);
+    console.log(`USER:      ${tokenUser ? (tokenUser.email || tokenUser.name) : (req.body?.email || 'Anonymous')}`);
+    console.log(`USER ID:   ${tokenUser ? tokenUser.id : 'N/A'}`);
+    console.log(`ROLE:      ${tokenUser ? tokenUser.role : 'N/A'}`);
+    console.log(`TIMESTAMP: ${timestamp}`);
+    if (req.body && Object.keys(req.body).length > 0) {
+      const sanitizedBody = { ...req.body };
+      if (sanitizedBody.password) sanitizedBody.password = '***REDACTED***';
+      console.log(`PAYLOAD:   ${JSON.stringify(sanitizedBody)}`);
+    }
+    console.log('========================================\n');
+  }
+
   next();
 });
 

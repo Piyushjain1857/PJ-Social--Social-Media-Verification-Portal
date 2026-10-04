@@ -173,14 +173,6 @@ const login = async (req, res, next) => {
       name: user.name
     });
 
-    // Asynchronously dispatch transactional login notification email (non-blocking)
-    sendLoginNotificationEmail(user, {
-      ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown',
-      userAgent: req.headers['user-agent'] || 'Web Browser',
-      time: new Date().toUTCString()
-    }).catch(err => {
-      console.warn('[AuthController] Login notification email skipped:', err.message);
-    });
 
     return res.status(200).json({
       success: true,

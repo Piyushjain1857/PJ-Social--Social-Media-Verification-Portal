@@ -41,6 +41,13 @@ console.log('========================================================');
 console.log('   PJ Social Full-Stack Verification Portal Test Suite  ');
 console.log('========================================================\n');
 
+if (process.env.ALLOW_LIVE_DB_TESTING !== 'true') {
+  console.log('🛡️  Safety Protection Active: Automated test suites are disabled from running against the active database.');
+  console.log('To prevent automatic user creation, submissions, approvals, or rejections in your active database,');
+  console.log('tests will not execute unless explicitly invoked with ALLOW_LIVE_DB_TESTING=true.\n');
+  process.exit(0);
+}
+
 let passedCount = 0;
 let failedCount = 0;
 

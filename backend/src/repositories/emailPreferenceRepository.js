@@ -26,12 +26,13 @@ const getUserEmailPreferences = async (userId) => {
       });
 
       if (!prefs) {
-        prefs = await prisma.emailPreference.create({
-          data: {
-            userId,
-            ...DEFAULT_PREFERENCES
-          }
-        });
+        return {
+          accountSecurity: DEFAULT_PREFERENCES.accountSecurity,
+          submissionUpdates: DEFAULT_PREFERENCES.submissionUpdates,
+          gamificationUpdates: DEFAULT_PREFERENCES.gamificationUpdates,
+          announcements: DEFAULT_PREFERENCES.announcements,
+          updatedAt: null
+        };
       }
 
       return {

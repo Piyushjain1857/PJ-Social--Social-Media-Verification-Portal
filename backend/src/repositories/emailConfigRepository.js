@@ -190,14 +190,7 @@ const getTemplateConfigs = async () => {
       });
 
       if (records.length === 0) {
-        // Seed default template configurations
-        await prisma.emailTemplateConfig.createMany({
-          data: DEFAULT_TEMPLATES,
-          skipDuplicates: true
-        });
-        return await prisma.emailTemplateConfig.findMany({
-          orderBy: { category: 'asc' }
-        });
+        return DEFAULT_TEMPLATES;
       }
 
       return records;
@@ -290,9 +283,7 @@ const getSystemSettings = async () => {
       });
 
       if (!setting) {
-        setting = await prisma.emailSystemSetting.create({
-          data: DEFAULT_SYSTEM_SETTINGS
-        });
+        setting = DEFAULT_SYSTEM_SETTINGS;
       }
 
       // Security-critical events must ALWAYS be true

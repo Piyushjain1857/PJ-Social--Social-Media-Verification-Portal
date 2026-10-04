@@ -365,14 +365,6 @@ const calculateUserXP = async (userId) => {
       let isSynchronized = true;
       if (user && user.totalXP !== verifiedTotalXP) {
         isSynchronized = false;
-        // Synchronize cached totalXP with the verified transaction audit sum
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            totalXP: verifiedTotalXP,
-            totalPoints: verifiedTotalXP
-          }
-        });
       }
 
       return {
