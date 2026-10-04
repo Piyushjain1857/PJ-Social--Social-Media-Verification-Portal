@@ -13,6 +13,7 @@ import FilterBar from '../common/FilterBar';
 import Pagination from '../common/Pagination';
 import EmptyState from '../common/EmptyState';
 import LoadingSkeleton from '../common/LoadingSkeleton';
+import { PlatformIcon } from '../common/SocialIcons';
 
 export default function UsersView() {
   const { user: currentUser } = useAuth();
@@ -1783,8 +1784,8 @@ export default function UsersView() {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.9rem' }}>
-                              {s.platform === 'INSTAGRAM' ? '📸' : s.platform === 'TWITTER' ? '🐦' : s.platform === 'FACEBOOK' ? '👥' : s.platform === 'YOUTUBE' ? '▶️' : '🌐'}
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              <PlatformIcon platform={s.platform} size={15} />
                             </span>
                             <span style={{ fontWeight: 600, color: 'var(--text-highlight)' }}>{s.platform}</span>
                             <span style={{ color: 'var(--text-muted)' }}>•</span>

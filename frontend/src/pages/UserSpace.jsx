@@ -10,11 +10,12 @@ import {
 } from '../services/api';
 import { fetchMyGamification } from '../services/gamificationApi';
 import ScreenshotImage from '../components/ScreenshotImage';
+import { InstagramIcon, LinkedInIcon, FacebookIcon, CameraIcon } from '../components/common/SocialIcons';
 
 const PLATFORMS = [
-  { id: 'INSTAGRAM', name: 'Instagram', icon: '📸', color: '#E1306C', class: 'instagram', placeholder: 'https://instagram.com/p/...' },
-  { id: 'LINKEDIN', name: 'LinkedIn', icon: '💼', color: '#0A66C2', class: 'linkedin', placeholder: 'https://linkedin.com/feed/update/...' },
-  { id: 'FACEBOOK', name: 'Facebook', icon: '👥', color: '#1877F2', class: 'facebook', placeholder: 'https://facebook.com/stories/...' },
+  { id: 'INSTAGRAM', name: 'Instagram', icon: <InstagramIcon size={18} />, color: '#E1306C', class: 'instagram', placeholder: 'https://instagram.com/p/...' },
+  { id: 'LINKEDIN', name: 'LinkedIn', icon: <LinkedInIcon size={18} />, color: '#0A66C2', class: 'linkedin', placeholder: 'https://linkedin.com/feed/update/...' },
+  { id: 'FACEBOOK', name: 'Facebook', icon: <FacebookIcon size={18} />, color: '#1877F2', class: 'facebook', placeholder: 'https://facebook.com/stories/...' },
 ];
 
 const ACTIONS = [
@@ -692,8 +693,9 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                     type="button"
                     className={`user-filter-pill ${platformFilter === pl ? `active pill-${pl.toLowerCase()}` : ''}`}
                     onClick={() => setPlatformFilter(pl)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                   >
-                    {pl === 'ALL' ? 'All' : pl === 'INSTAGRAM' ? '📸 Instagram' : pl === 'LINKEDIN' ? '💼 LinkedIn' : '👥 Facebook'}
+                    {pl === 'ALL' ? 'All' : pl === 'INSTAGRAM' ? <><InstagramIcon size={13} /> Instagram</> : pl === 'LINKEDIN' ? <><LinkedInIcon size={13} /> LinkedIn</> : <><FacebookIcon size={13} /> Facebook</>}
                   </button>
                 ))}
               </div>
@@ -742,8 +744,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                       tabIndex={0}
                     >
                       <div className="quest-card-header">
-                        <span className="quest-platform-badge">
-                          <span>📸</span> Instagram
+                        <span className="quest-platform-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <InstagramIcon size={14} /> Instagram
                         </span>
                         <span className="quest-xp-reward">+25 XP Boost</span>
                       </div>
@@ -765,8 +767,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                       tabIndex={0}
                     >
                       <div className="quest-card-header">
-                        <span className="quest-platform-badge">
-                          <span>💼</span> LinkedIn
+                        <span className="quest-platform-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <LinkedInIcon size={14} /> LinkedIn
                         </span>
                         <span className="quest-xp-reward">+15 XP</span>
                       </div>
@@ -941,8 +943,8 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                     {/* Screenshot Evidence Preview */}
                     {sub.screenshotUrl && (
                       <div className="evidence-preview-wrapper">
-                        <div className="evidence-preview-header">
-                          <span>📸</span>
+                        <div className="evidence-preview-header" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <CameraIcon size={16} />
                           <span>Attached Proof Evidence (Click image to inspect):</span>
                         </div>
                         <div className="evidence-image-frame">

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createSubmission, fetchActiveOfficialAccounts } from '../../services/api';
+import { InstagramIcon, LinkedInIcon, FacebookIcon } from '../common/SocialIcons';
 
 const PLATFORMS = [
   {
     id: 'INSTAGRAM',
     name: 'Instagram',
-    icon: '📸',
+    icon: <InstagramIcon size={24} />,
     color: '#E1306C',
     placeholder: 'https://instagram.com/p/DF123abc456',
     hint: 'e.g. post permalink or creator reel URL',
@@ -13,7 +14,7 @@ const PLATFORMS = [
   {
     id: 'LINKEDIN',
     name: 'LinkedIn',
-    icon: '💼',
+    icon: <LinkedInIcon size={24} />,
     color: '#0A66C2',
     placeholder: 'https://linkedin.com/feed/update/urn:li:activity:71625344901',
     hint: 'e.g. company post update or article link',
@@ -21,7 +22,7 @@ const PLATFORMS = [
   {
     id: 'FACEBOOK',
     name: 'Facebook',
-    icon: '👥',
+    icon: <FacebookIcon size={24} />,
     color: '#1877F2',
     placeholder: 'https://facebook.com/stories/109283749219',
     hint: 'e.g. post link, group update, or story permalink',

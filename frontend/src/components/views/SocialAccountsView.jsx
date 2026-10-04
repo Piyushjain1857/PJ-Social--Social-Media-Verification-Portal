@@ -14,11 +14,12 @@ import FilterBar from '../common/FilterBar';
 import Pagination from '../common/Pagination';
 import EmptyState from '../common/EmptyState';
 import LoadingSkeleton from '../common/LoadingSkeleton';
+import { InstagramIcon, LinkedInIcon, FacebookIcon, CameraIcon } from '../common/SocialIcons';
 
 const PLATFORM_CONFIG = {
   INSTAGRAM: {
     name: 'Instagram',
-    icon: '📸',
+    icon: <InstagramIcon size={22} />,
     color: '#E1306C',
     gradient: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)',
     domain: 'instagram.com',
@@ -27,7 +28,7 @@ const PLATFORM_CONFIG = {
   },
   LINKEDIN: {
     name: 'LinkedIn',
-    icon: '💼',
+    icon: <LinkedInIcon size={22} />,
     color: '#0A66C2',
     gradient: 'linear-gradient(135deg, #0a66c2, #0077b5, #38bdf8)',
     domain: 'linkedin.com',
@@ -36,7 +37,7 @@ const PLATFORM_CONFIG = {
   },
   FACEBOOK: {
     name: 'Facebook',
-    icon: '👥',
+    icon: <FacebookIcon size={22} />,
     color: '#1877F2',
     gradient: 'linear-gradient(135deg, #1877f2, #2563eb, #60a5fa)',
     domain: 'facebook.com',
@@ -533,12 +534,12 @@ export default function SocialAccountsView() {
             <span className="superadmin-kpi-value" style={{ color: '#38bdf8' }}>
               {totalCount}
             </span>
-            <span className="superadmin-kpi-subtext" style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-              <span>📸 {instagramCount}</span>
+            <span className="superadmin-kpi-subtext" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><InstagramIcon size={13} /> {instagramCount}</span>
               <span>·</span>
-              <span>💼 {linkedinCount}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><LinkedInIcon size={13} /> {linkedinCount}</span>
               <span>·</span>
-              <span>👥 {facebookCount}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FacebookIcon size={13} /> {facebookCount}</span>
             </span>
           </div>
         </div>
@@ -601,9 +602,9 @@ export default function SocialAccountsView() {
             onChange: (val) => { setPlatformFilter(val); setPage(1); },
             options: [
               { value: 'ALL', label: 'All Platforms' },
-              { value: 'INSTAGRAM', label: 'Instagram (📸)' },
-              { value: 'LINKEDIN', label: 'LinkedIn (💼)' },
-              { value: 'FACEBOOK', label: 'Facebook (👥)' }
+              { value: 'INSTAGRAM', label: 'Instagram' },
+              { value: 'LINKEDIN', label: 'LinkedIn' },
+              { value: 'FACEBOOK', label: 'Facebook' }
             ]
           },
           ...(isSuperAdmin ? [
@@ -1561,8 +1562,8 @@ export default function SocialAccountsView() {
                     {selectedAccount.submissions.map(sub => (
                       <div key={sub.id} className="dossier-feed-item">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                          <span style={{ fontSize: '1rem' }}>
-                            {sub.actionType === 'LIKE' ? '❤️' : sub.actionType === 'COMMENT' ? '💬' : '📸'}
+                          <span style={{ fontSize: '1rem', display: 'inline-flex', alignItems: 'center' }}>
+                            {sub.actionType === 'LIKE' ? '❤️' : sub.actionType === 'COMMENT' ? '💬' : <CameraIcon size={16} />}
                           </span>
                           <div>
                             <strong style={{ fontSize: '0.84rem', color: '#ffffff' }}>{sub.actionType}</strong>

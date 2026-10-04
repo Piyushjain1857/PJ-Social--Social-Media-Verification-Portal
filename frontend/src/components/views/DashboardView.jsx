@@ -12,16 +12,17 @@ import {
 import ScreenshotImage from '../ScreenshotImage';
 import PointsSummary from '../common/PointsSummary';
 import GamificationSummary from '../gamification/GamificationSummary';
+import { InstagramIcon, LinkedInIcon, FacebookIcon, TwitterXIcon, TikTokIcon, YouTubeIcon } from '../common/SocialIcons';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PLATFORM_ICONS = {
-  INSTAGRAM: '📸',
-  LINKEDIN:  '💼',
-  FACEBOOK:  '👥',
-  TWITTER:   '🐦',
-  TIKTOK:    '🎵',
-  YOUTUBE:   '▶️',
+  INSTAGRAM: <InstagramIcon size={16} />,
+  LINKEDIN:  <LinkedInIcon size={16} />,
+  FACEBOOK:  <FacebookIcon size={16} />,
+  TWITTER:   <TwitterXIcon size={16} />,
+  TIKTOK:    <TikTokIcon size={16} />,
+  YOUTUBE:   <YouTubeIcon size={16} />,
 };
 
 const NOTIF_ICONS = {
@@ -1745,63 +1746,226 @@ function AdminDashboard({ onNavigateToNav }) {
       </div>
 
       {/* ── Standard Moderation Procedures ── */}
-      <div className="admin-dash-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-          <span style={{ fontSize: '1.2rem' }}>📋</span>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-highlight)', fontWeight: 800 }}>
-            Moderator Verification Standard Operating Procedures
-          </h3>
-        </div>
-        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-          Follow these core compliance guidelines to ensure fair, accurate, and consistent verification decisions.
-        </p>
+      <div className="admin-dash-panel" style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '320px',
+          height: '100%',
+          background: 'radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }} />
 
-        <div className="admin-dash-sop-grid">
-          <div className="admin-dash-sop-card">
-            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-              1
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          paddingBottom: '0.9rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25))',
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              boxShadow: '0 0 20px rgba(99, 102, 241, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                <path d="m9 14 2 2 4-4" />
+              </svg>
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Identity Verification</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
-                Verify the creator handle visible in the screenshot matches the registered creator account.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.08rem', color: '#ffffff', fontWeight: 800, letterSpacing: '-0.01em' }}>
+                  Moderator Verification Standard Operating Procedures
+                </h3>
+                <span style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  padding: '0.15rem 0.55rem',
+                  borderRadius: '999px',
+                  background: 'rgba(99, 102, 241, 0.15)',
+                  border: '1px solid rgba(99, 102, 241, 0.35)',
+                  color: '#c7d2fe',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase'
+                }}>
+                  Protocol &amp; SOP
+                </span>
               </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                Mandatory compliance standards enforced across all submission audits to ensure fair, consistent, and accountable decisions.
+              </p>
             </div>
           </div>
 
-          <div className="admin-dash-sop-card">
-            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              2
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '999px',
+            fontSize: '0.74rem',
+            color: '#34d399',
+            fontWeight: 600,
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+            <span>Active Quality Framework</span>
+          </div>
+        </div>
+
+        <div className="admin-dash-sop-grid">
+          {/* Phase 1 */}
+          <div className="admin-dash-sop-card" style={{ borderTop: '3px solid #f59e0b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1.25rem', marginBottom: '0.35rem' }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#f59e0b',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                padding: '0.22rem 0.65rem',
+                borderRadius: '6px',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                display: 'inline-block'
+              }}>
+                Phase 01
+              </span>
+              <div className="admin-dash-sop-step-num" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.35)', marginLeft: 'auto', flexShrink: 0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Active Timestamp</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>Identity Verification</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.5 }}>
+                Verify the creator handle visible in the screenshot matches the registered creator account profile.
+              </div>
+            </div>
+            <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.72rem', color: '#fbbf24', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>✓</span> Match username &amp; profile handle
+            </div>
+          </div>
+
+          {/* Phase 2 */}
+          <div className="admin-dash-sop-card" style={{ borderTop: '3px solid #6366f1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1.25rem', marginBottom: '0.35rem' }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#818cf8',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                padding: '0.22rem 0.65rem',
+                borderRadius: '6px',
+                background: 'rgba(99, 102, 241, 0.12)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                display: 'inline-block'
+              }}>
+                Phase 02
+              </span>
+              <div className="admin-dash-sop-step-num" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.35)', marginLeft: 'auto', flexShrink: 0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>Active Timestamp</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.5 }}>
                 Confirm timestamp of social engagement proof is within the valid active campaign timeframe.
               </div>
             </div>
+            <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.72rem', color: '#a5b4fc', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>✓</span> Validate recency &amp; deadline window
+            </div>
           </div>
 
-          <div className="admin-dash-sop-card">
-            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-              3
+          {/* Phase 3 */}
+          <div className="admin-dash-sop-card" style={{ borderTop: '3px solid #10b981' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1.25rem', marginBottom: '0.35rem' }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#34d399',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                padding: '0.22rem 0.65rem',
+                borderRadius: '6px',
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                display: 'inline-block'
+              }}>
+                Phase 03
+              </span>
+              <div className="admin-dash-sop-step-num" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.35)', marginLeft: 'auto', flexShrink: 0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <polyline points="9 12 11 14 15 10" />
+                </svg>
+              </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Legitimate Evidence</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>Legitimate Evidence</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.5 }}>
                 Ensure screenshot has not been cropped to obscure timestamps, handles, or interaction state.
               </div>
             </div>
+            <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.72rem', color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>✓</span> Unaltered, complete UI screenshot
+            </div>
           </div>
 
-          <div className="admin-dash-sop-card">
-            <div className="admin-dash-sop-step-num" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-              4
+          {/* Phase 4 */}
+          <div className="admin-dash-sop-card" style={{ borderTop: '3px solid #f43f5e' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1.25rem', marginBottom: '0.35rem' }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#fb7185',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                padding: '0.22rem 0.65rem',
+                borderRadius: '6px',
+                background: 'rgba(244, 63, 94, 0.12)',
+                border: '1px solid rgba(244, 63, 94, 0.25)',
+                display: 'inline-block'
+              }}>
+                Phase 04
+              </span>
+              <div className="admin-dash-sop-step-num" style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', border: '1px solid rgba(244, 63, 94, 0.35)', marginLeft: 'auto', flexShrink: 0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-highlight)' }}>Constructive Feedback</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.45 }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>Constructive Feedback</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.5 }}>
                 When rejecting submissions, always provide actionable, polite feedback so creators can rectify.
               </div>
+            </div>
+            <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.72rem', color: '#fb7185', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>✓</span> Clear reason &amp; actionable guidance
             </div>
           </div>
         </div>

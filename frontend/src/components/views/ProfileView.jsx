@@ -10,6 +10,7 @@ import {
 } from '../../services/api';
 import { fetchMyGamification } from '../../services/gamificationApi';
 import LevelProgressCard from '../gamification/LevelProgressCard';
+import { InstagramIcon, LinkedInIcon, TwitterXIcon, GitHubIcon } from '../common/SocialIcons';
 
 const PERSONALIZATION_KEY = 'user_portal_personalization';
 
@@ -854,7 +855,7 @@ export default function ProfileView({ onNavigateToNav }) {
                     rel="noreferrer"
                     className="profile-social-chip"
                   >
-                    <span>📸</span>
+                    <InstagramIcon size={16} />
                     <span>@{personalization.socialHandles.instagram}</span>
                   </a>
                 )}
@@ -865,7 +866,7 @@ export default function ProfileView({ onNavigateToNav }) {
                     rel="noreferrer"
                     className="profile-social-chip"
                   >
-                    <span>💼</span>
+                    <LinkedInIcon size={16} />
                     <span>{personalization.socialHandles.linkedin}</span>
                   </a>
                 )}
@@ -876,7 +877,7 @@ export default function ProfileView({ onNavigateToNav }) {
                     rel="noreferrer"
                     className="profile-social-chip"
                   >
-                    <span>🐦</span>
+                    <TwitterXIcon size={16} />
                     <span>@{personalization.socialHandles.twitter}</span>
                   </a>
                 )}
@@ -887,7 +888,7 @@ export default function ProfileView({ onNavigateToNav }) {
                     rel="noreferrer"
                     className="profile-social-chip"
                   >
-                    <span>🐙</span>
+                    <GitHubIcon size={16} />
                     <span>{personalization.socialHandles.github}</span>
                   </a>
                 )}
@@ -1507,7 +1508,9 @@ export default function ProfileView({ onNavigateToNav }) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.2rem', width: '24px' }}>📸</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', flexShrink: 0 }}>
+                    <InstagramIcon size={22} />
+                  </span>
                   <input
                     type="text"
                     className="input-field"
@@ -1518,7 +1521,9 @@ export default function ProfileView({ onNavigateToNav }) {
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.2rem', width: '24px' }}>💼</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', flexShrink: 0 }}>
+                    <LinkedInIcon size={22} />
+                  </span>
                   <input
                     type="text"
                     className="input-field"
@@ -1529,7 +1534,9 @@ export default function ProfileView({ onNavigateToNav }) {
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.2rem', width: '24px' }}>🐦</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', flexShrink: 0 }}>
+                    <TwitterXIcon size={22} />
+                  </span>
                   <input
                     type="text"
                     className="input-field"
@@ -1540,7 +1547,9 @@ export default function ProfileView({ onNavigateToNav }) {
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.2rem', width: '24px' }}>🐙</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', flexShrink: 0 }}>
+                    <GitHubIcon size={22} />
+                  </span>
                   <input
                     type="text"
                     className="input-field"
@@ -1674,17 +1683,26 @@ export default function ProfileView({ onNavigateToNav }) {
                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.25rem' }}>
                   {personalization.socialHandles.instagram && (
                     <span className="profile-social-chip">
-                      📸 @{personalization.socialHandles.instagram}
+                      <InstagramIcon size={14} />
+                      <span>@{personalization.socialHandles.instagram}</span>
                     </span>
                   )}
                   {personalization.socialHandles.linkedin && (
                     <span className="profile-social-chip">
-                      💼 {personalization.socialHandles.linkedin}
+                      <LinkedInIcon size={14} />
+                      <span>{personalization.socialHandles.linkedin}</span>
                     </span>
                   )}
                   {personalization.socialHandles.twitter && (
                     <span className="profile-social-chip">
-                      🐦 @{personalization.socialHandles.twitter}
+                      <TwitterXIcon size={14} />
+                      <span>@{personalization.socialHandles.twitter}</span>
+                    </span>
+                  )}
+                  {personalization.socialHandles.github && (
+                    <span className="profile-social-chip">
+                      <GitHubIcon size={14} />
+                      <span>{personalization.socialHandles.github}</span>
                     </span>
                   )}
                 </div>

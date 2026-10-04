@@ -8,11 +8,13 @@ import {
   requestReviewClarification,
 } from '../../services/api';
 import ScreenshotImage from '../ScreenshotImage';
+import { InstagramIcon, LinkedInIcon, FacebookIcon, TwitterXIcon } from '../common/SocialIcons';
 
 const PLATFORM_CONFIG = {
-  INSTAGRAM: { icon: '📸', name: 'Instagram', color: '#E1306C' },
-  LINKEDIN:  { icon: '💼', name: 'LinkedIn',  color: '#0A66C2' },
-  FACEBOOK:  { icon: '👥', name: 'Facebook',  color: '#1877F2' },
+  INSTAGRAM: { icon: <InstagramIcon size={16} />, name: 'Instagram', color: '#E1306C' },
+  LINKEDIN:  { icon: <LinkedInIcon size={16} />,  name: 'LinkedIn',  color: '#0A66C2' },
+  TWITTER:   { icon: <TwitterXIcon size={16} />,   name: 'Twitter / X', color: '#ffffff' },
+  FACEBOOK:  { icon: <FacebookIcon size={16} />,  name: 'Facebook',  color: '#1877F2' },
 };
 
 const ACTION_DESCRIPTIONS = {
@@ -709,9 +711,9 @@ export default function ReviewSubmissionsView() {
           }}>
             {[
               { id: 'ALL', label: 'All', icon: '🌐', color: '#c7d2fe', bg: 'rgba(99, 102, 241, 0.22)', border: 'rgba(99, 102, 241, 0.45)' },
-              { id: 'INSTAGRAM', label: 'Insta', icon: '📸', color: '#f472b6', bg: 'rgba(236, 72, 153, 0.18)', border: 'rgba(236, 72, 153, 0.4)' },
-              { id: 'LINKEDIN', label: 'LinkedIn', icon: '💼', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.18)', border: 'rgba(56, 189, 248, 0.4)' },
-              { id: 'FACEBOOK', label: 'FB', icon: '👥', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.18)', border: 'rgba(96, 165, 250, 0.4)' },
+              { id: 'INSTAGRAM', label: 'Insta', icon: <InstagramIcon size={13} />, color: '#f472b6', bg: 'rgba(236, 72, 153, 0.18)', border: 'rgba(236, 72, 153, 0.4)' },
+              { id: 'LINKEDIN', label: 'LinkedIn', icon: <LinkedInIcon size={13} />, color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.18)', border: 'rgba(56, 189, 248, 0.4)' },
+              { id: 'FACEBOOK', label: 'FB', icon: <FacebookIcon size={13} />, color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.18)', border: 'rgba(96, 165, 250, 0.4)' },
             ].map((p) => {
               const isSelected = platform === p.id;
               return (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CameraIcon } from '../common/SocialIcons';
 
 const STORAGE_KEY = 'portal_governance_settings';
 
@@ -486,8 +487,8 @@ export default function SettingsView() {
           {/* Control 3: Screenshot Proof Requirement */}
           <div className="settings-control-row">
             <div className="settings-control-info">
-              <label className="settings-control-label">
-                <span>📸</span>
+              <label className="settings-control-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                <CameraIcon size={18} style={{ color: 'var(--primary)' }} />
                 <span>Require Screenshot Proof on All Submissions</span>
               </label>
               <div className="settings-control-desc">
@@ -644,7 +645,9 @@ export default function SettingsView() {
 
             <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #a855f7' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '1.4rem' }}>📸</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <CameraIcon size={24} style={{ color: '#a855f7' }} />
+                </span>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#a855f7', textTransform: 'uppercase' }}>STORY ACTION</span>
               </div>
               <div style={{ marginTop: '0.75rem' }}>

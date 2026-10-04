@@ -6,6 +6,7 @@ import FilterBar from '../common/FilterBar';
 import Pagination from '../common/Pagination';
 import EmptyState from '../common/EmptyState';
 import LoadingSkeleton from '../common/LoadingSkeleton';
+import { PlatformIcon, CameraIcon } from '../common/SocialIcons';
 
 export default function SubmissionsView() {
   const { user } = useAuth();
@@ -434,9 +435,11 @@ export default function SubmissionsView() {
               <tbody>
                 {submissions.map((sub) => {
                   const getPlatformChip = (platform) => {
-                    if (platform === 'INSTAGRAM') return { icon: '📸', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.28)' };
-                    if (platform === 'LINKEDIN') return { icon: '💼', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.28)' };
-                    return { icon: '👥', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.12)', border: 'rgba(96, 165, 250, 0.28)' };
+                    const norm = String(platform || '').toUpperCase();
+                    if (norm === 'INSTAGRAM') return { icon: <PlatformIcon platform="INSTAGRAM" size={14} />, color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.28)' };
+                    if (norm === 'LINKEDIN') return { icon: <PlatformIcon platform="LINKEDIN" size={14} />, color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.28)' };
+                    if (norm === 'TWITTER' || norm === 'X') return { icon: <PlatformIcon platform="TWITTER" size={14} />, color: '#f8fafc', bg: 'rgba(255, 255, 255, 0.12)', border: 'rgba(255, 255, 255, 0.28)' };
+                    return { icon: <PlatformIcon platform={platform} size={14} />, color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.12)', border: 'rgba(96, 165, 250, 0.28)' };
                   };
                   const pChip = getPlatformChip(sub.platform);
 
@@ -630,7 +633,7 @@ export default function SubmissionsView() {
                     📱 Platform &amp; Action
                   </span>
                   <div style={{ fontWeight: 700, color: 'var(--text-highlight)', fontSize: '0.95rem', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span>{selectedSub.platform === 'INSTAGRAM' ? '📸' : selectedSub.platform === 'TWITTER' ? '🐦' : selectedSub.platform === 'LINKEDIN' ? '💼' : selectedSub.platform === 'FACEBOOK' ? '👥' : '🌐'}</span>
+                    <PlatformIcon platform={selectedSub.platform} size={18} />
                     <span>{selectedSub.platform}</span>
                     <span style={{ color: 'var(--text-muted)' }}>•</span>
                     <span style={{ color: 'var(--accent-cyan)' }}>{selectedSub.actionType}</span>
@@ -736,8 +739,8 @@ export default function SubmissionsView() {
 
               {/* Uploaded Screenshot Proof */}
               <div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', display: 'block', marginBottom: '0.45rem' }}>
-                  📸 Uploaded Screenshot Evidence
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.45rem' }}>
+                  <CameraIcon size={14} /> Uploaded Screenshot Evidence
                 </span>
                 <div style={{
                   background: 'rgba(0, 0, 0, 0.4)',
