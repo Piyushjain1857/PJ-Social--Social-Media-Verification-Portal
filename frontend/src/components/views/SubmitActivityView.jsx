@@ -1011,7 +1011,7 @@ export default function SubmitActivityView({ onNavigateToNav }) {
           <div className="submit-step-label-row">
             <label htmlFor="description-input" className="submit-step-label">
               <span className="submit-step-badge">STEP 06</span>
-              <span>Additional Context / Account Handle</span>
+              <span>Additional Context</span>
               <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 400 }}>(Optional)</span>
             </label>
             <span className="submit-step-hint">

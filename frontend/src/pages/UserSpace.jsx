@@ -291,7 +291,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
     if (status === 'APPROVED') {
       return (
         <span className="user-sub-status-pill approved">
-          <span>✓</span> VERIFIED APPROVED
+          <span>✓</span> APPROVED
         </span>
       );
     }
@@ -338,12 +338,9 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                 </span>
                 <span className="user-badge-chip account-active">
                   ✓ VERIFIED ACCOUNT
-                </span>
+                </span><br/>
                 <span className="user-badge-chip xp-tier">
                   {gamification?.icon || '🌱'} Level {currentLevelNumber} · {currentLevelName}
-                </span>
-                <span className="user-badge-chip streak-chip">
-                  🔥 1-Day Streak
                 </span>
               </div>
               <h1>
@@ -434,7 +431,7 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
         {/* Card 2: Verified Approved */}
         <div className="user-stat-card theme-emerald">
           <div className="stat-card-header">
-            <span className="stat-card-label">Verified Approved</span>
+            <span className="stat-card-label">Approved</span>
             <div className="stat-card-icon-orb emerald">🛡️</div>
           </div>
           <div className="stat-card-value-wrap">
@@ -884,9 +881,6 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
 
               {filteredSubmissions.map((sub) => {
                 const pInfo = PLATFORMS.find(p => p.id === sub.platform) || { name: sub.platform, icon: '🌐', class: 'default' };
-                const formattedId = typeof sub.id === 'string' && sub.id.length > 10
-                  ? `#${sub.id.slice(0, 8)}…`
-                  : `#${sub.id}`;
                 const relativeTime = new Date(sub.createdAt).toLocaleDateString(undefined, {
                   month: 'short',
                   day: 'numeric',
@@ -906,14 +900,6 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                         <span className="action-pill">
                           {ACTIONS.find(a => a.id === sub.actionType)?.icon || '⚡'} {sub.actionType}
                         </span>
-                        <button
-                          type="button"
-                          className="sub-id-chip"
-                          onClick={() => handleCopyUrl(String(sub.id), `id-${sub.id}`)}
-                          title={`Click to copy full ID (${sub.id})`}
-                        >
-                          {copiedId === `id-${sub.id}` ? '✓ Copied!' : `ID: ${formattedId}`}
-                        </button>
                       </div>
 
                       <div>
@@ -986,9 +972,6 @@ export default function UserSpace({ onNavigate, onNavigateToNav }) {
                     <div className="user-sub-card-footer">
                       <span className="sub-time-label">
                         <span>🕒</span> Submitted on {relativeTime}
-                      </span>
-                      <span className="sub-security-token">
-                        <span>🔒</span> Server-Verified Token Signature
                       </span>
                     </div>
                   </article>
