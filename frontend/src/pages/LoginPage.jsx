@@ -497,11 +497,11 @@ export default function LoginPage({ onNavigate }) {
               </div>
             )}
 
-            {mode === 'register' && (
+            {/* {mode === 'register' && (
               <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', marginTop: '1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                 🛡️ <strong>Server-Enforced Role:</strong> Public registrations are automatically assigned the <code>USER</code> role. Administrative roles (<code>SUPER_ADMIN</code>, <code>ADMIN</code>) are strictly provisioned by platform governors.
               </div>
-            )}
+            )} */}
 
             <button
               type="submit"

@@ -14931,13 +14931,13 @@ input[type="date"] {
 .platform-badge > span:first-child,
 .status-badge > span:first-child,
 .status-pill > span:first-child,
-.btn > span:first-child,
-.btn-primary > span:first-child,
-.btn-secondary > span:first-child,
-.btn-outline > span:first-child,
-.btn-action > span:first-child,
-.table-action-btn > span:first-child,
-.sub-action-btn > span:first-child,
+.btn > span:first-child:not(:only-child),
+.btn-primary > span:first-child:not(:only-child),
+.btn-secondary > span:first-child:not(:only-child),
+.btn-outline > span:first-child:not(:only-child),
+.btn-action > span:first-child:not(:only-child),
+.table-action-btn > span:first-child:not(:only-child),
+.sub-action-btn > span:first-child:not(:only-child),
 .portal-alert > span:first-child,
 .dropdown-item > span:first-child,
 .filter-group-label > span:first-child,
@@ -14951,6 +14951,38 @@ input[type="date"] {
   vertical-align: middle;
   line-height: 1;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Ensure all buttons and button text use modern sans-serif typography with tight, natural spacing */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-action,
+.table-action-btn,
+.sub-action-btn,
+#auth-submit-btn,
+button.btn-primary,
+button.btn-secondary {
+  font-family: var(--font-sans) !important;
+  letter-spacing: -0.015em !important;
+  word-spacing: normal !important;
+}
+
+.btn > span,
+.btn-primary > span,
+.btn-secondary > span,
+.btn-outline > span,
+.btn-action > span,
+.table-action-btn > span,
+.sub-action-btn > span,
+#auth-submit-btn > span,
+button.btn-primary > span,
+button.btn-secondary > span {
+  font-family: var(--font-sans) !important;
+  letter-spacing: -0.015em !important;
+  word-spacing: normal !important;
+  filter: none;
 }
 
 /* 2. Micro-Hover Animation for Interactive Emoji Elements */
@@ -20558,5 +20590,404 @@ input[type="date"] {
 
   .admin-gamification-analytics > div:first-child .glass-panel {
     padding: 0.65rem 0.5rem !important;
+  }
+}
+
+/* ==========================================================================
+   LOGIN, REGISTER & AUTH MOBILE SCREEN RESPONSIVE ENGINE
+   Mobile screen optimization for Login, Register, Forgot & Reset Password
+   ========================================================================== */
+
+/* Base enhancement for Login & Auth Container */
+.container:has(#auth-email),
+.container:has(#auth-submit-btn),
+.container:has(#reg-name),
+.container:has(#forgot-email),
+.container:has(#reset-new-pass) {
+  transition: padding 0.2s ease, max-width 0.2s ease;
+}
+
+.glass-panel:has(#auth-email),
+.glass-panel:has(#auth-submit-btn),
+.glass-panel:has(#reg-name),
+.glass-panel:has(#forgot-email),
+.glass-panel:has(#reset-new-pass) {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ambient glow accent behind the auth card */
+.glass-panel:has(#auth-email)::before,
+.glass-panel:has(#auth-submit-btn)::before,
+.glass-panel:has(#reg-name)::before,
+.glass-panel:has(#forgot-email)::before,
+.glass-panel:has(#reset-new-pass)::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Tablet & Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  .container:has(#auth-email),
+  .container:has(#auth-submit-btn),
+  .container:has(#reg-name),
+  .container:has(#forgot-email),
+  .container:has(#reset-new-pass) {
+    padding: 1.5rem 1rem 2.5rem !important;
+    max-width: 520px !important;
+  }
+}
+
+/* Mobile Screens (<= 600px) */
+@media (max-width: 600px) {
+  .container:has(#auth-email),
+  .container:has(#auth-submit-btn),
+  .container:has(#reg-name),
+  .container:has(#forgot-email),
+  .container:has(#reset-new-pass) {
+    padding: 1rem 0.75rem 2rem !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .glass-panel:has(#auth-email),
+  .glass-panel:has(#auth-submit-btn),
+  .glass-panel:has(#reg-name),
+  .glass-panel:has(#forgot-email),
+  .glass-panel:has(#reset-new-pass) {
+    padding: 1.5rem 1.15rem !important;
+    border-radius: 18px !important;
+  }
+
+  /* Header Branding */
+  .glass-panel:has(#auth-email) .brand-logo-icon,
+  .glass-panel:has(#auth-submit-btn) .brand-logo-icon,
+  .glass-panel:has(#reg-name) .brand-logo-icon,
+  .glass-panel:has(#forgot-email) .brand-logo-icon,
+  .glass-panel:has(#reset-new-pass) .brand-logo-icon {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.35rem !important;
+    margin-bottom: 0.75rem !important;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.35) !important;
+  }
+
+  .glass-panel:has(#auth-email) h2,
+  .glass-panel:has(#auth-submit-btn) h2,
+  .glass-panel:has(#reg-name) h2,
+  .glass-panel:has(#forgot-email) h2,
+  .glass-panel:has(#reset-new-pass) h2 {
+    font-size: 1.38rem !important;
+    margin-bottom: 0.35rem !important;
+    line-height: 1.25 !important;
+    font-weight: 800 !important;
+  }
+
+  .glass-panel:has(#auth-email) p,
+  .glass-panel:has(#auth-submit-btn) p,
+  .glass-panel:has(#reg-name) p,
+  .glass-panel:has(#forgot-email) p,
+  .glass-panel:has(#reset-new-pass) p {
+    font-size: 0.84rem !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Sign In / Register Mode Tabs Container */
+  .glass-panel:has(#auth-email) div[style*="border-radius: var(--radius-full)"],
+  .glass-panel:has(#auth-submit-btn) div[style*="border-radius: var(--radius-full)"],
+  .glass-panel:has(#reg-name) div[style*="border-radius: var(--radius-full)"] {
+    margin-bottom: 1.35rem !important;
+    padding: 0.25rem !important;
+  }
+
+  /* Sign In / Register Mode Tab Buttons */
+  .glass-panel:has(#auth-email) div[style*="border-radius: var(--radius-full)"] button,
+  .glass-panel:has(#auth-submit-btn) div[style*="border-radius: var(--radius-full)"] button,
+  .glass-panel:has(#reg-name) div[style*="border-radius: var(--radius-full)"] button {
+    min-height: 42px !important;
+    font-size: 0.88rem !important;
+    touch-action: manipulation;
+  }
+
+  /* Form Inputs on Mobile - 16px to prevent iOS Safari auto-zoom */
+  .glass-panel:has(#auth-email) input,
+  .glass-panel:has(#auth-submit-btn) input,
+  .glass-panel:has(#reg-name) input,
+  .glass-panel:has(#forgot-email) input,
+  .glass-panel:has(#reset-new-pass) input,
+  #auth-email,
+  #auth-password,
+  #reg-name,
+  #forgot-email,
+  #reset-new-pass,
+  #reset-confirm-pass {
+    font-size: 16px !important;
+    min-height: 46px !important;
+    padding: 0.75rem 0.9rem !important;
+    border-radius: 10px !important;
+    background: rgba(10, 14, 23, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+
+  /* Password Show/Hide Toggle Button */
+  .glass-panel:has(#auth-email) button[type="button"]:not(.btn-primary):not(.btn-secondary):not([style*="var(--radius-full)"]),
+  .glass-panel:has(#auth-submit-btn) button[type="button"]:not(.btn-primary):not(.btn-secondary):not([style*="var(--radius-full)"]),
+  .glass-panel:has(#reg-name) button[type="button"]:not(.btn-primary):not(.btn-secondary):not([style*="var(--radius-full)"]) {
+    min-height: 34px !important;
+    padding: 0.25rem 0.6rem !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px !important;
+    touch-action: manipulation;
+  }
+
+  /* Submit Button (#auth-submit-btn / .btn-primary in auth form) */
+  #auth-submit-btn,
+  .glass-panel:has(#auth-email) form > button.btn-primary,
+  .glass-panel:has(#reg-name) form > button.btn-primary,
+  .glass-panel:has(#forgot-email) form button.btn-primary,
+  .glass-panel:has(#reset-new-pass) form button.btn-primary {
+    min-height: 48px !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    font-family: var(--font-sans) !important;
+    letter-spacing: -0.015em !important;
+    word-spacing: normal !important;
+    border-radius: 10px !important;
+    margin-top: 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35) !important;
+  }
+
+  #auth-submit-btn span,
+  .glass-panel form > button.btn-primary span {
+    font-family: var(--font-sans) !important;
+    letter-spacing: -0.015em !important;
+    word-spacing: normal !important;
+  }
+
+  /* ── Register Mode: Role Notice Banner ── */
+  .glass-panel:has(#reg-name) div[style*="rgba(99, 102, 241, 0.08)"],
+  div:has(> #reg-name) ~ div[style*="rgba(99, 102, 241, 0.08)"] {
+    padding: 0.75rem 0.9rem !important;
+    font-size: 0.8rem !important;
+    line-height: 1.5 !important;
+    border-radius: 10px !important;
+    margin-bottom: 1.25rem !important;
+    margin-top: 0.75rem !important;
+    background: rgba(99, 102, 241, 0.1) !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .glass-panel:has(#reg-name) div[style*="rgba(99, 102, 241, 0.08)"] code,
+  div:has(> #reg-name) ~ div[style*="rgba(99, 102, 241, 0.08)"] code {
+    background: rgba(99, 102, 241, 0.22) !important;
+    padding: 0.12rem 0.4rem !important;
+    border-radius: 4px !important;
+    font-size: 0.76rem !important;
+    color: #c7d2fe !important;
+    border: 1px solid rgba(99, 102, 241, 0.35) !important;
+    font-weight: 700 !important;
+  }
+
+  /* Return / Secondary Buttons in Forgot / Reset Flows */
+  .glass-panel:has(#forgot-email) .btn-secondary,
+  .glass-panel:has(#reset-new-pass) .btn-secondary {
+    min-height: 44px !important;
+    font-size: 0.88rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── 1-Click Demo Accounts Mobile Card Redesign ── */
+  .glass-panel:has(#auth-email) div[style*="marginTop: '2.5rem'"],
+  .glass-panel:has(#auth-email) div[style*="margin-top: 2.5rem"],
+  .glass-panel:has(#auth-email) div[style*="borderTop: '1px solid"],
+  .glass-panel:has(#auth-email) div[style*="border-top: 1px solid"] {
+    margin-top: 1.75rem !important;
+    padding-top: 1.25rem !important;
+  }
+
+  /* Demo Account Cards - Stack into clean touch-friendly mobile widgets */
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"][style*="justify-content: space-between"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+    padding: 0.85rem 0.85rem !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  }
+
+  /* Demo Account Identity Row (Emoji + Badge + Email) */
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Demo Account Email Text */
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] div[style*="wordBreak: 'break-all'"],
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] div[style*="word-break: break-all"] {
+    font-size: 0.78rem !important;
+    color: #94a3b8 !important;
+    word-break: break-all !important;
+  }
+
+  /* Demo Account Action Buttons Wrapper */
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] > div:last-child {
+    display: flex !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+    margin-top: 0.25rem !important;
+  }
+
+  /* Fill button on mobile */
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] > div:last-child button.btn-secondary {
+    flex: 1 1 0 !important;
+    min-height: 38px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.4rem 0.5rem !important;
+  }
+
+  /* Instant Login button on mobile */
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] > div:last-child button.btn-primary {
+    flex: 2 1 0 !important;
+    min-height: 38px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.4rem 0.65rem !important;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25) !important;
+  }
+
+  /* Alert Banners on mobile */
+  .glass-panel:has(#auth-email) div[style*="rgba(16, 185, 129, 0.12)"],
+  .glass-panel:has(#auth-email) div[style*="rgba(244, 63, 94, 0.12)"],
+  .glass-panel:has(#reg-name) div[style*="rgba(16, 185, 129, 0.12)"],
+  .glass-panel:has(#reg-name) div[style*="rgba(244, 63, 94, 0.12)"],
+  .glass-panel:has(#auth-submit-btn) div[style*="rgba(16, 185, 129, 0.12)"],
+  .glass-panel:has(#auth-submit-btn) div[style*="rgba(244, 63, 94, 0.12)"] {
+    padding: 0.7rem 0.9rem !important;
+    font-size: 0.82rem !important;
+    border-radius: 10px !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Compact Footer on Login View */
+  .site-footer.compact {
+    padding: 1rem 0 !important;
+  }
+
+  .site-footer.compact .footer-bottom-bar {
+    flex-direction: column !important;
+    gap: 0.4rem !important;
+    text-align: center !important;
+  }
+
+  /* Register Official Channel Modal: Social Platform Cards */
+  .portal-modal-card div[style*="repeat(3, 1fr)"] {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+}
+
+/* Small / Compact Mobile Screens (<= 420px) */
+@media (max-width: 420px) {
+  .container:has(#auth-email),
+  .container:has(#auth-submit-btn),
+  .container:has(#reg-name),
+  .container:has(#forgot-email),
+  .container:has(#reset-new-pass) {
+    padding: 0.75rem 0.5rem 1.5rem !important;
+  }
+
+  .glass-panel:has(#auth-email),
+  .glass-panel:has(#auth-submit-btn),
+  .glass-panel:has(#reg-name),
+  .glass-panel:has(#forgot-email),
+  .glass-panel:has(#reset-new-pass) {
+    padding: 1.25rem 0.9rem !important;
+    border-radius: 14px !important;
+  }
+
+  .glass-panel:has(#auth-email) h2,
+  .glass-panel:has(#auth-submit-btn) h2,
+  .glass-panel:has(#reg-name) h2,
+  .glass-panel:has(#forgot-email) h2,
+  .glass-panel:has(#reset-new-pass) h2 {
+    font-size: 1.22rem !important;
+  }
+
+  .glass-panel:has(#auth-email) div[style*="border-radius: var(--radius-full)"] button,
+  .glass-panel:has(#auth-submit-btn) div[style*="border-radius: var(--radius-full)"] button,
+  .glass-panel:has(#reg-name) div[style*="border-radius: var(--radius-full)"] button {
+    font-size: 0.84rem !important;
+    min-height: 40px !important;
+  }
+
+  #auth-submit-btn {
+    font-size: 0.9rem !important;
+    min-height: 46px !important;
+  }
+}
+
+/* Tiny Mobile Phones (<= 360px) */
+@media (max-width: 360px) {
+  .container:has(#auth-email),
+  .container:has(#auth-submit-btn),
+  .container:has(#reg-name),
+  .container:has(#forgot-email),
+  .container:has(#reset-new-pass) {
+    padding: 0.5rem 0.35rem 1.25rem !important;
+  }
+
+  .glass-panel:has(#auth-email),
+  .glass-panel:has(#auth-submit-btn),
+  .glass-panel:has(#reg-name),
+  .glass-panel:has(#forgot-email),
+  .glass-panel:has(#reset-new-pass) {
+    padding: 1rem 0.75rem !important;
+  }
+
+  .glass-panel:has(#auth-email) h2,
+  .glass-panel:has(#auth-submit-btn) h2,
+  .glass-panel:has(#reg-name) h2 {
+    font-size: 1.15rem !important;
+  }
+
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] > div:last-child {
+    flex-direction: column !important;
+  }
+
+  .glass-panel:has(#auth-email) div[style*="rgba(255, 255, 255, 0.03)"] > div:last-child button {
+    width: 100% !important;
+    flex: 1 1 auto !important;
   }
 }
