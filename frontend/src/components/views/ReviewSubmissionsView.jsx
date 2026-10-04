@@ -68,6 +68,7 @@ export default function ReviewSubmissionsView() {
   // ── Queue & Filter State ──
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubId, setSelectedSubId] = useState(null);
+  const [showMobileModal, setShowMobileModal] = useState(false);
   const [dossier, setDossier] = useState(null);
 
   const [search, setSearch] = useState('');
@@ -247,6 +248,7 @@ export default function ReviewSubmissionsView() {
         if (confirmModal.isOpen) setConfirmModal(prev => ({ ...prev, isOpen: false }));
         if (clarificationModal.isOpen) setClarificationModal(prev => ({ ...prev, isOpen: false }));
         if (noteModal.isOpen) setNoteModal(prev => ({ ...prev, isOpen: false }));
+        if (showMobileModal) setShowMobileModal(false);
         return;
       }
 
@@ -292,10 +294,23 @@ export default function ReviewSubmissionsView() {
     confirmModal.isOpen,
     clarificationModal.isOpen,
     noteModal.isOpen,
+    showMobileModal,
     dossier?.submission,
     handleSelectPrevious,
     handleSelectNext,
   ]);
+
+  // Lock body scroll when mobile pop-up modal is open
+  useEffect(() => {
+    if (showMobileModal && typeof window !== 'undefined' && window.innerWidth <= 900) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileModal]);
 
   // ── Open Modals ──
   const openConfirmModal = (action) => {
@@ -763,7 +778,10 @@ export default function ReviewSubmissionsView() {
                 return (
                   <div
                     key={sub.id}
-                    onClick={() => setSelectedSubId(sub.id)}
+                    onClick={() => {
+                      setSelectedSubId(sub.id);
+                      setShowMobileModal(true);
+                    }}
                     style={{
                       padding: '0.85rem 0.95rem',
                       borderRadius: 'var(--radius-sm)',
@@ -840,7 +858,40 @@ export default function ReviewSubmissionsView() {
         {/* ==================================================================
             RIGHT COLUMN: Selected Submission Details & Human Verification Stage
             ================================================================== */}
-        <div className="review-stage-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className={`review-stage-panel ${showMobileModal ? 'mobile-modal-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Mobile Pop-up Top Bar */}
+          <div className="mobile-stage-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.15rem' }}>⚖️</span>
+              <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-highlight)' }}>
+                Evidence &amp; Verification
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn-close-mobile-stage"
+              onClick={() => setShowMobileModal(false)}
+              aria-label="Close modal and return to Queue"
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          {/* Action Success / Error Notifications in Review Stage */}
+          {actionSuccess && (
+            <div className="glass-panel" style={{ padding: '0.75rem 1rem', borderLeft: '4px solid var(--status-success)', color: 'var(--status-success)', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem' }}>
+              <span>✓</span>
+              <span>{actionSuccess}</span>
+            </div>
+          )}
+
+          {actionError && (
+            <div className="glass-panel" style={{ padding: '0.75rem 1rem', borderLeft: '4px solid var(--status-error)', color: 'var(--status-error)', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem' }}>
+              <span>⚠️</span>
+              <span>{actionError}</span>
+            </div>
+          )}
+
           {!selectedSubId ? (
             <div className="glass-panel" style={{
               padding: '3.5rem 2rem',
@@ -921,105 +972,63 @@ export default function ReviewSubmissionsView() {
           ) : activeSub ? (
             <>
               {/* ── Stage Action Bar ── */}
-              <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderTop: '3px solid var(--primary)' }}>
-                {/* Prev / Next Queue Nav */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSelectPrevious}
-                    disabled={!hasPrevious}
-                    title="Previous Submission in queue (Hotkey: P)"
-                    style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                  >
-                    <span>◀</span>
-                    <span>Prev</span>
-                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>P</kbd>
-                  </button>
+              <div className="glass-panel stage-action-bar" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderTop: '3px solid var(--primary)', flexShrink: 0, minHeight: 'fit-content' }}>
+                {/* Prev / Next Queue Nav & Status */}
+                <div className="stage-nav-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={handleSelectPrevious}
+                      disabled={!hasPrevious}
+                      title="Previous Submission in queue (Hotkey: P)"
+                      style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <span>◀</span>
+                      <span>Prev</span>
+                      <kbd className="nav-kbd" style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>P</kbd>
+                    </button>
 
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0 0.25rem' }}>
-                    {currentIndex >= 0 ? `${currentIndex + 1} of ${submissions.length}` : ''}
-                  </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0 0.35rem', whiteSpace: 'nowrap' }}>
+                      {currentIndex >= 0 ? `${currentIndex + 1} of ${submissions.length}` : ''}
+                    </span>
 
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSelectNext}
-                    disabled={!hasNext}
-                    title="Next Submission in queue (Hotkey: N)"
-                    style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                  >
-                    <span>Next</span>
-                    <span>▶</span>
-                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>N</kbd>
-                  </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={handleSelectNext}
+                      disabled={!hasNext}
+                      title="Next Submission in queue (Hotkey: N)"
+                      style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <span>Next</span>
+                      <span>▶</span>
+                      <kbd className="nav-kbd" style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>N</kbd>
+                    </button>
+                  </div>
 
                   {/* Current Status Pill */}
-                  <span className={`badge ${statusMeta.badgeClass}`} style={{ marginLeft: '0.5rem', fontSize: '0.78rem', padding: '0.3rem 0.65rem' }}>
+                  <span className={`badge ${statusMeta.badgeClass}`} style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', whiteSpace: 'nowrap' }}>
                     {statusMeta.icon} {activeSub.status}
                   </span>
                 </div>
 
-                {/* Primary Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                  {/* Request Clarification */}
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={openClarificationModal}
-                    title="Request clarification or additional proof from creator"
-                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                  >
-                    <span>💬</span>
-                    <span>Request Clarification</span>
-                  </button>
-
-                  {/* Add Note */}
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={openNoteModal}
-                    title="Add an internal moderation note (private to staff)"
-                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                  >
-                    <span>📝</span>
-                    <span>Add Note</span>
-                  </button>
-
-                  {/* Reject Button (Destructive Confirmation) */}
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => openConfirmModal('REJECT')}
-                    disabled={activeSub.status === 'REJECTED' || activeSub.status === 'APPROVED'}
-                    title={activeSub.status !== 'PENDING' ? 'Submission already verified' : 'Reject submission (Hotkey: R)'}
-                    style={{
-                      padding: '0.45rem 1rem',
-                      fontSize: '0.82rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      opacity: activeSub.status !== 'PENDING' ? 0.5 : 1,
-                      cursor: activeSub.status !== 'PENDING' ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    <span>✕</span>
-                    <span>Reject</span>
-                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(0,0,0,0.2)', borderRadius: 3 }}>R</kbd>
-                  </button>
-
+                {/* Primary Action Buttons Grid */}
+                <div className="stage-action-buttons" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', width: '100%' }}>
                   {/* Approve Button */}
                   <button
                     type="button"
-                    className="btn-primary"
+                    className="btn-primary btn-stage-action btn-stage-approve"
                     onClick={() => openConfirmModal('APPROVE')}
                     disabled={activeSub.status === 'APPROVED' || activeSub.status === 'REJECTED'}
                     title={activeSub.status !== 'PENDING' ? 'Submission already verified' : 'Approve submission (Hotkey: A)'}
                     style={{
-                      padding: '0.45rem 1.15rem',
-                      fontSize: '0.82rem',
+                      padding: '0.55rem 1rem',
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '0.4rem',
                       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                       borderColor: '#10b981',
@@ -1031,14 +1040,62 @@ export default function ReviewSubmissionsView() {
                     <span>Approve</span>
                     <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(0,0,0,0.2)', borderRadius: 3 }}>A</kbd>
                   </button>
+
+                  {/* Reject Button (Destructive Confirmation) */}
+                  <button
+                    type="button"
+                    className="btn-danger btn-stage-action btn-stage-reject"
+                    onClick={() => openConfirmModal('REJECT')}
+                    disabled={activeSub.status === 'REJECTED' || activeSub.status === 'APPROVED'}
+                    title={activeSub.status !== 'PENDING' ? 'Submission already verified' : 'Reject submission (Hotkey: R)'}
+                    style={{
+                      padding: '0.55rem 1rem',
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      opacity: activeSub.status !== 'PENDING' ? 0.5 : 1,
+                      cursor: activeSub.status !== 'PENDING' ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <span>✕</span>
+                    <span>Reject</span>
+                    <kbd style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(0,0,0,0.2)', borderRadius: 3 }}>R</kbd>
+                  </button>
+
+                  {/* Request Clarification */}
+                  <button
+                    type="button"
+                    className="btn-secondary btn-stage-action"
+                    onClick={openClarificationModal}
+                    title="Request clarification or additional proof from creator"
+                    style={{ padding: '0.5rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                  >
+                    <span>💬</span>
+                    <span>Request Clarification</span>
+                  </button>
+
+                  {/* Add Note */}
+                  <button
+                    type="button"
+                    className="btn-secondary btn-stage-action"
+                    onClick={openNoteModal}
+                    title="Add an internal moderation note (private to staff)"
+                    style={{ padding: '0.5rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                  >
+                    <span>📝</span>
+                    <span>Add Note</span>
+                  </button>
                 </div>
               </div>
 
               {/* ── Human Verification Notice ── */}
-              <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                <span style={{ fontSize: '1.1rem' }}>🛡️</span>
-                <span>
-                  <strong>Human Evidence Verification:</strong> Administrator decisions reflect manual verification of submitted proof. The portal does not claim automated platform scraping. Verify evidence screenshot authenticity manually.
+              <div className="human-verification-notice" style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', padding: '0.75rem 1.15rem', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                <span style={{ fontSize: '1.25rem', flexShrink: 0, marginTop: '0.05rem' }}>🛡️</span>
+                <span style={{ lineHeight: 1.55 }}>
+                  <strong style={{ color: 'var(--text-highlight)' }}>Human Evidence Verification:</strong> Administrator decisions reflect manual verification of submitted proof. The portal does not claim automated platform scraping. Verify evidence screenshot authenticity manually.
                 </span>
               </div>
 
@@ -1047,13 +1104,13 @@ export default function ReviewSubmissionsView() {
                 {/* ─── Evidence & Submission Column ─── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {/* Submission Evidence Card */}
-                  <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-                      <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-highlight)' }}>
+                  <div className="glass-panel evidence-proof-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="evidence-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-highlight)', letterSpacing: '-0.01em' }}>
                         Activity Evidence &amp; Proof
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        ID: <code style={{ color: 'var(--text-secondary)' }}>{activeSub.id}</code>
+                      <span className="evidence-id-badge" title={activeSub.id} style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'var(--font-mono, monospace)' }}>
+                        ID: <code style={{ color: 'var(--accent-cyan)' }}>#{activeSub.id ? activeSub.id.slice(0, 8) : ''}</code>
                       </span>
                     </div>
 
@@ -1369,14 +1426,23 @@ export default function ReviewSubmissionsView() {
         </div>
       </div>
 
+      {/* ── Mobile Stage Pop-up Backdrop ── */}
+      {showMobileModal && (
+        <div
+          className="mobile-stage-backdrop"
+          onClick={() => setShowMobileModal(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ====================================================================
           MODALS & DIALOGS
           ==================================================================== */}
 
       {/* ── 1. APPROVE / REJECT CONFIRMATION DIALOG (Destructive for Reject) ── */}
       {confirmModal.isOpen && (
-        <div className="modal-backdrop" onClick={closeConfirmModal}>
-          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '90%', padding: '1.75rem', borderLeft: `4px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}` }}>
+        <div className="modal-backdrop" onClick={closeConfirmModal} style={{ zIndex: 2500 }}>
+          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '90%', padding: '1.75rem', borderLeft: `4px solid ${confirmModal.action === 'APPROVE' ? 'var(--status-success)' : 'var(--status-error)'}`, zIndex: 2501 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.5rem' }}>
@@ -1455,8 +1521,8 @@ export default function ReviewSubmissionsView() {
 
       {/* ── 2. REQUEST CLARIFICATION DIALOG ── */}
       {clarificationModal.isOpen && (
-        <div className="modal-backdrop" onClick={closeClarificationModal}>
-          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '90%', padding: '1.75rem', borderLeft: '4px solid var(--accent-cyan)' }}>
+        <div className="modal-backdrop" onClick={closeClarificationModal} style={{ zIndex: 2500 }}>
+          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '90%', padding: '1.75rem', borderLeft: '4px solid var(--accent-cyan)', zIndex: 2501 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.4rem' }}>💬</span>
@@ -1529,8 +1595,8 @@ export default function ReviewSubmissionsView() {
 
       {/* ── 3. ADD INTERNAL NOTE DIALOG ── */}
       {noteModal.isOpen && (
-        <div className="modal-backdrop" onClick={closeNoteModal}>
-          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', width: '90%', padding: '1.75rem', borderLeft: '4px solid var(--role-admin)' }}>
+        <div className="modal-backdrop" onClick={closeNoteModal} style={{ zIndex: 2500 }}>
+          <div className="glass-panel modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', width: '90%', padding: '1.75rem', borderLeft: '4px solid var(--role-admin)', zIndex: 2501 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.4rem' }}>📝</span>

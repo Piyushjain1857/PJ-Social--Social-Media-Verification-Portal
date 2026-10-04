@@ -835,7 +835,7 @@ textarea:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2500;
   padding: 1.25rem;
   animation: modal-fade-in 0.2s ease-out;
   overflow-y: auto;
@@ -9307,6 +9307,32 @@ input[type="text"]:hover {
 
 
 
+/* Mobile pop-up stage elements hidden on desktop */
+.mobile-stage-bar {
+  display: none;
+}
+
+.mobile-stage-backdrop {
+  display: none;
+}
+
+/* Animations for Mobile Stage Modal */
+@keyframes stageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes stageModalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.93) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* KPI Cards Grid */
 .gamepoints-kpi-grid {
   display: grid;
@@ -11003,6 +11029,18 @@ div:has(> strong:nth-of-type(2)):not(:has(button, input, select, table, form)) >
 
   .gamepoints-banner-title {
     font-size: 1.55rem;
+  }
+
+  .review-split-layout,
+  div[style*="minmax(320px, 380px) 1fr"] {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hide stage panel by default on tablet/mobile unless open */
+  .review-stage-panel:not(.mobile-modal-open) {
+    display: none !important;
   }
 }
 
@@ -16186,6 +16224,354 @@ input[type="date"] {
     gap: 1rem !important;
   }
 
+  /* ── 8.5. Verification Review Workspace (ReviewSubmissionsView) ── */
+  .review-workspace-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 1rem !important;
+  }
+
+  /* Top Workspace Banner */
+  .review-workspace-container > .glass-panel:first-child {
+    padding: 1.1rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .review-workspace-container > .glass-panel:first-child h2 {
+    font-size: 1.15rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .review-workspace-container > .glass-panel:first-child p {
+    font-size: 0.8rem !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Shortcuts Hint Bar on Mobile */
+  .review-workspace-container .kbd-badge {
+    padding: 0.15rem 0.4rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Main Split Dual-Pane Terminal: Stack 1-column on mobile */
+  .review-split-layout,
+  div[style*="minmax(320px, 380px) 1fr"] {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 1rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Left Column: Moderation Queue Panel */
+  .queue-panel {
+    width: 100% !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    padding: 1.1rem 1rem !important;
+  }
+
+  /* Filter segmented bars in Queue */
+  .queue-panel div[style*="repeat(4, 1fr)"] {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 3px !important;
+    padding: 3px !important;
+    box-sizing: border-box !important;
+  }
+
+  .queue-panel div[style*="repeat(4, 1fr)"] button {
+    padding: 0.42rem 0.15rem !important;
+    font-size: 0.7rem !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+  }
+
+  /* Mobile Pop-up Stage Backdrop */
+  .mobile-stage-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    z-index: 1100 !important;
+    animation: stageFadeIn 0.2s ease forwards;
+  }
+
+  /* Hide review stage panel by default on mobile (only Queue is visible) */
+  .review-stage-panel {
+    display: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 1rem !important;
+  }
+
+  /* When a submitted proof is clicked, pop-up like a modal on screen */
+  .review-stage-panel.mobile-modal-open {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 2.5% !important;
+    bottom: 2.5% !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    max-width: 660px !important;
+    margin: 0 auto !important;
+    z-index: 1110 !important;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 30, 0.99) 100%) !important;
+    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.25) !important;
+    padding: 1.15rem !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    animation: stageModalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Prevent any child in scrollable mobile modal from shrinking into zero height */
+  .review-stage-panel.mobile-modal-open > * {
+    flex-shrink: 0 !important;
+  }
+
+  /* Pop-up header with close button */
+  .mobile-stage-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.2rem 0.25rem 0.85rem 0.25rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    margin-bottom: 0.5rem !important;
+    position: sticky !important;
+    top: -1.15rem !important;
+    background: rgba(15, 23, 42, 0.96) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    z-index: 10 !important;
+  }
+
+  .btn-close-mobile-stage {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    padding: 0.42rem 0.9rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15) !important;
+  }
+
+  .btn-close-mobile-stage:hover,
+  .btn-close-mobile-stage:active {
+    background: rgba(239, 68, 68, 0.3) !important;
+    color: #fff !important;
+    transform: scale(0.97) !important;
+  }
+
+  /* Mobile Stage Action Bar */
+  .stage-action-bar,
+  .review-stage-panel > .stage-action-bar,
+  .review-stage-panel > .glass-panel:first-of-type {
+    padding: 0.85rem 0.95rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+    box-sizing: border-box !important;
+    border-radius: var(--radius-md, 14px) !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    height: auto !important;
+    min-height: fit-content !important;
+    max-height: none !important;
+  }
+
+  /* Nav Row (Prev / Next & Status Badge) */
+  .stage-nav-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    gap: 0.45rem !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+  }
+
+  .stage-nav-row > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .stage-nav-row button {
+    padding: 0.4rem 0.65rem !important;
+    font-size: 0.76rem !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.3rem !important;
+  }
+
+  .stage-nav-row .nav-kbd,
+  .btn-stage-action kbd {
+    display: none !important;
+  }
+
+  .stage-nav-row span {
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* Status badge on right */
+  .stage-nav-row .badge {
+    margin-left: auto !important;
+    font-size: 0.74rem !important;
+    padding: 0.28rem 0.65rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    max-width: fit-content !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2x2 Clean Action Buttons Grid:
+     Row 1: [ ✓ Approve ] [ ✕ Reject ]
+     Row 2: [ 💬 Clarify ] [ 📝 Add Note ] */
+  .stage-action-buttons,
+  .stage-action-bar .stage-action-buttons,
+  .review-stage-panel > .stage-action-bar > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .btn-stage-action {
+    width: 100% !important;
+    min-height: 44px !important;
+    height: auto !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    padding: 0.6rem 0.45rem !important;
+    white-space: nowrap !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-stage-approve {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(52, 211, 153, 0.7) !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  }
+
+  .btn-stage-reject {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(248, 113, 113, 0.7) !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+  }
+
+  /* Human Verification Notice */
+  .human-verification-notice {
+    padding: 0.75rem 0.95rem !important;
+    font-size: 0.78rem !important;
+    line-height: 1.5 !important;
+    gap: 0.65rem !important;
+    border-radius: 12px !important;
+    align-items: flex-start !important;
+  }
+
+  /* Evidence Card */
+  .evidence-proof-card {
+    padding: 1.15rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  .evidence-card-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+
+  .evidence-card-header > span:first-child {
+    font-size: 1rem !important;
+    white-space: nowrap !important;
+  }
+
+  .evidence-id-badge {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.5rem !important;
+  }
+
+  .evidence-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem !important;
+  }
+
+  /* Dual Evidence vs Intelligence columns inside details view */
+  div[style*="minmax(320px, 1.2fr) minmax(300px, 0.8fr)"] {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 1rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Target Platform & Official Account 2-col row -> stack on mobile */
+  .review-stage-panel div[style*="gridTemplateColumns: '1fr 1fr'"],
+  .review-stage-panel div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Historical Trust Metric Pills (Total, Approved, Rejected, Trust) -> 2x2 grid */
+  .review-stage-panel div[style*="repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Permaproof / Submitted URL row */
+  .review-stage-panel a[href] {
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Screenshot Viewer Container */
+  .review-stage-panel img {
+    max-height: 280px !important;
+    object-fit: contain !important;
+  }
+
   /* ── 9. Game Points & Community Leaderboard (PersonalGamificationDashboard & Leaderboard) ── */
   .gamepoints-dashboard-container {
     gap: 1rem !important;
@@ -18684,6 +19070,81 @@ input[type="date"] {
   /* Submit Activity ultra-compact adjustments */
   .submit-receipt-card {
     grid-template-columns: 1fr !important;
+  }
+
+  /* Verification Review Workspace ultra-compact adjustments */
+  .review-workspace-container > .glass-panel:first-child {
+    padding: 0.85rem 0.75rem !important;
+  }
+
+  .queue-panel {
+    padding: 0.85rem 0.75rem !important;
+  }
+
+  .queue-panel div[style*="repeat(4, 1fr)"] button {
+    font-size: 0.65rem !important;
+    padding: 0.35rem 0.1rem !important;
+    gap: 0.15rem !important;
+  }
+
+  .queue-panel div[style*="repeat(4, 1fr)"] button span:first-child {
+    font-size: 0.7rem !important;
+  }
+
+  .stage-nav-row button {
+    padding: 0.3rem 0.45rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .stage-nav-row span {
+    font-size: 0.7rem !important;
+  }
+
+  .stage-nav-row .badge {
+    font-size: 0.68rem !important;
+    padding: 0.22rem 0.45rem !important;
+  }
+
+  .stage-action-bar,
+  .review-stage-panel > .stage-action-bar,
+  .review-stage-panel > .glass-panel:first-of-type {
+    padding: 0.75rem 0.8rem !important;
+    flex-shrink: 0 !important;
+    height: auto !important;
+    min-height: fit-content !important;
+    overflow: visible !important;
+  }
+
+  .stage-action-buttons,
+  .stage-action-bar .stage-action-buttons,
+  .review-stage-panel > .stage-action-bar > div:last-child {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.45rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-stage-action {
+    font-size: 0.76rem !important;
+    padding: 0.5rem 0.25rem !important;
+    min-height: 40px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .evidence-card-header > span:first-child {
+    font-size: 0.92rem !important;
+  }
+
+  .review-stage-panel.mobile-modal-open {
+    top: 1.5% !important;
+    bottom: 1.5% !important;
+    left: 0.35rem !important;
+    right: 0.35rem !important;
+    padding: 0.85rem !important;
+    border-radius: 16px !important;
+  }
+
+  .mobile-stage-bar {
+    top: -0.85rem !important;
   }
 
   .submit-platform-avatar {
