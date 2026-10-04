@@ -3493,10 +3493,29 @@ div:hover > .profile-photo-hover-badge {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 2rem 2.5rem;
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Eliminate nested duplicate padding and constraints in Game Points & Admin views */
+.layout-view-body > .layout-content-area,
+.gamepoints-admin-container,
+.gamepoints-dashboard-container {
+  padding: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.gamepoints-dashboard-banner,
+.admin-users-points-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .layout-page-header {
@@ -11049,22 +11068,242 @@ div:has(> strong:nth-of-type(2)):not(:has(button, input, select, table, form)) >
 /* ==========================================================================
    Admin Gamification Suite: Tables, Cards, Toasts, Responsive
    ========================================================================== */
-.admin-desktop-points-table {
-  display: block;
+.admin-desktop-points-table,
+.table-responsive.admin-desktop-points-table,
+div.admin-desktop-points-table {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-.admin-mobile-points-cards {
-  display: none;
+.admin-desktop-points-table::-webkit-scrollbar,
+.table-responsive.admin-desktop-points-table::-webkit-scrollbar,
+div.admin-desktop-points-table::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.admin-desktop-points-table table {
+  display: table !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+
+.admin-desktop-points-table thead {
+  display: table-header-group !important;
+}
+
+.admin-desktop-points-table tbody {
+  display: table-row-group !important;
+}
+
+.admin-desktop-points-table tr {
+  display: table-row !important;
+  transition: background 0.15s ease !important;
+}
+
+.admin-desktop-points-table tr:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Force all table headers and data cells to remain distinct table-cells in ONE LINE */
+.admin-desktop-points-table th,
+.admin-desktop-points-table td {
+  display: table-cell !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  padding: 0.65rem 0.45rem !important;
+  font-size: 0.8rem !important;
+}
+
+.admin-desktop-points-table th:first-child,
+.admin-desktop-points-table td:first-child {
+  padding-left: 0.85rem !important;
+}
+
+.admin-desktop-points-table th:last-child,
+.admin-desktop-points-table td:last-child {
+  padding-right: 0.85rem !important;
+  text-align: right !important;
+}
+
+/* User column: compact avatar and name info */
+.admin-desktop-points-table td:nth-child(1) > div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.admin-desktop-points-table td:nth-child(1) > div > div:first-child {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  font-size: 0.78rem !important;
+}
+
+.admin-desktop-points-table td:nth-child(1) > div > div:last-child > div:first-child {
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+}
+
+.admin-desktop-points-table td:nth-child(1) > div > div:last-child > div:last-child {
+  font-size: 0.68rem !important;
+}
+
+/* Email column */
+.admin-desktop-points-table td:nth-child(2) {
+  font-size: 0.78rem !important;
+}
+
+/* Total XP in its own distinct column: strictly ONE LINE */
+.admin-desktop-points-table th:nth-child(3),
+.admin-desktop-points-table td:nth-child(3) {
+  display: table-cell !important;
+  white-space: nowrap !important;
+}
+
+.admin-desktop-points-table td:nth-child(3) span {
+  white-space: nowrap !important;
+  display: inline-block !important;
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+}
+
+/* Level badge in its own distinct column: strictly ONE LINE */
+.admin-desktop-points-table th:nth-child(4),
+.admin-desktop-points-table td:nth-child(4) {
+  display: table-cell !important;
+  white-space: nowrap !important;
+}
+
+.admin-desktop-points-table td:nth-child(4) span {
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: max-content !important;
+  font-size: 0.76rem !important;
+  padding: 0.18rem 0.45rem !important;
+  border-radius: 6px !important;
+}
+
+/* Level Name column */
+.admin-desktop-points-table td:nth-child(5) > div {
+  gap: 0.3rem !important;
+  font-size: 0.8rem !important;
+}
+
+/* Rank column */
+.admin-desktop-points-table td:nth-child(6) {
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+}
+
+/* Last Activity column */
+.admin-desktop-points-table td:nth-child(7) {
+  font-size: 0.78rem !important;
+}
+
+/* Status badge column */
+.admin-desktop-points-table td:nth-child(8) > span {
+  font-size: 0.72rem !important;
+  padding: 0.18rem 0.45rem !important;
+}
+
+/* Actions Column: Sleek, compact action buttons that never overflow or clip */
+.admin-desktop-points-table td:nth-child(9) > div {
+  display: inline-flex !important;
+  gap: 0.3rem !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  white-space: nowrap !important;
+}
+
+.admin-desktop-points-table td:nth-child(9) button {
+  padding: 0.28rem 0.48rem !important;
+  font-size: 0.73rem !important;
+  border-radius: 6px !important;
+  white-space: nowrap !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.2 !important;
+  transition: all 0.15s ease !important;
+}
+
+.admin-desktop-points-table td:nth-child(9) button:hover {
+  filter: brightness(1.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* All other cells: strictly ONE LINE */
+.admin-desktop-points-table td:nth-child(1) div,
+.admin-desktop-points-table td:nth-child(1) span,
+.admin-desktop-points-table td:nth-child(2),
+.admin-desktop-points-table td:nth-child(5) div,
+.admin-desktop-points-table td:nth-child(6) span,
+.admin-desktop-points-table td:nth-child(7),
+.admin-desktop-points-table td:nth-child(8) span,
+.admin-desktop-points-table td:nth-child(9) div {
+  white-space: nowrap !important;
+}
+
+/* Permanently hide duplicate mobile cards */
+.admin-mobile-points-cards,
+.admin-mobile-points-cards *,
+div.admin-mobile-points-cards,
+div.admin-mobile-points-cards > div {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  opacity: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
 }
 
 @media (max-width: 768px) {
-  .admin-desktop-points-table {
-    display: none !important;
+  .admin-desktop-points-table,
+  .table-responsive.admin-desktop-points-table,
+  div.admin-desktop-points-table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
   }
 
-  .admin-mobile-points-cards {
-    display: flex !important;
-    flex-direction: column;
+  .admin-desktop-points-table::-webkit-scrollbar,
+  .table-responsive.admin-desktop-points-table::-webkit-scrollbar,
+  div.admin-desktop-points-table::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .admin-mobile-points-cards,
+  .admin-mobile-points-cards *,
+  div.admin-mobile-points-cards,
+  div.admin-mobile-points-cards > div {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
   }
 }
 
@@ -12910,7 +13149,7 @@ div:has(> strong:nth-of-type(2)):not(:has(button, input, select, table, form)) >
 
 @media (max-width: 768px) {
   .admin-dash-kpi-grid {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
@@ -17663,6 +17902,709 @@ input[type="date"] {
     width: 100% !important;
     box-sizing: border-box !important;
   }
+
+  /* ── 10B. Admin Dashboard Mobile Responsiveness ──────────────────────── */
+  .admin-dash-container {
+    gap: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Cockpit Hero Banner */
+  .admin-dash-hero {
+    padding: 1.25rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1.1rem !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .admin-dash-hero-content {
+    width: 100% !important;
+  }
+
+  .admin-dash-tag-row {
+    gap: 0.35rem !important;
+    margin-bottom: 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .admin-dash-role-badge,
+  .admin-dash-telemetry-tag {
+    font-size: 0.68rem !important;
+    padding: 0.18rem 0.5rem !important;
+  }
+
+  .admin-dash-hero-title {
+    font-size: 1.3rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 0.45rem !important;
+  }
+
+  .admin-dash-hero-subtitle {
+    font-size: 0.82rem !important;
+    line-height: 1.5 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .admin-dash-hero-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.6rem !important;
+    align-self: stretch !important;
+  }
+
+  .admin-dash-hero-actions .btn-refresh-pill,
+  .admin-dash-hero-actions .admin-dash-btn-queue {
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    font-size: 0.84rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* KPI HUD Grid: 5 Items (ODD) -> Prefer 1fr ratio */
+  .admin-dash-kpi-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* Odd total count: 1fr ratio */
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  /* When an odd item is in any multi-column row, it spans 1fr ratio across */
+  .admin-dash-kpi-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .admin-dash-kpi-card {
+    padding: 0.85rem 1rem !important;
+    border-radius: 12px !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-dash-kpi-icon-box {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 1.2rem !important;
+  }
+
+  .admin-dash-kpi-label {
+    font-size: 0.68rem !important;
+  }
+
+  .admin-dash-kpi-value {
+    font-size: 1.5rem !important;
+  }
+
+  .admin-dash-kpi-subtext {
+    font-size: 0.72rem !important;
+  }
+
+  /* Action Queue Callout */
+  .admin-dash-queue-callout {
+    padding: 1.15rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.9rem !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .admin-dash-queue-callout > div:first-child h3 {
+    font-size: 1rem !important;
+  }
+
+  .admin-dash-queue-callout > div:first-child p {
+    font-size: 0.82rem !important;
+  }
+
+  .admin-dash-queue-callout > div:last-child {
+    width: 100% !important;
+  }
+
+  .admin-dash-queue-callout > div:last-child button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    font-size: 0.85rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Recent Submissions Panel */
+  .admin-dash-panel {
+    padding: 1.15rem 0.95rem !important;
+    border-radius: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-dash-panel > div:first-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+  }
+
+  /* Submission Row Item */
+  .admin-dash-submission-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+    padding: 0.95rem 0.85rem !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .admin-dash-submission-row > div:first-child {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  .admin-dash-submission-row a[href] {
+    max-width: 100% !important;
+    word-break: break-all !important;
+  }
+
+  /* Submission Row actions (Thumbnail + Status + Review Desk button) */
+  .admin-dash-submission-row > div:last-child {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.65rem !important;
+    padding-top: 0.65rem !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    flex-wrap: wrap !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-dash-submission-row > div:last-child button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    margin-top: 0.25rem !important;
+  }
+
+  /* SOP Procedures Grid: 4 Items (EVEN) -> Use 2X2 grid */
+  .admin-dash-sop-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 4 items: even items use 2X2 grid */
+    gap: 0.65rem !important;
+    width: 100% !important;
+  }
+
+  .admin-dash-sop-card {
+    padding: 0.8rem 0.7rem !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.45rem !important;
+    border-radius: 10px !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-dash-sop-step-num {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .admin-dash-sop-card > div:last-child > div:first-child {
+    font-size: 0.8rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .admin-dash-sop-card > div:last-child > div:last-child {
+    font-size: 0.72rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Generic Even Metric Grids (e.g. 8 items) -> 2X2 grid format */
+  div[style*="minmax(210px, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+
+  /* ── 10C. Admin Game Points Mobile Responsiveness ──────────────────────── */
+  .gamepoints-dashboard-container {
+    gap: 1.15rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Admin Game Points Header Banner */
+  .gamepoints-dashboard-banner {
+    padding: 1.25rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .gamepoints-banner-content {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .gamepoints-banner-title {
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+    gap: 0.5rem !important;
+  }
+
+  .gamepoints-banner-description {
+    font-size: 0.82rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .gamepoints-dashboard-banner .btn-refresh-pill {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 40px !important;
+    font-size: 0.82rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Admin Sub-navigation Tabs: 3 Items (ODD) -> Prefer 1fr ratio */
+  .gamepoints-banner-actions {
+    width: 100% !important;
+    align-items: stretch !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .gamepoints-subnav-tabs {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    padding: 0.3rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .gamepoints-subnav-btn {
+    width: 100% !important;
+    flex: 1 1 100% !important; /* Odd item: 1fr ratio */
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.82rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Admin Gamification 6-KPI Header Grid: 6 Items (EVEN) -> Use 2X2 grid (repeat(2, 1fr)) */
+  .admin-gamification-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 6 items: even items use 2X2 grid */
+    gap: 0.65rem !important;
+    margin-bottom: 1.25rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gamification-kpi-card {
+    padding: 0.85rem 0.75rem !important;
+    border-radius: 12px !important;
+    gap: 0.3rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gamification-kpi-label {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .admin-gamification-kpi-value {
+    font-size: 1.3rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .admin-gamification-kpi-sub {
+    font-size: 0.68rem !important;
+  }
+
+  /* Admin Users Points Table: Search & Filter Panel */
+  .admin-users-points-section {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-users-points-section .glass-panel {
+    padding: 1rem 0.85rem !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Primary Filters Row (Search + Level + Status + Sort): Odd count dropdowns -> 1fr ratio */
+  .admin-users-points-section .glass-panel > div:first-child {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    width: 100% !important;
+  }
+
+  .admin-users-points-section .glass-panel > div:first-child > div {
+    width: 100% !important;
+    flex: 1 1 100% !important; /* 1fr ratio */
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-users-points-section input,
+  .admin-users-points-section select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 0.84rem !important;
+    min-height: 40px !important;
+  }
+
+  /* Secondary Filter Row (XP Range + Clear Filters + Showing Count) */
+  .admin-users-points-section .glass-panel > div:nth-child(2) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+    width: 100% !important;
+  }
+
+  .admin-users-points-section .glass-panel > div:nth-child(2) > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-users-points-section .glass-panel > div:nth-child(2) > div:first-child input[type="number"] {
+    flex: 1 1 auto !important;
+    width: 0 !important;
+    min-width: 70px !important;
+    min-height: 36px !important;
+  }
+
+  .admin-users-points-section .glass-panel > div:nth-child(2) button {
+    width: 100% !important;
+    text-align: center !important;
+    min-height: 38px !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-users-points-section .glass-panel > div:nth-child(2) > div:last-child {
+    margin-left: 0 !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Admin Users Points Table: strictly 2 separate columns with single-line values, fit 100%, no scrollbars */
+  .admin-desktop-points-table,
+  .table-responsive.admin-desktop-points-table,
+  div.admin-desktop-points-table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .admin-desktop-points-table::-webkit-scrollbar,
+  .table-responsive.admin-desktop-points-table::-webkit-scrollbar,
+  div.admin-desktop-points-table::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .admin-desktop-points-table table {
+    display: table !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+  }
+
+  .admin-desktop-points-table thead {
+    display: table-header-group !important;
+  }
+
+  .admin-desktop-points-table tbody {
+    display: table-row-group !important;
+  }
+
+  .admin-desktop-points-table tr {
+    display: table-row !important;
+  }
+
+  .admin-desktop-points-table th,
+  .admin-desktop-points-table td {
+    display: table-cell !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .admin-desktop-points-table th:first-child,
+  .admin-desktop-points-table td:first-child {
+    padding-left: 0.8rem !important;
+  }
+
+  .admin-desktop-points-table th:last-child,
+  .admin-desktop-points-table td:last-child {
+    padding-right: 0.8rem !important;
+    text-align: right !important;
+  }
+
+  /* User column: compact avatar and name info */
+  .admin-desktop-points-table td:nth-child(1) > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(1) > div > div:first-child {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(1) > div > div:last-child > div:first-child {
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(1) > div > div:last-child > div:last-child {
+    font-size: 0.66rem !important;
+  }
+
+  /* Email column */
+  .admin-desktop-points-table td:nth-child(2) {
+    font-size: 0.76rem !important;
+  }
+
+  /* Total XP column in its own separate column */
+  .admin-desktop-points-table th:nth-child(3),
+  .admin-desktop-points-table td:nth-child(3) {
+    display: table-cell !important;
+    white-space: nowrap !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(3) span {
+    white-space: nowrap !important;
+    display: inline-block !important;
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+  }
+
+  /* Level column in its own separate column */
+  .admin-desktop-points-table th:nth-child(4),
+  .admin-desktop-points-table td:nth-child(4) {
+    display: table-cell !important;
+    white-space: nowrap !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(4) span {
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: max-content !important;
+    font-size: 0.74rem !important;
+    padding: 0.16rem 0.4rem !important;
+    border-radius: 6px !important;
+  }
+
+  /* Level Name column */
+  .admin-desktop-points-table td:nth-child(5) > div {
+    gap: 0.25rem !important;
+    font-size: 0.76rem !important;
+  }
+
+  /* Rank column */
+  .admin-desktop-points-table td:nth-child(6) {
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+  }
+
+  /* Last Activity column */
+  .admin-desktop-points-table td:nth-child(7) {
+    font-size: 0.76rem !important;
+  }
+
+  /* Status badge column */
+  .admin-desktop-points-table td:nth-child(8) > span {
+    font-size: 0.7rem !important;
+    padding: 0.16rem 0.4rem !important;
+  }
+
+  /* Actions Column: Sleek, compact action buttons */
+  .admin-desktop-points-table td:nth-child(9) > div {
+    display: inline-flex !important;
+    gap: 0.25rem !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    white-space: nowrap !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(9) button {
+    padding: 0.26rem 0.44rem !important;
+    font-size: 0.72rem !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.01em !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(9) button:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .admin-desktop-points-table td:nth-child(1) div,
+  .admin-desktop-points-table td:nth-child(1) span,
+  .admin-desktop-points-table td:nth-child(2),
+  .admin-desktop-points-table td:nth-child(5) div,
+  .admin-desktop-points-table td:nth-child(6) span,
+  .admin-desktop-points-table td:nth-child(7),
+  .admin-desktop-points-table td:nth-child(8) span,
+  .admin-desktop-points-table td:nth-child(9) div {
+    white-space: nowrap !important;
+  }
+
+  /* Admin Mobile Points Cards: completely eliminated to prevent duplicate display */
+  .admin-mobile-points-cards,
+  .admin-mobile-points-cards *,
+  div.admin-mobile-points-cards,
+  div.admin-mobile-points-cards > div {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Admin Points Pagination Controls */
+  div[style*="justifyContent: 'space-between'"]:has(> div:last-child > button[disabled]),
+  div[style*="justify-content: space-between"]:has(> div:last-child > button[disabled]) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    text-align: center !important;
+    padding: 0.85rem 1rem !important;
+  }
+
+  /* Tab 2: Admin Gamification Analytics Mobile Responsiveness */
+  .admin-gamification-analytics {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Analytics 6 Key Stat Cards: 6 Items (EVEN) -> Use 2X2 grid */
+  .admin-gamification-analytics > div:first-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 6 items: even items use 2X2 grid */
+    gap: 0.65rem !important;
+    margin-bottom: 1.25rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gamification-analytics > div:first-child .glass-panel {
+    padding: 0.85rem 0.75rem !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gamification-analytics > div:first-child .glass-panel div[style*="font-size: 1.75rem"],
+  .admin-gamification-analytics > div:first-child .glass-panel div[style*="fontSize: '1.75rem'"] {
+    font-size: 1.3rem !important;
+  }
+
+  /* Analytics Distributions & Breakdown: 3 Cards (ODD) -> Prefer 1fr ratio */
+  .admin-gamification-analytics > div:last-child {
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* Odd 3 items: 1fr ratio */
+    gap: 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gamification-analytics > div:last-child .glass-panel {
+    padding: 1.15rem 1rem !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Tab 3: Leaderboard Timeframe Tabs: 3 Items (ODD) -> Prefer 1fr ratio */
+  .leaderboard-timeframe-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    gap: 0.35rem !important;
+  }
+
+  .leaderboard-timeframe-tab {
+    flex: 1 1 100% !important; /* Odd 3 items: 1fr ratio */
+    text-align: center !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+  }
+
+  .leaderboard-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  .leaderboard-table {
+    min-width: 520px !important;
+  }
+
+  /* Tab 4: Level Engine 3 Stat Cards: 3 Items (ODD) -> Prefer 1fr ratio */
+  .glass-panel > div[style*="minmax(220px, 1fr)"] {
+    grid-template-columns: 1fr !important; /* Odd 3 items: 1fr ratio */
+    gap: 0.75rem !important;
+  }
+
+  /* XP Adjustment Modal Responsive */
+  .modal-backdrop .glass-panel {
+    padding: 1.25rem 1rem !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* XP Adjustment Modal Action Selector: 2 Items (EVEN) -> 2X2 grid */
+  .modal-backdrop div[style*="gridTemplateColumns: '1fr 1fr'"],
+  .modal-backdrop div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: repeat(2, 1fr) !important; /* Even 2 items: 2X2 grid */
+    gap: 0.5rem !important;
+  }
+
+  .modal-backdrop button.btn-portal-primary,
+  .modal-backdrop button.btn-portal-secondary {
+    min-height: 38px !important;
+    box-sizing: border-box !important;
+  }
 }
 
 /* ── 11. Ultra-compact Phones (< 440px) ── */
@@ -17913,6 +18855,33 @@ input[type="date"] {
   .profile-stat-num {
     font-size: 1.15rem !important;
   }
+
+  /* Admin Game Points ultra-compact (< 440px) */
+  .admin-gamification-kpi-card {
+    padding: 0.75rem 0.6rem !important;
+    border-radius: 10px !important;
+  }
+
+  .admin-gamification-kpi-label {
+    font-size: 0.62rem !important;
+  }
+
+  .admin-gamification-kpi-value {
+    font-size: 1.15rem !important;
+  }
+
+  .admin-gamification-kpi-sub {
+    font-size: 0.62rem !important;
+  }
+
+  .admin-gamification-analytics > div:first-child .glass-panel {
+    padding: 0.75rem 0.6rem !important;
+  }
+
+  .admin-gamification-analytics > div:first-child .glass-panel div[style*="font-size: 1.75rem"],
+  .admin-gamification-analytics > div:first-child .glass-panel div[style*="fontSize: '1.75rem'"] {
+    font-size: 1.15rem !important;
+  }
 }
 
 /* ── 12. Tiny Phones (< 360px) ── */
@@ -18060,5 +19029,42 @@ input[type="date"] {
     padding: 0.2rem 0.45rem !important;
     font-size: 0.62rem !important;
     white-space: nowrap !important;
+  }
+
+  /* Admin Dashboard tiny phones (< 360px) */
+  .admin-dash-kpi-grid {
+    grid-template-columns: 1fr !important; /* Odd 5 items: 1fr ratio */
+  }
+
+  .admin-dash-sop-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* Even 4 items: 2X2 grid */
+    gap: 0.45rem !important;
+  }
+
+  .admin-dash-sop-card {
+    padding: 0.65rem 0.5rem !important;
+  }
+
+  /* Admin Game Points tiny phones (< 360px) */
+  .admin-gamification-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* Even 6 items: 2X2 grid */
+    gap: 0.45rem !important;
+  }
+
+  .admin-gamification-kpi-card {
+    padding: 0.65rem 0.5rem !important;
+  }
+
+  .admin-gamification-kpi-value {
+    font-size: 1.05rem !important;
+  }
+
+  .admin-gamification-analytics > div:first-child {
+    grid-template-columns: repeat(2, 1fr) !important; /* Even 6 items: 2X2 grid */
+    gap: 0.45rem !important;
+  }
+
+  .admin-gamification-analytics > div:first-child .glass-panel {
+    padding: 0.65rem 0.5rem !important;
   }
 }
