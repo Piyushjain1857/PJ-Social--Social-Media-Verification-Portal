@@ -448,31 +448,26 @@ export default function UsersView() {
       {/* ── Top Header Panel & Governance Summary ── */}
       <div className="admin-dash-panel" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div className="admin-hero-icon-box cyan">
-              👥
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            <div className="admin-header-title-group">
+              <div className="gamepoints-banner-badge admin responsive-header-pill">
+                <span className="gamepoints-banner-dot" />
+                <span>{isSuperAdmin ? '👑 Super Admin Clearance' : '🛡️ Admin Directory Access'}</span>
+              </div>
+              <div className="admin-header-title-left">
+                <div className="admin-hero-icon-box cyan">
+                  👥
+                </div>
                 <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
                   User Governance & Access Management
                 </h2>
-                {isSuperAdmin ? (
-                  <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
-                    SUPER_ADMIN CLEARANCE
-                  </span>
-                ) : (
-                  <span className="badge badge-admin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
-                    ADMIN DIRECTORY ACCESS
-                  </span>
-                )}
               </div>
-              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem', maxWidth: '780px' }}>
-                {isSuperAdmin
-                  ? 'Provision, monitor, and regulate platform accounts with granular RBAC privilege controls.'
-                  : 'View and inspect platform creators and administrator directories with active count telemetry.'}
-              </p>
             </div>
+            <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem', maxWidth: '780px' }}>
+              {isSuperAdmin
+                ? 'Provision, monitor, and regulate platform accounts with granular RBAC privilege controls.'
+                : 'View and inspect platform creators and administrator directories with active count telemetry.'}
+            </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>

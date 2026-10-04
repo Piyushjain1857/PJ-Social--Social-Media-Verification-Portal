@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   fetchMyProfile,
@@ -34,16 +34,16 @@ const AVATAR_GRADIENTS = [
 ];
 
 const METRIC_CONFIG = {
-  totalUsers: { icon: '👥', label: 'Platform Users', subtitle: 'Registered accounts' },
-  totalCreators: { icon: '🚀', label: 'Verified Creators', subtitle: 'Active creators' },
-  totalAdmins: { icon: '🛡️', label: 'Platform Admins', subtitle: 'Authorized moderators' },
-  pendingReview: { icon: '⏳', label: 'Pending Review', subtitle: 'Awaiting inspection' },
-  totalSubmissions: { icon: '📊', label: 'Total Submissions', subtitle: 'Lifetime verifications' },
-  approved: { icon: '✅', label: 'Approved Proofs', subtitle: 'Verified & cleared' },
-  approvedSubmissions: { icon: '✅', label: 'Verified Proof', subtitle: 'Approved & credited' },
-  rejectedSubmissions: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs' },
-  pending: { icon: '⏳', label: 'Pending Review', subtitle: 'Awaiting inspection' },
-  rejected: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs' }
+  totalUsers: { icon: '👥', label: 'Total Users', subtitle: 'All registered', color: '#38bdf8' },
+  totalCreators: { icon: '🚀', label: 'Verified Creators', subtitle: 'Active creators', color: '#6366f1' },
+  totalAdmins: { icon: '🛡️', label: 'Platform Admins', subtitle: 'Queue moderators', color: '#8b5cf6' },
+  pendingReview: { icon: '⏳', label: 'Pending Review', subtitle: 'Requires attention', color: '#f59e0b' },
+  totalSubmissions: { icon: '📊', label: 'Total Submissions', subtitle: 'Lifetime verifications', color: '#3b82f6' },
+  approved: { icon: '✅', label: 'Approved Proofs', subtitle: 'Verified & cleared', color: '#10b981' },
+  approvedSubmissions: { icon: '✅', label: 'Verified Proof', subtitle: 'Approved & credited', color: '#10b981' },
+  rejectedSubmissions: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs', color: '#ef4444' },
+  pending: { icon: '⏳', label: 'Pending Review', subtitle: 'Awaiting inspection', color: '#f59e0b' },
+  rejected: { icon: '❌', label: 'Flagged Proof', subtitle: 'Non-compliant logs', color: '#ef4444' }
 };
 
 const DEFAULT_PERSONALIZATION = {
@@ -112,6 +112,39 @@ export default function ProfileView({ onNavigateToNav }) {
 
   // Active Tab: 'details' | 'personalization' | 'notifications' | 'security'
   const [activeTab, setActiveTab] = useState('details');
+  const tabBarRef = useRef(null);
+
+  const handlePersonalizeClick = () => {
+    setActiveTab('personalization');
+    setTimeout(() => {
+      const target = tabBarRef.current || document.getElementById('profile-tab-bar');
+      if (target) {
+        const scrollContainer = document.querySelector('.layout-main-column');
+        const navbar = document.querySelector('.layout-navbar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 56;
+
+        if (scrollContainer && typeof scrollContainer.scrollTo === 'function') {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const targetScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - (navbarHeight + 10);
+          
+          scrollContainer.scrollTo({
+            top: Math.max(0, targetScrollTop),
+            behavior: 'smooth'
+          });
+        } else {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Smooth horizontal centering of the preferences tab pill inside the scrollable tab bar
+        const prefTab = document.getElementById('profile-tab-preferences');
+        if (prefTab && typeof target.scrollTo === 'function') {
+          const scrollLeft = prefTab.offsetLeft - (target.clientWidth / 2) + (prefTab.clientWidth / 2);
+          target.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+        }
+      }
+    }, 50);
+  };
 
   // Email Notification Preferences State
   const [emailPrefs, setEmailPrefs] = useState({
@@ -867,8 +900,9 @@ export default function ProfileView({ onNavigateToNav }) {
         <div className="profile-actions-bar">
           <button
             type="button"
+            id="profile-personalize-btn"
             className="btn-secondary profile-action-btn"
-            onClick={() => setActiveTab('personalization')}
+            onClick={handlePersonalizeClick}
             title="Customize themes, avatar, and headline"
           >
             <span>🎨</span> Personalize
@@ -917,30 +951,33 @@ export default function ProfileView({ onNavigateToNav }) {
             const cfg = METRIC_CONFIG[key] || {
               icon: '📊',
               label: key.replace(/([A-Z])/g, ' $1').trim(),
-              subtitle: 'Platform Activity'
+              subtitle: 'Platform Activity',
+              color: currentAccent.primary
             };
+            const accentColor = cfg.color || currentAccent.primary;
             return (
               <div
                 key={key}
                 className="profile-stat-card"
                 style={{
-                  borderTop: `3px solid ${currentAccent.primary}`
+                  borderLeft: `4px solid ${accentColor}`
                 }}
               >
                 <div
                   className="profile-stat-icon-box"
                   style={{
-                    color: currentAccent.light,
-                    borderColor: `${currentAccent.primary}33`
+                    background: `${accentColor}18`,
+                    border: `1px solid ${accentColor}40`,
+                    color: accentColor
                   }}
                 >
                   {cfg.icon}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="profile-stat-content">
                   <span className="profile-stat-label">
                     {cfg.label}
                   </span>
-                  <span className="profile-stat-num">
+                  <span className="profile-stat-num" style={{ color: accentColor }}>
                     {val}
                   </span>
                   <span className="profile-stat-sub">
@@ -973,21 +1010,27 @@ export default function ProfileView({ onNavigateToNav }) {
       )}
 
       {/* ── 3. Profile Navigation Tabs ── */}
-      <div className="profile-tab-bar">
+      <div ref={tabBarRef} id="profile-tab-bar" className="profile-tab-bar">
         <button
+          id="profile-tab-details"
           type="button"
           className={`profile-tab-pill ${activeTab === 'details' ? 'active' : ''}`}
           onClick={() => setActiveTab('details')}
         >
-          <span>👤</span> Account Details &amp; Profile
+          <span>👤</span>
+          <span className="profile-tab-label-full">Account Details &amp; Profile</span>
+          <span className="profile-tab-label-short">Account</span>
         </button>
 
         <button
+          id="profile-tab-preferences"
           type="button"
           className={`profile-tab-pill ${activeTab === 'personalization' ? 'active' : ''}`}
           onClick={() => setActiveTab('personalization')}
         >
-          <span>🎨</span> Preferences &amp; Personalization
+          <span>🎨</span>
+          <span className="profile-tab-label-full">Preferences &amp; Personalization</span>
+          <span className="profile-tab-label-short">Preferences</span>
         </button>
 
         <button
@@ -995,7 +1038,9 @@ export default function ProfileView({ onNavigateToNav }) {
           className={`profile-tab-pill ${activeTab === 'notifications' ? 'active' : ''}`}
           onClick={() => setActiveTab('notifications')}
         >
-          <span>✉️</span> Email Preferences
+          <span>✉️</span>
+          <span className="profile-tab-label-full">Email Preferences</span>
+          <span className="profile-tab-label-short">Email</span>
         </button>
 
         <button
@@ -1003,7 +1048,9 @@ export default function ProfileView({ onNavigateToNav }) {
           className={`profile-tab-pill ${activeTab === 'security' ? 'active' : ''}`}
           onClick={() => setActiveTab('security')}
         >
-          <span>🔒</span> Security &amp; Password
+          <span>🔒</span>
+          <span className="profile-tab-label-full">Security &amp; Password</span>
+          <span className="profile-tab-label-short">Security</span>
         </button>
       </div>
 
