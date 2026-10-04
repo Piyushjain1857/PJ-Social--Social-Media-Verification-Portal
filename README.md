@@ -8,7 +8,7 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 
 ## 📑 Table of Contents
 
-- [🎯 Project Pitch & Presentation Guide (PROJECT_PITCH.md)](PROJECT_PITCH.md)
+- [🎯 Project Pitch & Presentation Guide (PITCH.md)](PITCH.md)
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Tech Stack](#-tech-stack)
@@ -31,7 +31,7 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 - [Profile Customization & Avatar Uploads](#-profile-customization--avatar-uploads)
 - [Global Search & Filtering Architecture](#-global-search--filtering-architecture)
 - [API Reference Matrix](#-api-reference-matrix)
-- [Automated Testing Suite (25 Test Suites)](#-automated-testing-suite-25-test-suites)
+- [Automated Testing Suite (32 Test Suites)](#-automated-testing-suite-32-test-suites)
 - [License](#-license)
 
 ---
@@ -93,41 +93,49 @@ The platform includes a real-time verification pipeline, deep audit dossiers, in
 
 ```
 Social Media Verification Portal/
-├── package.json                          # Monorepo workspaces orchestrator & root scripts
-├── package-lock.json
-├── .gitignore                            # Root gitignore rules
-├── README.md                             # Comprehensive project documentation
+├── .gitignore                            # Repository-wide gitignore rules (ignores credentials, env, node_modules)
+├── GOOGLE_PASS.txt                       # Google account & SMTP app credentials (git-ignored)
+├── LICENSE                               # MIT Open-Source License
+├── PITCH.md                              # Comprehensive presentation & feature pitch guide
+├── README.md                             # Master project documentation
 │
 ├── backend/
 │   ├── .env                              # Active backend environment configuration
 │   ├── .env.example                      # Reference template for backend variables
 │   ├── .gitignore
+│   ├── nodemon.json                      # Hot-reloading watch/ignore rules
 │   ├── package.json                      # Backend dependencies and test scripts
+│   ├── package-lock.json                 # Backend dependency lockfile
 │   ├── prisma/
 │   │   ├── schema.prisma                 # Core Prisma relational schema (Users, Levels, Submissions, etc.)
-│   │   ├── seed.js                       # Demo accounts & default levels seeding script
-│   │   └── migrations/                   # PostgreSQL migration history
+│   │   ├── seed.js                       # Core accounts, official channels & default levels seeder
+│   │   ├── seedLevels.js                 # 50-tier dynamic gamification level seeder
+│   │   └── migrations/                   # PostgreSQL migration history & lockfile
 │   ├── uploads/
-│   │   └── screenshots/                  # Auth-gated storage directory for uploaded evidence
+│   │   └── screenshots/                  # Auth-gated storage directory for uploaded evidence & test fixtures
 │   └── src/
-│       ├── app.js                        # Express app configuration, Helmet, CORS, parser limits
-│       ├── server.js                     # HTTP server startup with automatic port fallback
+│       ├── app.js                        # Express app configuration, Helmet, CORS, parser limits, audit logger
+│       ├── server.js                     # HTTP server startup with automatic port fallback (5001 -> 5002+)
 │       ├── config/
 │       │   ├── db.js                     # PrismaClient singleton with connection diagnostics
-│       │   └── env.js                    # Validated environment loader
+│       │   ├── env.js                    # Validated environment loader
+│       │   └── swagger.js                # OpenAPI 3.0 documentation specification
 │       ├── controllers/
-│       │   ├── adminGamificationController.js # Admin users points directory, user dossier, and manual XP adjustments
+│       │   ├── adminGamificationController.js # Admin points directory, user dossiers, and XP adjustments
 │       │   ├── adminLevelController.js   # Super Admin dynamic level CRUD & generation
 │       │   ├── authController.js         # Register, login, me, logout handlers
 │       │   ├── dashboardController.js    # Scoped telemetry for user, admin, super-admin
+│       │   ├── emailPreferenceController.js # User email notification preferences
 │       │   ├── gamificationController.js # Authoritative XP, Level Journey, Rank, Chart & history APIs
 │       │   ├── healthController.js       # Health and database telemetry endpoints
 │       │   ├── notificationController.js # Read / read-all notification handlers
 │       │   ├── pointsController.js       # Points ledger, rank, and manual adjustments
 │       │   ├── reviewController.js       # Admin review queue, approval, and rejection
+│       │   ├── searchController.js       # Unified multi-criteria global search
 │       │   ├── socialAccountController.js# Official accounts registry and management
 │       │   ├── submissionController.js   # User activity submission & query handlers
 │       │   ├── superAdminController.js   # Super Admin user CRUD, stats & audit logs
+│       │   ├── superAdminEmailController.js # Super Admin transactional email control center
 │       │   ├── superAdminGamificationController.js # Super Admin governance: overview, ledger, rules, analytics
 │       │   ├── uploadController.js       # Auth-gated screenshot stream handler
 │       │   └── userController.js         # Profile management & password updates
@@ -137,14 +145,18 @@ Social Media Verification Portal/
 │       │   ├── roleMiddleware.js         # Role gatekeeper & privilege escalation guard
 │       │   └── uploadMiddleware.js       # Multer memory storage & magic byte validator
 │       ├── repositories/
+│       │   ├── emailConfigRepository.js  # SMTP server configurations
+│       │   ├── emailLogRepository.js     # Transactional email delivery logs
+│       │   ├── emailPreferenceRepository.js # User communication preferences
 │       │   ├── notificationRepository.js # Notification queries & mutations
+│       │   ├── passwordResetRepository.js# Password reset tokens
 │       │   ├── pointTransactionRepository.js # Points & XP transaction store
 │       │   ├── socialAccountRepository.js# Official social account database ops
 │       │   ├── submissionRepository.js   # Submissions & moderation reviews store
 │       │   └── userRepository.js         # User store with password-hash sanitization
 │       ├── routes/
 │       │   ├── adminGamificationRoutes.js# /api/admin/gamification
-│       │   ├── adminLevelRoutes.js       # /api/admin/levels
+│       │   ├── adminLevelRoutes.js       # /api/admin/levels & /api/superadmin/levels
 │       │   ├── authRoutes.js             # /api/auth
 │       │   ├── dashboardRoutes.js        # /api/dashboard
 │       │   ├── gamificationRoutes.js     # /api/gamification
@@ -155,45 +167,27 @@ Social Media Verification Portal/
 │       │   ├── searchRoutes.js           # /api/search
 │       │   ├── socialAccountRoutes.js    # /api/social-accounts
 │       │   ├── submissionRoutes.js       # /api/submissions
+│       │   ├── superAdminEmailRoutes.js  # /api/super-admin/email
 │       │   ├── superAdminGamificationRoutes.js # /api/superadmin/gamification
 │       │   ├── superAdminRoutes.js       # /api/superadmin
+│       │   ├── swaggerRoutes.js          # /api/docs
 │       │   ├── uploadRoutes.js           # /api/uploads
 │       │   ├── userRoutes.js             # /api/users
 │       │   └── index.js                  # Central router registration
 │       ├── services/
 │       │   ├── adminGamificationService.js # Admin users directory & manual adjustment business logic
-│       │   ├── gamificationRealtimeService.js # SSE real-time broadcast and subscription manager
-│       │   ├── gamificationService.js    # XP calculation, rank calculation, and graph aggregations
+│       │   ├── auditLogService.js        # Governance and audit logging
+│       │   ├── emailService.js           # Transactional email dispatch, retries & telemetry
+│       │   ├── emailTemplates.js         # Production HTML transactional email templates
 │       │   ├── levelService.js           # Dynamic level thresholds calculation engine
 │       │   ├── pointsService.js          # Points awarding & idempotency service
+│       │   ├── realtimeGamificationService.js # SSE real-time broadcast and subscription manager
+│       │   ├── storageService.js         # Local/cloud storage abstraction
+│       │   ├── submissionApprovalService.js # Transactional approval & XP awarding orchestrator
 │       │   └── superAdminGamificationService.js # Super Admin transactions, audit logs, and settings logic
-│       ├── tests/
-│       │   ├── admin_gamification.test.js
-│       │   ├── admin_review_workspace.test.js
-│       │   ├── complete_gamification_audit.test.js
-│       │   ├── game_points_verification.test.js
-│       │   ├── gamification_analytics_graphs.test.js
-│       │   ├── gamification_authorization_audit.test.js
-│       │   ├── gamification_comprehensive_system.test.js
-│       │   ├── gamification_level_system.test.js
-│       │   ├── gamification_production_e2e.test.js
-│       │   ├── gamification_realtime_system.test.js
-│       │   ├── level_engine.test.js
-│       │   ├── notification.test.js
-│       │   ├── official_social_accounts.test.js
-│       │   ├── points_system.test.js
-│       │   ├── profile_management.test.js
-│       │   ├── rbac.test.js
-│       │   ├── run_all_tests.js          # Master test runner (25 suites)
-│       │   ├── search_and_filter.test.js
-│       │   ├── security_audit.test.js
-│       │   ├── submission_xp_awarding.test.js
-│       │   ├── superadmin_dashboard.test.js
-│       │   ├── superadmin_gamification.test.js
-│       │   ├── superadmin_levels.test.js
-│       │   ├── superadmin_users.test.js
-│       │   ├── swagger.test.js
-│       │   └── workflow.test.js
+│       ├── tests/                        # 32 automated test suites + master runner
+│       │   ├── run_all_tests.js          # Master test runner
+│       │   └── *.test.js                 # 32 unit, integration, and security suites
 │       └── utils/
 │           ├── hash.js                   # bcrypt helper functions
 │           ├── jwt.js                    # JWT signing and verification utility
@@ -205,6 +199,7 @@ Social Media Verification Portal/
     ├── .gitignore
     ├── index.html                        # Application entrypoint with SEO meta
     ├── package.json                      # React 19, Vite, and scripts
+    ├── package-lock.json                 # Frontend dependency lockfile
     ├── vite.config.js                    # Vite configuration & dev proxy
     └── src/
         ├── main.jsx                      # React 19 root bootstrap
@@ -214,19 +209,15 @@ Social Media Verification Portal/
         ├── services/
         │   ├── adminGamificationApi.js   # Admin gamification API client
         │   ├── api.js                    # Universal API abstraction client
+        │   ├── emailAdminApi.js          # Transactional email management API client
         │   ├── gamificationApi.js        # Dedicated gamification client
         │   ├── gamificationRealtimeClient.js # Frontend SSE real-time client & event emitter
         │   └── superAdminGamificationApi.js # Super Admin gamification API client
         ├── styles/
-        │   ├── app.css                   # Component-level layout rules & badges
-        │   ├── gamification.css          # Level cards, journey track, modals, leaderboard, charts
-        │   ├── index.css                 # Color tokens, typography, glassmorphism
-        │   └── layout.css                # Responsive sidebar, drawer, and grids
+        │   └── index.css                 # Master design system (tokens, typography, glassmorphism)
         ├── pages/
         │   ├── LoginPage.jsx             # Credentials authentication & demo selector
-        │   ├── UserSpace.jsx             # Creator space view
-        │   ├── AdminSpace.jsx            # Admin moderator space view
-        │   └── SuperAdminSpace.jsx       # Super Admin space view
+        │   └── UserSpace.jsx             # Creator space view (rendered inside MainLayout)
         └── components/
             ├── Header.jsx                # Navigation header, user avatar & search trigger
             ├── Footer.jsx                # Public footer
@@ -249,14 +240,21 @@ Social Media Verification Portal/
             │   ├── FilterBar.jsx         # Debounced search & filter bar
             │   ├── GlobalSearchModal.jsx # ⌘K / Ctrl+K Command Palette
             │   ├── LoadingSkeleton.jsx   # Shimmer table skeletons
-            │   └── Pagination.jsx        # Ellipsis pagination & page size selector
+            │   ├── Pagination.jsx        # Ellipsis pagination & page size selector
+            │   └── PointsSummary.jsx     # Points card summary widget
             ├── gamification/
             │   ├── DynamicLevelTimeline.jsx # Visual 50-level milestone journey
+            │   ├── GamificationSummary.jsx # Level & points summary bar
             │   ├── Leaderboard.jsx       # Portal-wide ranked leaderboard with tie-breaking
             │   ├── LevelBadge.jsx        # Tier icons & glowing badges
+            │   ├── LevelJourneySection.jsx # Visual level track section
+            │   ├── LevelProgress.jsx     # Level progress bar component
+            │   ├── LevelProgressCard.jsx # Compact level progress card
             │   ├── LevelUpModal.jsx      # Animated level-up celebration modal
             │   ├── PersonalGamificationDashboard.jsx # Normal user gamification command center
+            │   ├── PointHistory.jsx      # Points activity log
             │   ├── PositionTimeline.jsx  # Creator leaderboard position timeline
+            │   ├── UserActivityDistribution.jsx # Activity breakdown donut chart
             │   ├── UserXPChart.jsx       # Dynamic SVG/CSS XP trajectory chart
             │   └── XPHistoryLedger.jsx   # Itemized transaction ledger with pagination
             ├── superadmin/gamification/
@@ -280,6 +278,8 @@ Social Media Verification Portal/
                 ├── SettingsView.jsx      # System policies & anti-abuse thresholds
                 ├── SocialAccountsView.jsx# Official accounts management & stats
                 ├── SubmissionsView.jsx   # Global submissions directory
+                ├── SubmitActivityView.jsx# Social activity verification form
+                ├── SuperAdminEmailCenter.jsx # Transactional email control center
                 ├── SuperAdminGamificationCenter.jsx # 9-tab Super Admin governance console
                 └── UsersView.jsx         # Super Admin user CRUD & status control
 ```
@@ -298,6 +298,12 @@ Social Media Verification Portal/
 | `JWT_SECRET` | `super_secret_jwt_key_verification_portal_2026` | Secret key used to sign and verify Bearer JWT tokens |
 | `JWT_EXPIRES_IN` | `7d` | Lifespan of issued JSON Web Tokens |
 | `CORS_ORIGIN` | `http://localhost:5173,http://localhost:5174` | Allowed origins for cross-origin browser requests |
+| `MAIL_HOST` | `smtp.gmail.com` | Transactional email SMTP server |
+| `MAIL_PORT` | `465` | SMTP port (SSL) |
+| `MAIL_SECURE` | `true` | Enable SSL encryption |
+| `MAIL_USER` | `pjsocialmediaportal@gmail.com` | Sender Gmail account |
+| `MAIL_PASSWORD` | *(16-char App Password)* | Google App Password (see `GOOGLE_PASS.txt`) |
+| `MAIL_FROM` | `"PJ Social Portal" <pjsocialmediaportal@gmail.com>` | Default sender display format |
 
 ### Frontend (`frontend/.env`)
 
@@ -326,20 +332,22 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/social_verification_
 
 ## 🔄 Prisma Migration Commands
 
-From the repository root or the `backend` directory:
+From the `backend` directory:
 
 ```bash
+cd backend
+
 # Generate the Prisma Client
-npm run prisma:generate
+npx prisma generate
 
 # Apply database migrations to PostgreSQL
-npm run prisma:migrate
+npx prisma migrate dev
 
 # Seed demo accounts and default levels (50 tiers)
-npm run db:seed --prefix backend
+node prisma/seed.js
 
 # (Optional) Open Prisma Studio database browser:
-npx prisma studio --schema backend/prisma/schema.prisma
+npx prisma studio
 ```
 
 ---
@@ -363,7 +371,7 @@ npx prisma studio --schema backend/prisma/schema.prisma
    ```bash
    npm run dev
    ```
-   *The backend server will run on `http://localhost:5001`.*
+   *The backend server will run on `http://localhost:5001` (or `http://localhost:5002` if port 5001 is busy).*
 
 ---
 
@@ -387,23 +395,24 @@ npx prisma studio --schema backend/prisma/schema.prisma
 
 ## 🛠️ Development Commands
 
-From the repository root:
-
 ```bash
-# Run both Backend and Frontend concurrently
-npm run dev
+# Start Backend in development mode with nodemon:
+cd backend && npm run dev
 
-# Run only Backend in development mode (nodemon)
-npm run dev:backend
+# Start Frontend in development mode with Vite:
+cd frontend && npm run dev
 
-# Run only Frontend in development mode (vite)
-npm run dev:frontend
+# Execute backend automated test suites:
+cd backend && npm test
 
-# Execute all automated backend test suites (25 suites)
-npm test
+# Run all test suites with live database testing enabled:
+cd backend && ALLOW_LIVE_DB_TESTING=true npm test
 
-# Build Frontend production bundle
-npm run build:frontend
+# Build Frontend production bundle:
+cd frontend && npm run build
+
+# Preview Frontend production build:
+cd frontend && npm run preview
 ```
 
 ---
@@ -413,15 +422,13 @@ npm run build:frontend
 ### 1. Build the Frontend
 Compile and minify the React application into optimized static assets in `frontend/dist/`:
 ```bash
-npm run build:frontend
-# or from frontend directory:
-npm run build
+cd frontend && npm run build
 ```
 
 ### 2. Run the Production Backend
 Ensure environment variables are configured with production credentials:
 ```bash
-NODE_ENV=production PORT=5001 npm run start --prefix backend
+cd backend && NODE_ENV=production PORT=5001 npm start
 ```
 
 ---
@@ -604,18 +611,19 @@ The user profile section (`ProfileView.jsx`) supports full creator personalizati
 
 ---
 
-## 🧪 Automated Testing Suite (25 Test Suites)
+## 🧪 Automated Testing Suite (32 Test Suites)
 
-The repository includes a comprehensive 25-suite automated test harness verifying every layer of the platform:
+The repository includes a comprehensive 32-suite automated test harness verifying every layer of the platform:
 
 ```bash
-# Run all 25 test suites sequentially
-npm test
+# Run all test suites sequentially (safety protected by default)
+cd backend && npm test
 
-# Run all test suites directly from backend
-cd backend && node src/tests/run_all_tests.js
+# Run all test suites with live database testing enabled:
+cd backend && ALLOW_LIVE_DB_TESTING=true npm test
 
-# Run a specific test suite
+# Run a specific test suite directly:
+cd backend && node src/tests/level_engine.test.js
 cd backend && node src/tests/gamification_production_e2e.test.js
 ```
 
@@ -646,6 +654,13 @@ cd backend && node src/tests/gamification_production_e2e.test.js
 23. **`gamification_comprehensive_system.test.js`**: 32-point specification test suite covering XP math, level engine, ranking, RBAC, audit logging, notifications, and database transaction atomicity.
 24. **`gamification_realtime_system.test.js`**: Tests real-time SSE / WebSocket event streams, live XP broadcasts, level-up celebrations, admin table refreshes, and stale-state synchronization.
 25. **`gamification_production_e2e.test.js`**: Comprehensive 18-step production lifecycle test verifying the entire workflow from user registration and submission approval to manual adjustment, rule updates, historical immutability, mobile pagination, and authorization defense.
+26. **`transactional_email_system.test.js`**: Verifies transactional email pipeline, nodemailer SMTP integration, live mail telemetry, delivery status, and graceful error trapping.
+27. **`superadmin_email_control_center.test.js`**: Validates Super Admin transactional email control center APIs, event toggles, template previews, and test email sending.
+28. **`portal_activity_email_integration.test.js`**: End-to-end integration tests verifying email dispatch on registration, submission received, review feedback, XP awarded, and level up.
+29. **`ranking_system.test.js`**: Validates PostgreSQL window ranking, deterministic tie-breaking, percentile computation, and pagination.
+30. **`strict_submission_verification.test.js`**: Strict validation tests for URL structures, supported platforms, magic-byte verified file buffers, and duplicate submission blocks.
+31. **`xp_adjustment_system.test.js`**: Audited manual XP balance adjustment verification, positive bonuses, negative penalties, and non-negative floor enforcement.
+32. **`admin_user_visibility.test.js`**: Validates moderator directory scoping, creator dossier inspection, and RBAC visibility isolation.
 
 ---
 
