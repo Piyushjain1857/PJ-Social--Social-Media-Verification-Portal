@@ -475,15 +475,20 @@ export default function ReviewSubmissionsView() {
     <div className="review-workspace-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
       {/* ── Top Workspace Bar ── */}
       <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid var(--role-admin)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span style={{ fontSize: '1.35rem' }}>⚖️</span>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-highlight)', letterSpacing: '-0.02em' }}>
-              Verification Review Workspace
-            </h2>
-            <span className="badge badge-admin" style={{ fontSize: '0.72rem' }}>EVIDENCE AUDIT</span>
+        <div style={{ flex: 1, minWidth: '280px' }}>
+          <div className="admin-header-title-group">
+            <div className="gamepoints-banner-badge admin responsive-header-pill">
+              <span className="gamepoints-banner-dot" />
+              <span>🛡️ Evidence Audit</span>
+            </div>
+            <div className="admin-header-title-left">
+              <span style={{ fontSize: '1.35rem' }}>⚖️</span>
+              <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-highlight)', letterSpacing: '-0.02em' }}>
+                Verification Review Workspace
+              </h2>
+            </div>
           </div>
-          <p style={{ margin: '0.3rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+          <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
             Dual-pane human review terminal with split evidence inspection, creator audit trail, and instant verdict execution.
           </p>
         </div>

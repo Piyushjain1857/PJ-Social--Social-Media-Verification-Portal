@@ -276,6 +276,8 @@ button {
   border-radius: var(--radius-full);
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .badge-superadmin {
@@ -9226,12 +9228,53 @@ input[type="text"]:hover {
   color: #7dd3fc;
   margin-bottom: 0.75rem;
   letter-spacing: 0.02em;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .gamepoints-banner-badge.admin {
   background: rgba(168, 85, 247, 0.12);
   border-color: rgba(168, 85, 247, 0.3);
   color: #d8b4fe;
+}
+
+.admin-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-header-title-left {
+  order: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.responsive-header-pill {
+  order: 2;
+  margin: 0 !important;
+}
+
+@media (max-width: 640px) {
+  .admin-header-title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .responsive-header-pill {
+    order: -1 !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .admin-header-title-left {
+    order: 1 !important;
+    width: 100%;
+  }
 }
 
 .gamepoints-banner-dot {
@@ -17790,6 +17833,360 @@ input[type="date"] {
     box-sizing: border-box !important;
   }
 
+  /* ──────────────────────────────────────────────────────────
+     13.5. Platform Submissions Directory Mobile (SubmissionsView.jsx)
+     ────────────────────────────────────────────────────────── */
+  /* Header Overview Card */
+  .admin-dash-panel:has(.badge-superadmin),
+  .admin-dash-panel:has(.gamepoints-banner-badge) {
+    padding: 1.15rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  .admin-dash-panel:has(.badge-superadmin) .admin-hero-icon-box,
+  .admin-dash-panel:has(.gamepoints-banner-badge) .admin-hero-icon-box {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.35rem !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-dash-panel:has(.badge-superadmin) h2,
+  .admin-dash-panel:has(.gamepoints-banner-badge) h2 {
+    font-size: 1.15rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .admin-dash-panel:has(.badge-superadmin) p,
+  .admin-dash-panel:has(.gamepoints-banner-badge) p {
+    font-size: 0.8rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .admin-dash-panel:has(.badge-superadmin) .btn-refresh-pill,
+  .admin-dash-panel:has(.gamepoints-banner-badge) .btn-refresh-pill {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 40px !important;
+    margin-top: 0.35rem !important;
+  }
+
+  /* FilterBar on Mobile */
+  .glass-panel:has(input[placeholder*="Search creator"]) {
+    padding: 0.95rem 0.85rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+  }
+
+  .glass-panel:has(input[placeholder*="Search creator"]) > div:first-child {
+    gap: 0.65rem !important;
+  }
+
+  .glass-panel:has(input[placeholder*="Search creator"]) input.input-field {
+    font-size: 0.84rem !important;
+    height: 42px !important;
+  }
+
+  .glass-panel:has(input[placeholder*="Search creator"]) > div:first-child > div:last-child {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+  }
+
+  .glass-panel:has(input[placeholder*="Search creator"]) > div:first-child > div:last-child > span {
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    font-size: 0.76rem !important;
+    padding: 0.4rem 0.5rem !important;
+    min-width: 0 !important;
+  }
+
+  .glass-panel:has(input[placeholder*="Search creator"]) > div:first-child > div:last-child > button {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    font-size: 0.8rem !important;
+    min-width: 0 !important;
+  }
+
+  .glass-panel:has(input[placeholder*="Search creator"]) div[style*="repeat(auto-fit, minmax(180px, 1fr))"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+
+  /* Submissions Table to Mobile Card Stack Transformation */
+  .admin-dash-panel:has(table.portal-table[style*="780px"]),
+  .admin-dash-panel:has(th:nth-child(6)) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .table-responsive-wrapper:has(table.portal-table[style*="780px"]),
+  .table-responsive-wrapper:has(th:nth-child(6)) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  table.portal-table[style*="780px"],
+  table.portal-table:has(th:nth-child(6)) {
+    display: block !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.portal-table[style*="780px"] thead,
+  table.portal-table:has(th:nth-child(6)) thead {
+    display: none !important;
+  }
+
+  table.portal-table[style*="780px"] tbody,
+  table.portal-table:has(th:nth-child(6)) tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.85rem !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Card Item for each Submission Row */
+  table.portal-table[style*="780px"] tbody tr,
+  table.portal-table:has(th:nth-child(6)) tbody tr {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas:
+      "creator   status"
+      "platform  date"
+      "proof     proof"
+      "actions   actions" !important;
+    align-items: center !important;
+    gap: 0.65rem 0.5rem !important;
+    padding: 1.05rem 1rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+    background: linear-gradient(150deg, rgba(26, 32, 53, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+  }
+
+  table.portal-table[style*="780px"] tbody tr:hover,
+  table.portal-table:has(th:nth-child(6)) tbody tr:hover {
+    border-color: rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(99, 102, 241, 0.12) !important;
+  }
+
+  table.portal-table[style*="780px"] tbody tr:active,
+  table.portal-table:has(th:nth-child(6)) tbody tr:active {
+    transform: scale(0.99) !important;
+  }
+
+  table.portal-table[style*="780px"] td,
+  table.portal-table:has(th:nth-child(6)) td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Area 1: Creator */
+  table.portal-table[style*="780px"] td:nth-child(1),
+  table.portal-table:has(th:nth-child(6)) td:nth-child(1) {
+    grid-area: creator !important;
+    min-width: 0 !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(1) > div:first-child,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(1) > div:first-child {
+    font-size: 0.92rem !important;
+    font-weight: 750 !important;
+    color: var(--text-highlight, #f8fafc) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(1) > div:last-child,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(1) > div:last-child {
+    font-size: 0.74rem !important;
+    color: var(--text-muted, #94a3b8) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-top: 1px !important;
+  }
+
+  /* Area 2: Status Badge */
+  table.portal-table[style*="780px"] td:nth-child(4),
+  table.portal-table:has(th:nth-child(6)) td:nth-child(4) {
+    grid-area: status !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(4) .badge,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(4) .badge {
+    font-size: 0.68rem !important;
+    font-weight: 800 !important;
+    padding: 0.22rem 0.55rem !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
+    border-radius: 6px !important;
+  }
+
+  /* Area 3: Platform Chip & Action */
+  table.portal-table[style*="780px"] td:nth-child(2),
+  table.portal-table:has(th:nth-child(6)) td:nth-child(2) {
+    grid-area: platform !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    flex-wrap: wrap !important;
+    min-width: 0 !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(2) > div:first-child,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(2) > div:first-child {
+    font-size: 0.7rem !important;
+    padding: 0.18rem 0.5rem !important;
+    border-radius: 6px !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(2) > div:last-child,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(2) > div:last-child {
+    margin-top: 0 !important;
+    font-size: 0.74rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    text-transform: capitalize !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    padding: 0.15rem 0.45rem !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* Area 4: Date Submitted */
+  table.portal-table[style*="780px"] td:nth-child(5),
+  table.portal-table:has(th:nth-child(6)) td:nth-child(5) {
+    grid-area: date !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    font-size: 0.74rem !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+  }
+
+  /* Area 5: Target Post URL / Proof */
+  table.portal-table[style*="780px"] td:nth-child(3),
+  table.portal-table:has(th:nth-child(6)) td:nth-child(3) {
+    grid-area: proof !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0.45rem 0.65rem !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(3) a,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(3) a {
+    max-width: 100% !important;
+    width: 100% !important;
+    font-size: 0.75rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+  }
+
+  /* Area 6: Inspect Action Button */
+  table.portal-table[style*="780px"] td:nth-child(6),
+  table.portal-table:has(th:nth-child(6)) td:nth-child(6) {
+    grid-area: actions !important;
+    width: 100% !important;
+    padding-top: 0.25rem !important;
+    text-align: stretch !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(6) .btn-action-chip,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(6) .btn-action-chip {
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    border-radius: 9px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.45rem !important;
+    box-sizing: border-box !important;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(56, 189, 248, 0.15) 100%) !important;
+    border: 1px solid rgba(99, 102, 241, 0.4) !important;
+    color: #e0e7ff !important;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.15) !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(6) .btn-action-chip:hover,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(6) .btn-action-chip:active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(56, 189, 248, 0.25) 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(99, 102, 241, 0.6) !important;
+  }
+
+  /* Submission Inspection Dossier Modal Mobile */
+  .portal-modal-backdrop .portal-modal-card {
+    max-width: 95vw !important;
+    width: 95vw !important;
+    max-height: 92vh !important;
+    padding: 1.15rem 1rem !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .portal-modal-backdrop .portal-modal-card div[style*="gridTemplateColumns: 'repeat(2, 1fr)'"],
+  .portal-modal-backdrop .portal-modal-card div[style*="grid-template-columns: repeat(2, 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .portal-modal-backdrop .portal-modal-card div[style*="justifyContent: 'flex-end'"],
+  .portal-modal-backdrop .portal-modal-card div[style*="justify-content: flex-end"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.55rem !important;
+  }
+
+  .portal-modal-backdrop .portal-modal-card div[style*="justify-content: flex-end"] button {
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Prevent post url action links/buttons from wrapping into 2 lines */
+  .portal-modal-backdrop .portal-modal-card a[href],
+  .portal-modal-backdrop .portal-modal-card div:has(> a) button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
   /* Mobile Pagination Bar Layout */
   .pagination-container,
   div[style*="justify-content: space-between"]:has(.pagination-summary),
@@ -19178,6 +19575,24 @@ input[type="date"] {
   .my-subs-proof-thumb {
     width: 36px !important;
     height: 36px !important;
+  }
+
+  /* Platform Submissions Directory ultra-compact adjustments (< 440px) */
+  table.portal-table[style*="780px"] tbody tr,
+  table.portal-table:has(th:nth-child(6)) tbody tr {
+    padding: 0.85rem 0.8rem !important;
+    gap: 0.55rem 0.4rem !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(1) > div:first-child,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(1) > div:first-child {
+    font-size: 0.86rem !important;
+  }
+
+  table.portal-table[style*="780px"] td:nth-child(6) .btn-action-chip,
+  table.portal-table:has(th:nth-child(6)) td:nth-child(6) .btn-action-chip {
+    min-height: 38px !important;
+    font-size: 0.78rem !important;
   }
 
   /* Notifications ultra-compact adjustments */

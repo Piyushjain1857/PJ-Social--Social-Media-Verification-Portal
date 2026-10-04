@@ -246,24 +246,25 @@ export default function SubmissionsView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Header Overview */}
       <div className="admin-dash-panel" style={{ padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div className="admin-hero-icon-box blue">
-              📁
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            <div className="admin-header-title-group">
+              <div className="gamepoints-banner-badge admin responsive-header-pill">
+                <span className="gamepoints-banner-dot" />
+                <span>🛡️ Audit Repository</span>
+              </div>
+              <div className="admin-header-title-left">
+                <div className="admin-hero-icon-box blue">
+                  📁
+                </div>
                 <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-highlight)' }}>
                   Platform Submissions Directory
                 </h2>
-                <span className="badge badge-superadmin" style={{ fontSize: '0.68rem', padding: '0.15rem 0.55rem' }}>
-                  AUDIT REPOSITORY
-                </span>
               </div>
-              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
-                Inspect, filter, and audit creator submissions across all connected institutional social channels.
-              </p>
             </div>
+            <p style={{ margin: '0.35rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+              Inspect, filter, and audit creator submissions across all connected institutional social channels.
+            </p>
           </div>
 
           <button
@@ -667,11 +668,11 @@ export default function SubmissionsView() {
                 border: '1px solid rgba(255, 255, 255, 0.05)',
                 borderRadius: '12px'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem', flexWrap: 'wrap', gap: '0.45rem' }}>
                   <span style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
                     🔗 Target Post URL
                   </span>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={() => handleCopyUrl(selectedSub.postUrl)}
@@ -680,14 +681,16 @@ export default function SubmissionsView() {
                         border: `1px solid ${copiedUrl ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
                         color: copiedUrl ? '#10b981' : 'var(--text-secondary)',
                         borderRadius: '6px',
-                        padding: '0.15rem 0.5rem',
-                        fontSize: '0.7rem',
+                        padding: '0.22rem 0.6rem',
+                        fontSize: '0.74rem',
                         fontWeight: 600,
                         cursor: 'pointer',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
-                        transition: 'all 0.15s ease'
+                        gap: '0.3rem',
+                        transition: 'all 0.15s ease',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                       }}
                     >
                       {copiedUrl ? '✓ Copied' : '📋 Copy Link'}
@@ -697,17 +700,20 @@ export default function SubmissionsView() {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        background: 'rgba(99, 102, 241, 0.12)',
-                        border: '1px solid rgba(99, 102, 241, 0.25)',
-                        color: '#a5b4fc',
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid rgba(99, 102, 241, 0.35)',
+                        color: '#c7d2fe',
                         borderRadius: '6px',
-                        padding: '0.15rem 0.5rem',
-                        fontSize: '0.7rem',
+                        padding: '0.22rem 0.65rem',
+                        fontSize: '0.74rem',
                         fontWeight: 600,
                         textDecoration: 'none',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.25rem'
+                        gap: '0.35rem',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)'
                       }}
                     >
                       <span>Open Post ↗</span>
