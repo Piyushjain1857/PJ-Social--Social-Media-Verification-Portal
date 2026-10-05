@@ -847,8 +847,8 @@ function SuperAdminDashboard({ onNavigateToNav }) {
         />
       )}
 
-      {/* ── Analytics Metric Cards Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+      {/* ── Analytics Metric Cards Grid (4x2 Desktop, 2x4 Mobile) ── */}
+      <div className="superadmin-stat-grid" style={{ display: 'grid', gap: '1rem' }}>
         {isLoading ? (
           <>
             <SkeletonCard /><SkeletonCard />
